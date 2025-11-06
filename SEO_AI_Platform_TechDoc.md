@@ -1,7 +1,7 @@
 # SEO AI Platform - Технічна документація
 
-**Версія:** 1.2  
-**Дата:** 01 листопада 2025  
+**Версія:** 1.3  
+**Дата:** 06 листопада 2025  
 **Статус:** MVP Planning
 
 ---
@@ -719,41 +719,493 @@ model AuditPage {
 
 ### 5.7. Module: Task Management
 
-**Функції:**
-- Створення задач (вручну або AI-generated)
-- Призначення виконавців
-- Статуси (todo, in_progress, done, blocked)
-- Пріоритети (low, medium, high, critical)
-- Коментарі до задач
-- Історія змін
+**Концепція:**
+Вбудований task manager спеціально для SEO-команд з AI-плануванням та автоматизацією. Замінює Jira/Trello/Asana для SEO задач.
 
-**Database Schema:**
+**Ключові особливості:**
+- ✅ **Schedule + Backlog система** (планування тижня)
+- ✅ **AI планування** (автоматичний розподіл задач по днях)
+- ✅ **Acceptance workflow** (підтвердження задач з estimated time)
+- ✅ **Group tasks** (створення задачі на всіх членів команди)
+- ✅ **Recurring tasks** (повторювані задачі)
+- ✅ **Time tracking** (опціонально)
+- ✅ **Drag & drop** (ручне редагування розкладу)
+
+---
+
+#### 5.7.1. Three Views Architecture
+
+**Користувач бачить три views:**
+
+```
+┌────────────────────────────────────────────┐
+│ 📋 My Tasks              [@Ivan ▼]         │
+├────────────────────────────────────────────┤
+│ TABS:                                      │
+│ [📅 Schedule] [📋 Backlog] [✅ Done]       │
+└────────────────────────────────────────────┘
+```
+
+**1. Schedule View** - розплановані задачі по днях:
+```
+Понеділок, 04.11          [7.5h / 7.5h] ✅
+├─ 🔴 Fix 404 errors (2h)
+├─ 🟡 Check indexation (1h)
+└─ 🟢 Meta descriptions (4h)
+
+Вівторок, 05.11           [8.2h / 7.5h] ⚠️
+├─ ... (overload warning)
+```
+
+**2. Backlog View** - задачі без scheduledDate:
+```
+📋 BACKLOG (26 tasks)     [Est: 52h total]
+├─ 🟢 Update robots.txt (2h)
+├─ 🟢 Internal links audit (4h)
+└─ ... (ще 24)
+```
+
+**3. Done View** - завершені задачі:
+```
+✅ COMPLETED (this week: 12 tasks, 38h)
+```
+
+---
+
+#### 5.7.2. Task Creation (два способи)
+
+**Варіант A: UI Form (швидко)**
+```
+┌────────────────────────────────────┐
+│ Створити задачу                    │
+├────────────────────────────────────┤
+│ Назва: [Fix 404 errors]            │
+│ Проект: [site-a.com ▼]             │
+│ Виконавець: [Ivan ▼] або [Всі ▼]  │
+│ Estimated time: [2] hours          │
+│ Дедлайн: [08.11.2025]              │
+│ Пріоритет: (•) High                │
+│ [Create]                           │
+└────────────────────────────────────┘
+```
+
+**Варіант B: AI Creation (детально)**
+```
+User: "Постав задачу на Івана щоб виправив 404 помилки 
+       на site-a.com. Додай документ з аудиту. Дедлайн - п'ятниця."
+
+AI розуміє:
+{
+  "assignee": "ivan@agency.com",
+  "projectId": "site-a.com",
+  "title": "Виправити 404 помилки",
+  "description": "На сайті виявлено 15 помилок 404...",
+  "priority": "high",
+  "dueDate": "2025-11-08",
+  "relatedDocuments": ["audit-doc-id"],
+  "estimatedTime": null // Іван сам вкаже при acceptance
+}
+```
+
+---
+
+#### 5.7.3. Acceptance Workflow
+
+**Коли хтось створює задачу на мене:**
+
+```
+1. Task створюється зі status: "pending_acceptance"
+2. Я отримую notification (Telegram + In-app)
+3. Бачу popup:
+
+┌────────────────────────────────────┐
+│ 🔔 Нова задача від @TeamLead       │
+├────────────────────────────────────┤
+│ 📋 Fix 404 errors                  │
+│ Проект: site-a.com                 │
+│ Дедлайн: 08.11.2025 (4 дні)       │
+│                                    │
+│ ⏱️ Скільки часу займе?             │
+│ [2.5] hours                        │
+│                                    │
+│ 💬 Коментар (optional):            │
+│ [____________________________]     │
+│                                    │
+│ [✅ Accept] [❌ Decline] [💬 Ask]  │
+└────────────────────────────────────┘
+
+4. Після Accept:
+   - status → "backlog"
+   - estimatedTime → 2.5h
+   - Тімлід отримує: "✅ Ivan accepted (2.5h)"
+
+5. Якщо Decline:
+   - status → "declined"
+   - Тімлід отримує: "❌ Ivan declined (причина)"
+```
+
+**Коли створюю на себе:**
+- Estimated time обов'язковий (вказую одразу)
+- Task одразу в backlog (немає acceptance)
+
+---
+
+#### 5.7.4. Group Tasks (на всіх = копія кожному)
+
+**Створення задачі "на всіх":**
+
+```
+Тімлід: "Створи задачу на всіх: переглянути новий документ"
+
+System:
+├─ Знаходить всіх team members
+├─ Створює ОКРЕМИЙ Task для кожного:
+│   ├─ Task 1: assignee = Ivan
+│   ├─ Task 2: assignee = Anna
+│   ├─ Task 3: assignee = Petro
+│   └─ ...
+├─ Всі задачі мають groupTaskId (для зв'язку)
+└─ Кожен отримує notification для acceptance
+```
+
+**Тімлід бачить group progress:**
+```
+┌────────────────────────────────────┐
+│ 📋 Group Task Status               │
+├────────────────────────────────────┤
+│ Task: "Переглянути документ"       │
+│                                    │
+│ Team Progress:                     │
+│ ✅ Ivan - Accepted (2h) - Done     │
+│ ✅ Anna - Accepted (1.5h) - Todo   │
+│ ⏳ Petro - Pending acceptance      │
+│ ❌ Maria - Declined (vacation)     │
+│                                    │
+│ Summary: 2/4 accepted, 1 declined  │
+└────────────────────────────────────┘
+```
+
+---
+
+#### 5.7.5. AI Planning (розподіл на тиждень)
+
+**User команда:**
+```
+User: "AI, створи розклад на тиждень"
+```
+
+**AI workflow:**
+```typescript
+1. Отримує всі tasks з Backlog (де estimatedTime є)
+2. Читає user settings:
+   - workingHoursPerDay: 8h
+   - bufferTime: 0.5h (резерв)
+   - availablePerDay: 7.5h
+3. Враховує:
+   - Critical tasks → першими
+   - Deadlines (urgent → priority)
+   - Priority (high → перед medium)
+4. Розподіляє по днях (max 7.5h/day):
+   Monday: 3 tasks (7h)
+   Tuesday: 4 tasks (7.5h)
+   Wednesday: 3 tasks (6.5h)
+   ...
+5. Якщо не вмістились → залишаються в Backlog
+```
+
+**AI повертає:**
+```
+✅ Розклад на тиждень готовий!
+
+Понеділок (7h):
+• Fix 404 errors (critical, 2h)
+• Check indexation (high, 1h)
+• Meta tags - start (medium, 4h)
+
+...
+
+⚠️ Не вмістились 5 задач (12h) - залишились в Backlog
+⚠️ 3 tasks без estimated time - поставив по пріоритету
+
+[✅ Apply] [✏️ Edit] [✗ Cancel]
+```
+
+---
+
+#### 5.7.6. Estimated Time Logic
+
+**Правила:**
+
+| Сценарій | Estimated Time |
+|----------|----------------|
+| Створюю на себе | Обов'язково вказую одразу ✅ |
+| Хтось на мене | Вказую при acceptance ✅ |
+| AI генерує | AI робить базовий estimate |
+| Старі tasks (edge case) | AI ставить по deadline/priority |
+
+**Edge case (без estimated time):**
+```
+Якщо task без часу потрапив в планування:
+├─ AI аналізує deadline + priority
+├─ Якщо critical + urgent deadline → ставить першим
+├─ Якщо normal → виділяє весь день (8h) з warning
+└─ User може поправити manually
+```
+
+---
+
+#### 5.7.7. Recurring Tasks
+
+**Типи періодичності:**
+- Daily (щодня)
+- Weekly (щотижня, конкретний день)
+- Monthly (щомісяця, конкретне число)
+- Custom (cron expression)
+
+**Як працює:**
+```
+1. User створює recurring task:
+   "Перевірити GSC щопонеділка о 09:00"
+
+2. Зберігається master task:
+   {
+     isRecurring: true,
+     recurringPattern: "weekly",
+     recurringConfig: {
+       dayOfWeek: "monday",
+       time: "09:00"
+     }
+   }
+
+3. Cron job (щодня 00:00):
+   - Перевіряє recurring tasks
+   - Якщо настав час → створює instance:
+     {
+       parentTaskId: "master-id",
+       scheduledDate: "2025-11-04",
+       status: "scheduled"
+     }
+
+4. User бачить задачу в Schedule на понеділок
+```
+
+---
+
+#### 5.7.8. Time Tracking (опціонально)
+
+**Manual tracking:**
+```
+1. User: [▶️ Start task] → timer починається
+2. Працює... (timer йде)
+3. User: [⏸️ Pause] → timer зупиняється
+4. User: [▶️ Continue] → timer продовжує
+5. User: [✅ Complete] → actualTime зберігається
+```
+
+**Time entries:**
+```
+⏱️ Time Tracking:
+┌────────────────────────────────┐
+│ Current: 01:23:45              │
+│ [⏸️ Pause] [⏹️ Stop]           │
+└────────────────────────────────┘
+
+History:
+• Today 10:00-11:30 (1.5h)
+• Today 14:00-15:23 (1.4h)
+───────────────────────────
+Total: 2.9h / 2h estimated ⚠️
+```
+
+**Benefits:**
+- Порівняння estimated vs actual
+- AI вчиться (покращує estimates)
+- Team reports для тімліда
+
+---
+
+#### 5.7.9. Task Statuses (повний список)
+
+```typescript
+enum TaskStatus {
+  // Acceptance stage
+  "pending_acceptance"  // Очікує підтвердження assignee
+  "declined"            // Відхилено assignee
+  
+  // Planning stage
+  "backlog"             // В черзі (без scheduledDate)
+  "scheduled"           // Розплановано на дату
+  
+  // Execution stage
+  "todo"                // Сьогодні треба почати
+  "in_progress"         // В роботі зараз
+  
+  // Blocked/Paused
+  "blocked"             // Заблоковано (чекає щось)
+  "paused"              // На паузі (відклав)
+  
+  // Completed
+  "done"                // Виконано ✅
+  "wont_do"             // Не будемо робити
+}
+```
+
+**Workflow:**
+```
+pending_acceptance → [Accept + set time] → backlog
+                  ↘ [Decline] → declined
+
+backlog → [AI schedules OR manual] → scheduled
+                                   ↘ todo → in_progress → done
+                                                        ↘ blocked
+                                                        ↘ paused
+```
+
+---
+
+#### 5.7.10. User Settings (планування)
+
+```typescript
+model UserSettings {
+  userId           String @unique
+  
+  // Work schedule
+  workingHoursPerDay Float @default(8)
+  workingDays        String[] // ["monday", "tuesday", ...]
+  bufferTime         Float @default(0.5) // резерв часу
+  
+  // AI planning
+  aiPlanningEnabled  Boolean @default(true)
+  allowOverload      Boolean @default(false) // AI може >8h?
+  
+  // Time tracking
+  timeTrackingEnabled Boolean @default(false)
+  autoStopAfterIdle   Int? @default(15) // minutes
+}
+```
+
+---
+
+#### 5.7.11. Drag & Drop (manual editing)
+
+**User може manually:**
+- Перетягувати tasks між днями
+- Змінювати порядок в одному дні
+- Переносити з Backlog → Schedule
+- Переносити з Schedule → Backlog
+
+```typescript
+// Frontend (React)
+const handleDragEnd = (result) => {
+  const newDate = result.destination.droppableId;
+  
+  await updateTask(taskId, {
+    scheduledDate: newDate
+  });
+};
+```
+
+---
+
+#### 5.7.12. Database Schema (повна версія)
+
 ```prisma
 model Task {
   id          String   @id @default(cuid())
   projectId   String
   project     Project  @relation(fields: [projectId], references: [id])
   
+  // Basic info
   title       String
   description String
   
-  status      String   @default("todo") // todo, in_progress, done, blocked
+  // Status & Assignment
+  status        String   @default("backlog") // enum TaskStatus
+  assignedToId  String   // ЗАВЖДИ є! (не null)
+  assignedTo    User     @relation(fields: [assignedToId], references: [id])
+  createdBy     String   // userId або 'ai'
+  
+  // Scheduling
+  scheduledDate DateTime? // null = в Backlog, є дата = в Schedule
+  dueDate       DateTime? // deadline
+  
+  // Estimated time
+  estimatedTimeMin Float?  // в годинах (2)
+  estimatedTimeMax Float?  // в годинах (3)
+  estimatedTimeBy  String? // 'user', 'ai', або null
+  
+  // Actual time (after completion)
+  actualTimeSpent  Float?  // фактичний час
+  
+  // Priority
   priority    String   @default("medium") // low, medium, high, critical
   
-  assignedToId String
-  assignedTo   User    @relation(fields: [assignedToId], references: [id])
-  createdBy    String  // userId або 'ai'
-  
-  dueDate     DateTime?
-  completedAt DateTime?
-  
+  // Tags & Relations
   tags        String[] // ['technical', 'content', 'links']
-  relatedUrl  String?  // Яка сторінка
+  relatedUrls String[] // URLs пов'язані з задачею
   
+  // Group tasks
+  groupTaskId String?  // зв'язує копії однієї задачі
+  isGroupTask Boolean  @default(false)
+  
+  // Acceptance tracking
+  acceptedAt    DateTime?
+  declinedAt    DateTime?
+  declineReason String?
+  
+  // Recurring tasks
+  isRecurring      Boolean @default(false)
+  recurringPattern String? // "daily", "weekly", "monthly", "custom"
+  recurringConfig  Json?   // { dayOfWeek: "monday", time: "09:00" }
+  parentTaskId     String? // якщо це instance of recurring task
+  
+  // Time tracking
+  timeTrackingEnabled Boolean @default(false)
+  timeEntries         TimeEntry[]
+  
+  // Relations
+  documents   TaskDocument[] // зв'язок з Google Drive docs
   comments    Comment[]
   
+  // Tracking
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  completedAt DateTime?
+  
+  @@index([assignedToId, status])
+  @@index([scheduledDate])
+  @@index([projectId])
+  @@index([groupTaskId])
+}
+
+model TaskDocument {
+  id             String @id @default(cuid())
+  taskId         String
+  task           Task   @relation(fields: [taskId], references: [id])
+  googleDriveId  String
+  title          String
+  
+  @@index([taskId])
+}
+
+model TimeEntry {
+  id       String   @id @default(cuid())
+  taskId   String
+  task     Task     @relation(fields: [taskId], references: [id])
+  
+  userId   String   // хто тректив
+  user     User     @relation(fields: [userId], references: [id])
+  
+  startedAt  DateTime
+  endedAt    DateTime?
+  duration   Float   // в годинах
+  
+  note     String?  // "Робив redirects"
+  
+  createdAt DateTime @default(now())
+  
+  @@index([taskId])
+  @@index([userId])
 }
 
 model Comment {
@@ -767,8 +1219,102 @@ model Comment {
   content  String
   
   createdAt DateTime @default(now())
+  
+  @@index([taskId])
+}
+
+model UserSettings {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  
+  // Work schedule
+  workingHoursPerDay Float    @default(8)
+  workingDays        String[] @default(["monday", "tuesday", "wednesday", "thursday", "friday"])
+  bufferTime         Float    @default(0.5)
+  
+  // AI planning preferences
+  aiPlanningEnabled  Boolean  @default(true)
+  allowOverload      Boolean  @default(false)
+  
+  // Time tracking
+  timeTrackingEnabled Boolean @default(false)
+  autoStopAfterIdle   Int?    @default(15) // minutes
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 ```
+
+---
+
+#### 5.7.13. AI Commands (приклади)
+
+**Користувач може:**
+
+```
+"Створи розклад на тиждень"
+→ AI розподіляє backlog tasks на 5 днів
+
+"Постав задачу на Івана: виправити 404, дедлайн п'ятниця"
+→ AI створює task з acceptance workflow
+
+"Створи задачу на всіх: переглянути документ"
+→ AI створює копію для кожного члена команди
+
+"Перенеси все з четверга на п'ятницю"
+→ AI масово змінює scheduledDate
+
+"Які задачі найважливіші зараз?"
+→ AI аналізує пріоритети та deadlines
+
+"Оптимізуй мій тиждень - забагато на понеділок"
+→ AI перерозподіляє для балансу
+```
+
+---
+
+#### 5.7.14. Notifications
+
+**Коли відправляються:**
+
+| Подія | Кому | Канал |
+|-------|------|-------|
+| Нова задача створена на мене | Assignee | Telegram + In-app |
+| Task accepted | Автор задачі | In-app |
+| Task declined | Автор задачі | In-app + Telegram |
+| Deadline за 24 год | Assignee | Telegram |
+| Task overdue | Assignee + Тімлід | Telegram |
+| Group task progress | Автор (тімлід) | In-app |
+| Згадали в коментарі (@mention) | User | In-app |
+
+---
+
+#### 5.7.15. Phase 2 Features (не в MVP)
+
+**Відкладено на Phase 2:**
+- ❌ Task dependencies (блокування задач)
+- ❌ Real subtasks (окремі DB records)
+- ❌ Audit log (повна історія змін)
+- ❌ Bulk operations (масові дії)
+- ❌ Sprint/Milestone planning
+- ❌ Kanban board view
+- ❌ Calendar view
+- ❌ Gantt chart (timeline)
+
+**MVP включає:**
+- ✅ Schedule + Backlog + Done views (List)
+- ✅ UI форма + AI створення
+- ✅ Acceptance workflow
+- ✅ Group tasks
+- ✅ AI planning
+- ✅ Recurring tasks
+- ✅ Time tracking (basic)
+- ✅ Drag & drop
+- ✅ Comments + tags
+- ✅ Notifications
+
+---
 
 ### 5.8. Module: Alerts & Notifications
 
