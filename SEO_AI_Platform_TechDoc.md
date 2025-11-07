@@ -1316,41 +1316,904 @@ model UserSettings {
 
 ---
 
-### 5.8. Module: Alerts & Notifications
 
-**Функції:**
-- Real-time алерти (критичні проблеми)
-- Telegram notifications
-- Email notifications (опціонально)
-- Slack webhooks (опціонально)
+### 5.8. Module: Messaging System + AI Teammate
 
-**Triggers:**
-- Трафік впав >20%
-- Помилки індексації (new 404/500)
-- Позиції впали на >5 позицій
-- Core Web Vitals погіршились
-- Manual trigger від користувача
+**Концепція:**
+Повноцінний team messenger з унікальною фішкою — AI як член команди, що бере участь в обговореннях.
 
-**Приклад Telegram повідомлення:**
+**🔥 Killer Feature:** AI Teammate — перше в SEO індустрії рішення де AI природньо інтегрований в командні обговорення через @mention.
+
+---
+
+#### 5.8.1. Chat Types
+
 ```
-🔴 КРИТИЧНО: site.com
-
-Органічний трафік впав на 35% за 3 дні!
-
-Причини:
-• Google Core Update (15.10)
-• 23 нові 404 помилки
-• Падіння позицій по 15 ключових запитах
-
-Рекомендації:
-1. Виправити 404 (список у задачах)
-2. Перевірити якість контенту
-3. Моніторити далі 7 днів
-
-[Відкрити дашборд] [Створити задачі]
+MVP Types:
+├─ Direct (1-on-1)
+│   └─ Приватні розмови між користувачами
+│
+├─ Group
+│   └─ Командні обговорення (користувачі створюють самі)
+│
+└─ AI Assistant (special)
+    └─ Окремий чат тільки з AI
 ```
 
-### 5.9. Module: Reports & Export
+**AI Integration:**
+- **MVP:** Окремий AI чат + AI в групових чатах через @mention
+- **Phase 2:** AI auto-analysis (опціонально)
+
+---
+
+#### 5.8.2. AI Integration — Killer Feature!
+
+**Як працює AI Teammate:**
+
+**Сценарій 1: Окремий AI чат**
+```
+User обирає "🤖 AI Assistant" в списку:
+├─ Пише питання
+├─ AI відповідає з контекстом всіх проектів
+├─ Історія зберігається
+└─ Як особистий SEO консультант 24/7
+```
+
+**Сценарій 2: AI в групових чатах (@mention)** 🚀
+
+```
+Команда обговорює проблему:
+
+Ivan: "У нас впав трафік на 20%"
+Anna: "Я бачила в GSC багато помилок"
+Ivan: "@AI що ти думаєш про це?"
+
+🤖 AI: "Проаналізував дані site-a.com за тиждень.
+      Бачу 3 причини падіння:
+      
+      1. 15 нових 404 помилок (з 15.10)
+      2. Core Update від Google (14.10)
+      3. Competitor запустив 8 нових статей
+      
+      📊 Metrics:
+      • Clicks: 450 → 350 (-22%)
+      • Impressions: -15%
+      
+      ✅ Рекомендації:
+      1. Виправити 404 (список в задачах)
+      2. Перевірити якість контенту
+      3. Competitor analysis
+      
+      Створити задачі?"
+```
+
+**Use Cases:**
+- 🔍 **Фактчек:** "@AI перевір реальні цифри"
+- 📊 **Аналіз:** "@AI що впливає на LCP?"
+- 🔎 **Пошук:** "@AI що ми вирішили про redirects?"
+- 💡 **Рекомендації:** "@AI що порадиш?"
+- 📝 **Створення контенту:** "@AI створи ТЗ на 404"
+
+**Чому це унікально:**
+
+| Конкурент | Team Chat | AI Integration |
+|-----------|-----------|----------------|
+| Ahrefs | ❌ | AI окремо |
+| Semrush | ❌ | AI окремо |
+| Screaming Frog | ❌ | No AI |
+| **SEO AI Platform** | ✅ | ✅ AI Teammate! 🏆 |
+
+---
+
+#### 5.8.3. Database Schema
+
+```prisma
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  name           String
+  avatar         String?
+  
+  // AI flag
+  isAI           Boolean  @default(false)
+  aiModel        String?  // "claude-sonnet-4"
+  
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  role           String
+  
+  // Messaging
+  sentMessages   Message[] @relation("sender")
+  chatMembers    ChatMember[]
+  
+  // Status
+  isOnline       Boolean   @default(false)
+  lastSeenAt     DateTime?
+  
+  createdAt      DateTime @default(now())
+}
+
+model Chat {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  type           String   // "direct" | "group" | "ai"
+  name           String?
+  avatar         String?
+  
+  projectId      String?
+  project        Project? @relation(fields: [projectId], references: [id])
+  
+  members        ChatMember[]
+  messages       Message[]
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  @@index([organizationId])
+  @@index([projectId])
+}
+
+model ChatMember {
+  id       String @id @default(cuid())
+  chatId   String
+  chat     Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  lastReadAt DateTime?
+  isMuted    Boolean @default(false)
+  
+  joinedAt   DateTime @default(now())
+  
+  @@unique([chatId, userId])
+  @@index([userId])
+  @@index([chatId])
+}
+
+model Message {
+  id       String   @id @default(cuid())
+  chatId   String
+  chat     Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  
+  senderId String
+  sender   User     @relation("sender", fields: [senderId], references: [id])
+  
+  content  String   @db.Text
+  type     String   @default("text")
+  
+  attachments Json?
+  
+  // AI specific
+  isAIResponse Boolean @default(false)
+  aiContext    Json?
+  aiModel      String?
+  
+  mentions     String[]
+  
+  isEdited     Boolean  @default(false)
+  editedAt     DateTime?
+  
+  createdAt    DateTime @default(now())
+  
+  @@index([chatId, createdAt])
+  @@index([senderId])
+}
+```
+
+---
+
+#### 5.8.4. Real-time (WebSockets)
+
+**Tech Stack:**
+- Backend: Socket.io (NestJS)
+- Frontend: Socket.io client
+- Redis: Online presence
+
+**Key Events:**
+
+```typescript
+// Connect
+socket.on('join_organization', async (orgId) => {
+  socket.join(`org:${orgId}`);
+  await updateUserStatus(userId, true);
+});
+
+// Send message
+socket.on('send_message', async (data) => {
+  const message = await saveMessage(data);
+  socket.to(`chat:${data.chatId}`).emit('new_message', message);
+  
+  // Check @AI
+  if (data.content.includes('@AI')) {
+    await handleAIResponse(data.chatId, message);
+  }
+});
+
+// Typing
+socket.on('typing', (chatId) => {
+  socket.to(`chat:${chatId}`).emit('user_typing', { userId, chatId });
+});
+```
+
+**AI Handler:**
+
+```typescript
+async function handleAIResponse(chatId, message) {
+  socket.to(`chat:${chatId}`).emit('ai_typing');
+  
+  const history = await getRecentMessages(chatId, 50);
+  const context = await buildAIContext(chatId);
+  
+  const response = await claude.messages.create({
+    model: "claude-sonnet-4-20250514",
+    messages: [
+      { role: "system", content: context },
+      ...history.map(m => ({
+        role: m.isAIResponse ? "assistant" : "user",
+        content: `${m.sender.name}: ${m.content}`
+      }))
+    ]
+  });
+  
+  const aiMessage = await saveMessage({
+    chatId,
+    senderId: "ai-assistant-id",
+    content: response.content[0].text,
+    isAIResponse: true
+  });
+  
+  socket.to(`chat:${chatId}`).emit('new_message', aiMessage);
+}
+```
+
+---
+
+#### 5.8.5. AI Context
+
+```typescript
+async function buildAIContext(chatId) {
+  const chat = await getChat(chatId);
+  const projects = await getUserProjects();
+  
+  let projectContext = '';
+  if (chat.projectId) {
+    const project = await getProject(chat.projectId);
+    const data = await getLatestDataSnapshot(project.id);
+    
+    projectContext = `
+      Project: ${project.domain}
+      Traffic: ${data.gscMetrics.clicks} clicks
+      Tasks: ${await getActiveTasks(project.id).length}
+    `;
+  }
+  
+  return `
+    AI SEO Expert in team chat.
+    
+    User: ${user.name} (${user.role})
+    Organization: ${org.name}
+    Projects: ${projects.length}
+    ${projectContext}
+    
+    Instructions:
+    - Analyze data when asked
+    - Give actionable recommendations
+    - Offer to create tasks
+    - Be concise but thorough
+    - Respond only on @mention
+  `;
+}
+```
+
+---
+
+#### 5.8.6. Features
+
+**MVP:**
+```
+✅ 1-on-1 chats
+✅ Group chats
+✅ AI Assistant (окремий + @mention в групах)
+✅ Real-time (WebSocket)
+✅ Full history
+✅ Online status
+✅ Typing indicators
+✅ Text + images + files
+```
+
+**Phase 2:**
+```
+✅ Reactions (emoji)
+✅ Reply threads
+✅ Message search
+✅ Rich text / markdown
+✅ Voice messages
+```
+
+---
+
+#### 5.8.7. Витрати (BYOK)
+
+```
+AI response cost:
+├─ Input: ~2,500 tokens = $0.0075
+├─ Output: ~500 tokens = $0.0075
+└─ Total: ~$0.015 per response
+
+Monthly (20 queries/day):
+└─ ~$9/міс (acceptable!)
+```
+
+---
+
+#### 5.8.8. Відповідальність
+
+```
+Terms: "We integrate third-party AI using your 
+API credentials. Not responsible for AI accuracy. 
+Always verify important decisions."
+```
+
+Standard: Cursor, GitHub Copilot, Notion AI.
+
+---
+
+#### 5.8.9. Marketing
+
+**Tagline:** "Your AI Teammate, Always in Context"
+
+**Demo:** Team discussing → @AI → instant analysis → wow!
+
+---
+
+### 5.9. Module: Notifications System
+
+**Концепція:**
+In-app notifications з floating button та sidebar panel (як в CK3). Всі нотіфікації спливають, групуються, інтерактивні.
+
+**🎯 Focus:** Тільки in-app для MVP (Telegram/Email - Phase 2)
+
+---
+
+#### 5.9.1. Architecture
+
+```
+Components:
+├─ Floating Button (bottom-right)
+│   ├─ Badge з лічильником
+│   ├─ Animate при критичних
+│   └─ Клік → відкриває panel
+│
+├─ Notification Panel (sidebar)
+│   ├─ Auto-grouping по типу
+│   ├─ Expandable details
+│   ├─ Interactive actions
+│   └─ Time grouping
+│
+└─ Popup Toast (top-right)
+    ├─ Спливає для ВСІХ типів
+    ├─ Auto-dismiss через 10 сек
+    └─ Sound effects (optional)
+```
+
+---
+
+#### 5.9.2. Floating Button
+
+```
+Position: fixed, bottom: 20px, right: 20px
+
+States:
+├─ No notifications → Gray, 60% opacity
+├─ Has unread → Blue, pulse animation
+└─ Has critical → Red, shake animation
+
+Badge:
+┌─────┐
+│ 🔔  │
+│ (5) │  ← Кількість непрочитаних
+└─────┘
+```
+
+**CSS:**
+
+```css
+.notification-button {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.has-critical {
+  background: #EF4444;
+  animation: shake 0.5s infinite;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+```
+
+---
+
+#### 5.9.3. Notification Panel
+
+**Клік на button → sidebar з правого боку:**
+
+```
+┌──────────────────────────────────┐
+│ 🔔 Notifications    [Mark all] [×]│
+│ [All] [Unread] [Critical]         │
+├──────────────────────────────────┤
+│                                   │
+│ 🔴 CRITICAL (2)              [▼] │ ← Групування
+│ ├─ 📉 site-a.com traffic -35%    │
+│ │   3 хв тому                    │
+│ │   [▼ Show details]             │
+│ │                                 │
+│ └─ ⚠️ site-b.com: 50+ 404        │
+│     15 хв тому                   │
+│     [View audit] [Fix now]       │
+│                                   │
+│ 💬 MESSAGES (3)              [▼] │
+│ ├─ @mention from Ivan            │
+│ │   in "site-a-team"             │
+│ │   [Open chat] [Reply]          │
+│ │                                 │
+│ └─ New message from Anna         │
+│     [Open chat]                  │
+│                                   │
+│ ✅ TASKS (1)                 [▼] │
+│ └─ Task assigned to you          │
+│     [Accept] [Decline] [View]    │
+│                                   │
+│ 🎉 GOOD NEWS                 [▼] │
+│ └─ site-d.com traffic +25% 🚀    │
+│     [View details]               │
+│                                   │
+│ ──────────────────────────       │
+│ Earlier (yesterday)              │
+│ [Show 12 more...]                │
+└──────────────────────────────────┘
+```
+
+---
+
+#### 5.9.4. Auto-Grouping
+
+```typescript
+interface NotificationGroup {
+  type: 'critical' | 'message' | 'task' | 'success';
+  title: string;
+  icon: string;
+  count: number;
+  isCollapsed: boolean;
+  notifications: Notification[];
+}
+
+// Grouping logic:
+├─ By type (critical/message/task/success)
+├─ By project (в межах типу)
+├─ Auto-collapse якщо >5 items
+└─ Critical завжди зверху
+```
+
+---
+
+#### 5.9.5. Expandable Details
+
+**Collapsed:**
+```
+📉 site-a.com traffic -35%
+3 хв тому
+[▼ Show details]
+```
+
+**Expanded:**
+```
+📉 site-a.com traffic -35%
+3 хв тому
+[▲ Hide details]
+
+━━━━━━━━━━━━━━━━━
+📊 Metrics:
+• Clicks: 450 → 290 (-160)
+• Impressions: 12K → 11K
+• CTR: 3.75% → 2.64%
+
+🤖 AI Analysis:
+• Core Update (15.10)
+• 23 нові 404
+• Competitor activity ↑
+
+✅ Actions:
+1. Fix 404 errors
+2. Check content
+3. Monitor 7 days
+
+[Create tasks] [View report]
+━━━━━━━━━━━━━━━━━
+```
+
+---
+
+#### 5.9.6. Popup Toasts
+
+**Position:** Top-right (не блокує floating button)
+
+**ВСІ типи спливають:**
+
+```
+Critical (червоний):
+┌──────────────────┐
+│ 🔴 site-a.com    │
+│ Traffic -35%     │
+│ [View] [Dismiss] │
+└──────────────────┘
+
+Message (@mention):
+┌──────────────────┐
+│ 💬 @Ivan         │
+│ "Треба виправ.." │
+│ [Reply] [Dismiss]│
+└──────────────────┘
+
+Task:
+┌──────────────────┐
+│ ✅ New task      │
+│ Fix 404 errors   │
+│ [Accept] [View]  │
+└──────────────────┘
+
+Success:
+┌──────────────────┐
+│ 🎉 site-d.com    │
+│ Traffic +25%     │
+│ [View] [Dismiss] │
+└──────────────────┘
+```
+
+**Multiple popups stack vertically:**
+```
+          ┌──────────┐
+          │ Popup 1  │
+          └──────────┘
+          ┌──────────┐
+          │ Popup 2  │
+          └──────────┘
+          ┌──────────┐
+          │ Popup 3  │
+          └──────────┘
+            (max 3)
+```
+
+---
+
+#### 5.9.7. Sound System
+
+```typescript
+const sounds = {
+  critical: {
+    file: '/sounds/alert-critical.mp3',
+    volume: 1.0
+  },
+  message: {
+    file: '/sounds/message.mp3',
+    volume: 0.7
+  },
+  mention: {
+    file: '/sounds/mention.mp3',
+    volume: 0.8
+  },
+  task: {
+    file: '/sounds/task.mp3',
+    volume: 0.6
+  },
+  success: {
+    file: '/sounds/success.mp3',
+    volume: 0.7
+  }
+};
+
+function playSound(type: string) {
+  if (!settings.enableSounds) return;
+  
+  const sound = sounds[type];
+  const audio = new Audio(sound.file);
+  audio.volume = sound.volume * settings.soundVolume;
+  audio.play();
+}
+```
+
+**Settings:**
+```
+☑️ Enable sounds
+Volume: [▓▓▓▓▓▓▓▓░░] 80%
+
+Preview:
+🔴 Critical  [▶️ Play]
+💬 Message   [▶️ Play]
+✅ Task      [▶️ Play]
+🎉 Success   [▶️ Play]
+```
+
+---
+
+#### 5.9.8. Notification Types
+
+**Всі типи що спливають:**
+
+```typescript
+// Critical (🔴 червоний + гучний)
+├─ traffic_drop_critical     // -30%+
+├─ indexing_errors_massive   // 50+ errors
+├─ site_down                 // 500 errors
+└─ cwv_critical              // всі червоні
+
+// Important (🟡 помаранчевий + середній)
+├─ traffic_drop_warning      // -15%
+├─ position_drop_major       // top 3 → 10+
+├─ new_404_errors           // 10+
+└─ task_overdue             // прострочена
+
+// Messages (💬 синій + м'який)
+├─ direct_message           // 1-on-1
+├─ group_message            // в групі
+├─ mention                  // @user
+└─ ai_response              // @AI відповів
+
+// Tasks (✅ жовтий + нейтральний)
+├─ task_assigned            // нова
+├─ task_due_soon           // 24 год
+├─ task_accepted           // прийнята
+├─ task_declined           // відхилена
+└─ task_commented          // коментар
+
+// Success (🎉 зелений + позитивний)
+├─ traffic_increase        // +20%
+├─ audit_completed         // краулінг готовий
+├─ scheduled_task_done     // відкладена виконана
+└─ report_generated        // звіт готовий
+```
+
+---
+
+#### 5.9.9. Database Schema
+
+```prisma
+model Notification {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id])
+  
+  // Type
+  type     String   // "critical" | "important" | "message" | "task" | "success"
+  category String   // "traffic_drop_critical" | "mention" | etc
+  
+  // Display
+  title    String
+  message  String   @db.Text
+  icon     String   // emoji
+  color    String   // hex
+  
+  // Rich content
+  metadata Json?    // metrics, analysis, recommendations
+  
+  // Actions
+  actions  Json?    // [{ label, url, action }]
+  
+  // Related
+  projectId String?
+  chatId    String?
+  taskId    String?
+  
+  // State
+  isRead      Boolean  @default(false)
+  isDismissed Boolean  @default(false)
+  wasShownInPopup Boolean @default(false)
+  
+  readAt      DateTime?
+  dismissedAt DateTime?
+  
+  // Grouping
+  groupKey String?   // "site-a.com-traffic"
+  
+  createdAt DateTime @default(now())
+  
+  @@index([userId, isRead, createdAt])
+  @@index([type, category])
+}
+
+model NotificationSettings {
+  id     String @id @default(cuid())
+  userId String @unique
+  
+  // Sounds
+  enableSounds Boolean @default(true)
+  soundVolume  Float   @default(0.8)
+  
+  // Popups
+  enablePopups    Boolean @default(true)
+  popupDuration   Int     @default(10)  // seconds
+  maxPopups       Int     @default(3)
+  
+  // Grouping
+  autoCollapse    Boolean @default(true)
+  collapseAfter   Int     @default(5)
+  
+  // Archive
+  autoArchiveDays Int     @default(30)
+  
+  // Mobile
+  enableVibration Boolean @default(true)
+  
+  updatedAt DateTime @updatedAt
+}
+```
+
+---
+
+#### 5.9.10. WebSocket Integration
+
+```typescript
+// Backend → Frontend
+socket.on('notification', (notification) => {
+  // 1. Add to state
+  addNotification(notification);
+  
+  // 2. Update badge
+  incrementUnreadCount();
+  
+  // 3. Show popup (для ВСІХ типів)
+  showPopup(notification);
+  
+  // 4. Play sound
+  playNotificationSound(notification.category);
+  
+  // 5. Vibrate (mobile)
+  if (isMobile && settings.enableVibration) {
+    navigator.vibrate([200, 100, 200]);
+  }
+});
+```
+
+---
+
+#### 5.9.11. Interactive Actions
+
+**Приклади:**
+
+```
+Task assigned:
+├─ [Accept] → status = "accepted"
+├─ [Decline] → show reason form
+└─ [View] → open task
+
+Traffic drop:
+├─ [View dashboard] → redirect
+├─ [Create tasks] → task creator
+└─ [Dismiss] → mark read
+
+@mention:
+├─ [Reply] → open chat + pre-fill
+├─ [Open chat] → jump to message
+└─ [×] → dismiss
+
+AI responded:
+├─ [View answer] → open chat
+├─ [Ask follow-up] → reply field
+└─ [×] → dismiss
+```
+
+---
+
+#### 5.9.12. Time Grouping
+
+```
+Today:
+├─ site-a.com traffic -35% (3 хв тому)
+├─ @mention from Ivan (15 хв тому)
+└─ Task assigned (1 год тому)
+
+Yesterday:
+├─ Audit completed (вчора, 18:30)
+└─ Report generated (вчора, 09:15)
+
+This week:
+└─ [Show 12 notifications...]
+
+Older:
+└─ [Show 48 notifications...]
+
+Archive (auto after 30 днів):
+└─ [View archive...]
+```
+
+---
+
+#### 5.9.13. Filtering
+
+```
+Top bar:
+┌─────────────────────────────┐
+│ 🔔 Notifications            │
+│ [All] [Unread] [Critical]   │ ← Quick filters
+│ [Messages] [Tasks] [Projects]│
+└─────────────────────────────┘
+
+Клік → показує тільки цей тип
+```
+
+---
+
+#### 5.9.14. Features Summary
+
+**MVP (in-app only):**
+```
+✅ Floating button (bottom-right)
+✅ Badge counter
+✅ Sidebar panel (slide-in)
+✅ Auto-grouping (type + project)
+✅ Popups для ВСІХ типів
+✅ Sound effects (optional)
+✅ Expandable details
+✅ Interactive actions
+✅ Mark as read/dismiss
+✅ Time grouping
+✅ Filtering
+✅ Real-time (WebSocket)
+```
+
+**Phase 2:**
+```
+✅ Telegram integration
+✅ Email notifications
+✅ Slack webhooks
+✅ Advanced filtering
+✅ Custom sounds
+```
+
+---
+
+#### 5.9.15. Timeline
+
+**1 тиждень:**
+
+```
+День 1-2: Backend
+├─ Notification model
+├─ Settings model
+├─ WebSocket events
+└─ Triggers
+
+День 3-4: Frontend UI
+├─ FloatingButton
+├─ NotificationPanel
+├─ Popup component
+└─ Grouping logic
+
+День 5: Sounds & animations
+├─ Sound system
+├─ Animations (slide/fade/shake)
+└─ Button states
+
+День 6-7: Integration
+├─ Messaging → notifications
+├─ Tasks → notifications
+├─ Data collection → notifications
+└─ Testing
+```
+
+---
+### 5.10. Module: Reports & Export
 
 **Функції:**
 - Автоматична генерація звітів (AI)
@@ -1391,36 +2254,6 @@ model UserSettings {
   ]
 }
 ```
-
-### 5.10. Module: AI Chat Assistant
-
-**Функції:**
-- Розмовний інтерфейс для аналізу
-- Питання-відповідь про проект
-- Генерація стратегій
-- Пояснення технічних термінів
-- Context-aware (знає всі дані проекту)
-
-**Приклади запитів:**
-```
-User: "Чому впав трафік на site.com?"
-AI: "Проаналізував дані за останній тиждень. Бачу 3 причини:
-     1. Google Core Update (15.10) — ваш сайт під фільтром
-     2. Конкурент запустив 15 нових статей
-     3. Сезонність (жовтень завжди -10%)
-     
-     Найімовірніше комбінація #1 + #3. Рекомендую..."
-
-User: "Які задачі найважливіші зараз?"
-AI: "За пріоритетом:
-     🔴 КРИТИЧНО: Виправити 15 помилок 404
-     🟡 ВАЖЛИВО: Оптимізувати 8 повільних сторінок
-     🟢 БАЖАНО: Додати 50 внутрішніх посилань
-     
-     Почніть з 404 — це найбільше впливає на індексацію."
-```
-
----
 
 ### 5.11. Module: AI Task Scheduler (Scheduled Tasks)
 
@@ -2516,48 +3349,81 @@ Profit: $15,305/міс ($183,660/рік)
 
 ### 11.1. Phase 1: MVP (Місяці 1-3)
 
+
 **Тиждень 1-2: Foundation**
 - [ ] Next.js setup + UI компоненти (shadcn/ui)
 - [ ] NestJS API + Database (Prisma)
 - [ ] Authentication (NextAuth + JWT)
 - [ ] Multi-tenancy setup (Organizations)
 
-**Тиждень 3-4: Core Integrations**
+**Тиждень 3-6: Messaging + AI Teammate** 🔥
+- [ ] Socket.io WebSocket setup
+- [ ] Chat CRUD (create, list, members)
+- [ ] Messages (send, receive, attachments)
+- [ ] Real-time updates
+- [ ] Online status + typing indicators
+- [ ] AI user creation (seed)
+- [ ] AI в окремому чаті
+- [ ] AI в групових чатах (@mention)
+- [ ] Context building для AI
+- [ ] Frontend UI (ChatList + MessageArea)
+
+**Тиждень 7-8: Google APIs**
 - [ ] Google OAuth setup
 - [ ] Google Search Console API
 - [ ] Google Analytics GA4 API
+- [ ] Google Drive/Docs/Sheets API
 - [ ] PageSpeed Insights API
 
-**Тиждень 5-6: Data Collection**
+**Тиждень 9-10: Data Collection**
 - [ ] Cron jobs для щоденного збору даних
 - [ ] DataSnapshot model + storage
-- [ ] Dashboard з графіками (Recharts)
-
-**Тиждень 7-8: AI Integration**
-- [ ] Claude API integration
 - [ ] AI Analysis Service
 - [ ] Morning Brief генерація
-- [ ] Автогенерація задач
+- [ ] Dashboard з графіками (Recharts)
 
-**Тиждень 9-10: Crawler**
+**Тиждень 11-12: Crawler**
 - [ ] Crawlee + Playwright setup
 - [ ] Audit Service
 - [ ] Background jobs queue (BullMQ)
 - [ ] Збереження результатів аудиту
 
-**Тиждень 11-12: Polish & Testing**
-- [ ] Task Manager UI
-- [ ] Telegram notifications
+**Тиждень 13-14: Task Manager**
+- [ ] Task CRUD operations
+- [ ] Assignment workflow + acceptance
+- [ ] Schedule + Backlog + Done views
+- [ ] AI planning (розподіл на тиждень)
+- [ ] Drag & drop
+- [ ] Time tracking (basic)
+- [ ] Integration з чатом
+
+**Тиждень 15-16: Notifications**
+- [ ] Notification model + settings
+- [ ] WebSocket events
+- [ ] Floating button (bottom-right)
+- [ ] Notification panel (sidebar)
+- [ ] Popup toasts
+- [ ] Sound system (optional)
+- [ ] Auto-grouping
+- [ ] Interactive actions
+- [ ] Integration з messaging + tasks
+
+**Тиждень 17-20: Polish & Testing**
+- [ ] UI/UX improvements
 - [ ] Bug fixes
-- [ ] Beta testing з 3-5 користувачами
+- [ ] Performance optimization
+- [ ] Documentation
+- [ ] Beta testing з 5-10 користувачами
 
 **Результат Phase 1:**
 Робоча платформа з базовим функціоналом:
-- Google APIs підключені
-- AI аналіз працює
-- Краулер робить аудити
-- Користувачі можуть створювати проекти та задачі
-
+- 💬 Team messaging з AI teammate
+- 🔔 Smart notifications (in-app)
+- 📊 Google APIs інтеграції
+- 🤖 AI аналіз даних
+- 🕷️ Краулер для аудитів
+- ✅ Task Manager
+- 📈 Dashboard з метриками
 ### 11.2. Phase 2: Automation & Reports (Місяці 4-6)
 
 **Місяць 4:**
@@ -2575,7 +3441,7 @@ Profit: $15,305/міс ($183,660/рік)
 - [ ] Serpstat API integration (опціонально)
 - [ ] Семантичне ядро (keyword research)
 - [ ] Competitor analysis
-- [ ] AI Chat Assistant (повноцінний)
+- [ ] Messaging Phase 2: Reactions, Reply threads, Message search
 - [ ] **Scheduled Tasks (розширена версія)**
   - [ ] Всі типи задач (аудит, конкуренти, звіти)
   - [ ] AI створення задач через чат
@@ -2583,6 +3449,7 @@ Profit: $15,305/міс ($183,660/рік)
 
 **Місяць 6:**
 - [ ] Email notifications (SendGrid)
+- [ ] Notifications Phase 2: Telegram integration, Slack webhooks
 - [ ] Advanced filtering & sorting
 - [ ] Історія змін (audit trail)
 - [ ] Performance optimization
