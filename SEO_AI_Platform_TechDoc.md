@@ -1,7 +1,7 @@
 # SEO AI Platform - Технічна документація
 
-**Версія:** 1.3  
-**Дата:** 06 листопада 2025  
+**Версія:** 1.4  
+**Дата:** 07 листопада 2025  
 **Статус:** MVP Planning
 
 ---
@@ -2419,143 +2419,671 @@ const result = await fetch('/api/scheduled-tasks/latest');
 - ✅ Гнучкість (підключає тільки що треба)
 - ✅ Масштабування без додаткових витрат
 
-### 6.2. Список API та їх вартість
+## 6.2. Authentication Methods (OAuth vs API Keys)
+
+### OAuth Support
+
+**Концепція:**  
+Де можливо використовуємо OAuth 2.0 для кращого UX. User бачить знайому кнопку "Connect with [Service]" замість копіювання API keys.
+
+**Які сервіси підтримують OAuth:**
+
+| Сервіс | OAuth Support | Authentication Method | UI Pattern |
+|--------|---------------|----------------------|------------|
+| **Google APIs** | ✅ YES | OAuth 2.0 | [🔵 Sign in with Google] |
+| **Ahrefs** | ✅ YES | OAuth 2.0 | [🟠 Connect with Ahrefs] + fallback manual |
+| **SEMrush** | ✅ YES | OAuth 2.0 (Device flow) | [🟢 Connect with SEMrush] + fallback manual |
+| **Serpstat** | ❌ NO | API Token only | [Enter API Token] |
+| **Claude (Anthropic)** | ❌ NO | API Key only | [Enter API Key] |
+| **SendGrid** | ❌ NO | API Key only | [Enter API Key] |
+| **PageSpeed Insights** | ❌ NO | API Key (public) | Auto-configured |
+
+---
+
+### OAuth Implementation Details
+
+#### Google OAuth (Organization-level)
+
+**Scopes запитуємо одночасно:**
+```typescript
+const scopes = [
+  // Google Search Console
+  'https://www.googleapis.com/auth/webmasters.readonly',
+  
+  // Google Analytics GA4
+  'https://www.googleapis.com/auth/analytics.readonly',
+  
+  // Google Drive
+  'https://www.googleapis.com/auth/drive.file',
+  
+  // Google Docs
+  'https://www.googleapis.com/auth/documents',
+  
+  // Google Sheets
+  'https://www.googleapis.com/auth/spreadsheets',
+  
+  // User profile
+  'https://www.googleapis.com/auth/userinfo.email',
+  'https://www.googleapis.com/auth/userinfo.profile'
+];
+```
+
+**Результат:**  
+Один `access_token` працює для ВСІХ Google сервісів одночасно!
+
+**Exceptions:**
+- PageSpeed Insights не потребує OAuth (public API key)
+
+---
+
+#### Ahrefs OAuth
+
+**Endpoints:**
+```
+Authorization: https://app.ahrefs.com/api/auth
+Token Exchange: https://app.ahrefs.com/api/token
+Subscription Info: https://apiv2.ahrefs.com (для usage tracking)
+```
+
+**Flow:**
+```typescript
+// 1. Redirect to Ahrefs
+const authUrl = new URL('https://app.ahrefs.com/api/auth');
+authUrl.searchParams.set('client_id', process.env.AHREFS_CLIENT_ID);
+authUrl.searchParams.set('redirect_uri', 'https://your-app.com/auth/ahrefs/callback');
+authUrl.searchParams.set('response_type', 'code');
+authUrl.searchParams.set('state', generateState());
+
+// 2. Handle callback
+const tokens = await axios.post('https://app.ahrefs.com/api/token', {
+  code: req.query.code,
+  client_id: process.env.AHREFS_CLIENT_ID,
+  client_secret: process.env.AHREFS_CLIENT_SECRET,
+  grant_type: 'authorization_code',
+  redirect_uri: 'https://your-app.com/auth/ahrefs/callback'
+});
+
+// Response:
+{
+  access_token: "...",
+  refresh_token: "...",
+  expires_in: 3600
+}
+```
+
+**Setup Required:**
+1. Contact Ahrefs Developer Relations
+2. Register OAuth Application
+3. Get Client ID + Secret
+4. Set redirect URI
+
+---
+
+#### SEMrush OAuth
+
+**Flow:** Device Authorization Grant (рекомендовано SEMrush)
+
+**Endpoints:**
+```
+Device Code: https://oauth.semrush.com/dag/device/code
+Token: https://oauth.semrush.com/dag/device/token
+```
+
+**Flow:**
+```typescript
+// 1. Get device code
+const deviceCode = await axios.post('https://oauth.semrush.com/dag/device/code', {
+  client_id: process.env.SEMRUSH_CLIENT_ID
+});
+
+// Response:
+{
+  device_code: "xxx",
+  user_code: "YYYY",
+  verification_uri: "https://oauth.semrush.com/dag/auth/verify_code?code=ZZZ",
+  expires_in: 300,
+  interval: 5
+}
+
+// 2. User opens verification_uri and approves
+// 3. Poll for token
+const tokens = await axios.post('https://oauth.semrush.com/dag/device/token', {
+  device_code: deviceCode.device_code,
+  grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
+});
+
+// Response:
+{
+  access_token: "...",
+  refresh_token: "...",
+  expires_in: 604800, // 7 days
+  token_type: "Bearer"
+}
+```
+
+**Setup Required:**
+1. Contact SEMrush Tech Support
+2. Request client_id + client_secret
+3. Specify redirect URI
+
+---
+
+### UI Patterns
+
+#### Pattern A: OAuth-First (Ahrefs, SEMrush)
+
+```
+┌──────────────────────────────────────────┐
+│ Connect Ahrefs                           │
+├──────────────────────────────────────────┤
+│                                          │
+│ Підключіть Ahrefs для:                  │
+│ • Backlinks analysis                     │
+│ • Domain Rating                          │
+│ • Keywords research                      │
+│                                          │
+│ 🔒 Secure OAuth 2.0 authentication      │
+│                                          │
+│ [🟠 Connect with Ahrefs] ← BIG          │
+│                                          │
+│ ────────── або ──────────                │
+│                                          │
+│ Advanced: Manual API Token              │
+│ [Enter token manually] ← small          │
+└──────────────────────────────────────────┘
+```
+
+**Переваги OAuth:**
+- ✅ Знайомий UX (як "Login with Google")
+- ✅ Не треба копіювати токени
+- ✅ Автоматичний refresh tokens
+- ✅ Ревокація доступу через provider UI
+
+**Fallback Manual:**
+- Для advanced users
+- Якщо OAuth registration ще не готова
+- Для testing/development
+
+---
+
+#### Pattern B: API Key Only (Claude, Serpstat, SendGrid)
+
+```
+┌──────────────────────────────────────────┐
+│ Anthropic Claude                         │
+├──────────────────────────────────────────┤
+│                                          │
+│ API Key *                                │
+│ ┌──────────────────────────────────────┐│
+│ │ sk-ant-api03-xxxxx                   ││
+│ └──────────────────────────────────────┘│
+│                                          │
+│ 📝 How to get API key:                  │
+│ 1. Go to console.anthropic.com          │
+│ 2. Settings → API Keys                  │
+│ 3. Create Key → Copy here               │
+│                                          │
+│ 🔒 Encrypted with AES-256               │
+│                                          │
+│ [Test Connection] [Save]                │
+└──────────────────────────────────────────┘
+```
+
+**Коли використовувати:**
+- OAuth не підтримується provider'ом
+- Simple API key authentication
+- Public APIs (PageSpeed)
+
+---
+
+### Backend OAuth Handlers
+
+```typescript
+// auth/oauth.controller.ts
+
+@Controller('auth')
+export class OAuthController {
+  
+  // Generic OAuth initiator
+  @Get(':provider/connect')
+  async initiateOAuth(
+    @Param('provider') provider: string,
+    @Req() req
+  ) {
+    const state = generateRandomState();
+    await this.redis.set(`oauth:${state}`, req.user.id, 'EX', 600);
+    
+    const config = this.getProviderConfig(provider);
+    const authUrl = new URL(config.authEndpoint);
+    
+    authUrl.searchParams.set('client_id', config.clientId);
+    authUrl.searchParams.set('redirect_uri', config.redirectUri);
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('state', state);
+    
+    if (config.scopes) {
+      authUrl.searchParams.set('scope', config.scopes.join(' '));
+    }
+    
+    return { redirectUrl: authUrl.toString() };
+  }
+  
+  // Generic OAuth callback
+  @Get(':provider/callback')
+  async handleCallback(
+    @Param('provider') provider: string,
+    @Query('code') code: string,
+    @Query('state') state: string
+  ) {
+    // Verify state
+    const userId = await this.redis.get(`oauth:${state}`);
+    if (!userId) throw new UnauthorizedException();
+    
+    // Exchange code for tokens
+    const config = this.getProviderConfig(provider);
+    const tokens = await this.exchangeCodeForTokens(provider, code, config);
+    
+    // Encrypt and save
+    const encrypted = await this.encryption.encrypt(tokens);
+    await this.saveIntegration(userId, provider, encrypted);
+    
+    return { success: true };
+  }
+  
+  private getProviderConfig(provider: string) {
+    const configs = {
+      google: {
+        authEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+        tokenEndpoint: 'https://oauth2.googleapis.com/token',
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        redirectUri: `${process.env.APP_URL}/auth/google/callback`,
+        scopes: [
+          'https://www.googleapis.com/auth/webmasters.readonly',
+          'https://www.googleapis.com/auth/analytics.readonly',
+          // ... all scopes
+        ]
+      },
+      ahrefs: {
+        authEndpoint: 'https://app.ahrefs.com/api/auth',
+        tokenEndpoint: 'https://app.ahrefs.com/api/token',
+        clientId: process.env.AHREFS_CLIENT_ID,
+        clientSecret: process.env.AHREFS_CLIENT_SECRET,
+        redirectUri: `${process.env.APP_URL}/auth/ahrefs/callback`
+      },
+      semrush: {
+        authEndpoint: 'https://oauth.semrush.com/oauth2/authorize',
+        tokenEndpoint: 'https://oauth.semrush.com/oauth2/token',
+        clientId: process.env.SEMRUSH_CLIENT_ID,
+        clientSecret: process.env.SEMRUSH_CLIENT_SECRET,
+        redirectUri: `${process.env.APP_URL}/auth/semrush/callback`,
+        scopes: ['user.id', 'domains.info', 'url.info']
+      }
+    };
+    
+    return configs[provider];
+  }
+}
+```
+
+---
+
+### 6.3. Список API та їх вартість
+
+*(Оновлено з OAuth інформацією)*
 
 #### Обов'язкові (безкоштовні):
 
 **1. Google Search Console API**
 - Вартість: ✅ $0
+- Authentication: OAuth 2.0 (organization-level)
 - Ліміти: 1,200 req/хв
 - Дані: Покази, кліки, CTR, помилки індексації
 
 **2. Google Analytics Data API (GA4)**
 - Вартість: ✅ $0
+- Authentication: OAuth 2.0 (same token as GSC)
 - Ліміти: 25,000 req/день
 - Дані: Трафік, bounce rate, conversions
 
 **3. Google Drive API**
 - Вартість: ✅ $0
+- Authentication: OAuth 2.0 (same token)
 - Ліміти: 20,000 req/день
-- Можливості: Пошук документів, організація файлів в папки, управління permissions
-- Для чого: AI пошук документів по всіх проектах, автоматична організація, share з командою
 
-
-**3. Google Docs API**
+**4. Google Docs API**
 - Вартість: ✅ $0
-- Можливості: Створення звітів, експорт
+- Authentication: OAuth 2.0 (same token)
 
-**4. Google Sheets API**
+**5. Google Sheets API**
 - Вартість: ✅ $0
-- Можливості: Експорт задач, метрик
+- Authentication: OAuth 2.0 (same token)
 
 **6. PageSpeed Insights API**
 - Вартість: ✅ $0
+- Authentication: Public API Key (no OAuth)
 - Ліміти: 25,000 req/день
-- Дані: Core Web Vitals, Performance score
-
-**7. Telegram Bot API**
-- Вартість: ✅ $0
-- Ліміти: 30 messages/sec
 
 #### Обов'язкові (платні):
 
-**8. Anthropic Claude API**
+**7. Anthropic Claude API**
 - Вартість: 💰 $3/1M input + $15/1M output
-- Типові витрати: $5-50/міс залежно від usage
+- Authentication: API Key (manual)
+- Typical usage: $10-50/міс
 - Для чого: AI аналіз, генерація звітів, чат
-
-**9. OpenAI API** (fallback, опціонально)
-- Вартість: 💰 $5/1M input + $15/1M output
-- Типові витрати: $10-100/міс
 
 #### Опціональні (платні SEO tools):
 
-**10. Serpstat API**
-- Вартість: 💰 $69-299/міс
-- Дані: Keywords, rankings, backlinks, competitors
-
-**11. Ahrefs API**
+**8. Ahrefs API**
 - Вартість: 💰 $500-1000/міс
-- Дані: Найбільша база backlinks, DR, organic keywords
+- Authentication: OAuth 2.0 ✅ (preferred) or API Token
+- Usage tracking: через API
+- Дані: Backlinks, DR, organic keywords
 
-**12. SEMrush API**
+**9. Serpstat API**
+- Вартість: 💰 $69-299/міс
+- Authentication: API Token (no OAuth)
+- Usage tracking: через API
+- Дані: Keywords, rankings, competitors
+
+**10. SEMrush API**
 - Вартість: 💰 $200-800/міс
-- Альтернатива Serpstat/Ahrefs
+- Authentication: OAuth 2.0 ✅ (Device flow) or API Key
+- Usage tracking: API Units
+- Дані: Keywords, traffic, backlinks
 
 #### Опціональні (notifications):
 
-**13. SendGrid / Mailgun**
-- Вартість: ✅ $0 для базового (100-5000 emails/міс)
-- Для: Email звіти
-
-**14. Slack Webhook**
-- Вартість: ✅ $0
-
-### 6.3. Типові витрати користувача
-
-**Фрілансер (1-5 проектів):**
-```
-Google APIs: $0 ✅
-Claude API: ~$10-20/міс
-Платформа: $49/міс
-
-РАЗОМ: ~$60-70/міс
-```
-
-**Агентство (10-30 проектів):**
-```
-Google APIs: $0 ✅
-Claude API: ~$50-100/міс
-Serpstat: $69-149/міс
-Платформа: $149/міс
-
-РАЗОМ: ~$270-400/міс
-```
-
-**Велике агентство (50+ проектів):**
-```
-Google APIs: $0 ✅
-Claude API: ~$200-500/міс
-Ahrefs API: $500/міс
-Платформа: $499/міс
-
-РАЗОМ: ~$1,200-1,500/міс
-```
-
-**ROI:** Економія 10-20 годин/тиждень = $2,000-4,000/міс вартості часу спеціаліста
+**11. SendGrid**
+- Вартість: ✅ $0 для базового (100 emails/день)
+- Authentication: API Key
+- Для: Email notifications
 
 ---
 
-### 6.4. Google OAuth Configuration (Organization-level)
+## 6.4. Cost Tracking System
 
-**Модель:** Organization-level OAuth (Admin підключає для всієї організації)
+### Концепція
 
-**Як працює:**
-1. Admin організації підключає свій Google Account один раз
-2. OAuth tokens зберігаються на рівні Organization (encrypted)
-3. Вся команда використовує ці самі токени
-4. Документи створюються на Google Drive Admin'а
-5. Автоматично share з усіма members організації
+Показувати користувачу скільки API usage витрачено та alertи при наближенні до лімітів.
 
-**Google Drive структура:**
+**Мета:**
+- Прозорість витрат (особливо для Claude API)
+- Попередження про наближення до лімітів
+- Допомога в плануванні бюджету
+
+---
+
+### 6.4.1. Що відслідковуємо
+
+| API | Tracking Metrics | Limits Source | Alerts |
+|-----|------------------|---------------|--------|
+| **Google GSC/GA4** | Requests count | Known (25K/day) | At 20K (80%) |
+| **Ahrefs** | Rows used | From API response | At 80% of plan |
+| **Serpstat** | Requests count | From API | At 80% |
+| **SEMrush** | API Units | From API | At 80% |
+| **Claude** | Tokens + Cost | Calculated | Optional budget alert |
+| **SendGrid** | Emails sent | From API | At 80% |
+
+---
+
+### 6.4.2. UI Components
+
+#### Variant A: Integration Card с Usage
+
 ```
-Google Drive Admin'а:
-  My Drive/
-    SEO AI Platform/
-      site-a.com/
-        Reports/
-        Keywords/
-        Audits/
-      site-b.com/
-        Reports/
-        ...
+┌──────────────────────────────────────────────┐
+│ 🟠 Ahrefs                                    │
+│ ✅ Connected                                 │
+├──────────────────────────────────────────────┤
+│                                              │
+│ 108 / 600 credits used                       │
+│ ▓▓▓░░░░░░░░░░░░░░░░░ 18%                    │
+│                                              │
+│ Resets: December 1, 2025                     │
+│                                              │
+│ ⚡ Your plan: Professional                   │
+│ (detected from API)                          │
+│                                              │
+│ [View Details]                               │
+└──────────────────────────────────────────────┘
 ```
 
-**Переваги:**
-- ✅ Централізація (всі документи в одному місці)
-- ✅ Простий onboarding (команда не налаштовує OAuth)
-- ✅ Контроль (Admin управляє доступом)
-- ✅ Continuity (документи залишаються при звільненні)
+#### Variant B: Claude (без лімітів, тільки cost)
+
+```
+┌──────────────────────────────────────────────┐
+│ 🤖 Anthropic Claude                          │
+│ ✅ Connected                                 │
+├──────────────────────────────────────────────┤
+│                                              │
+│ 📊 November 2025:                            │
+│                                              │
+│ • 1,247 requests                             │
+│ • 2.4M input tokens                          │
+│ • 890K output tokens                         │
+│                                              │
+│ 💰 Estimated cost: $20.85                    │
+│                                              │
+│ ℹ️  Paid directly to Anthropic              │
+│                                              │
+│ [View Details] [Anthropic Console →]        │
+└──────────────────────────────────────────────┘
+```
+
+---
+
+### 6.4.3. Database Schema
+
+```prisma
+model ApiUsage {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  provider       String   // 'anthropic', 'ahrefs', 'google_gsc', etc
+  
+  // Metrics (JSON для гнучкості)
+  metrics        Json     // { requests: 10, tokens: { input: 1000, output: 500 }, cost: 0.15 }
+  
+  // Time period
+  period         String   // '2025-11', '2025-11-07', '2025-11-07T10'
+  periodType     String   // 'month', 'day', 'hour'
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  @@unique([organizationId, provider, period])
+  @@index([organizationId, provider, periodType])
+}
+```
+
+---
+
+### 6.4.4. Tracking Service
+
+```typescript
+@Injectable()
+export class UsageTrackingService {
+  
+  // Track API call after execution
+  async trackApiCall(params: {
+    organizationId: string;
+    provider: string;
+    metrics: {
+      requests?: number;
+      tokens?: { input: number; output: number };
+      rows?: number;
+      units?: number;
+      cost?: number;
+    };
+  }) {
+    const { organizationId, provider, metrics } = params;
+    const period = format(new Date(), 'yyyy-MM');
+    
+    await this.prisma.apiUsage.upsert({
+      where: {
+        organizationId_provider_period: {
+          organizationId,
+          provider,
+          period
+        }
+      },
+      update: {
+        metrics: {
+          // Increment values
+          requests: { increment: metrics.requests || 0 },
+          // ... інші поля
+        }
+      },
+      create: {
+        organizationId,
+        provider,
+        period,
+        periodType: 'month',
+        metrics
+      }
+    });
+    
+    // Check limits and send alerts
+    await this.checkLimitsAndAlert(organizationId, provider);
+  }
+  
+  // Calculate Claude cost
+  calculateClaudeCost(inputTokens: number, outputTokens: number): number {
+    const INPUT_COST = 3 / 1_000_000;   // $3 per 1M
+    const OUTPUT_COST = 15 / 1_000_000; // $15 per 1M
+    
+    return (inputTokens * INPUT_COST) + (outputTokens * OUTPUT_COST);
+  }
+  
+  // Token counting
+  async countTokens(text: string): Promise {
+    // Using tiktoken or similar
+    const encoding = encodingForModel('claude-sonnet-4');
+    const tokens = encoding.encode(text);
+    return tokens.length;
+  }
+  
+  // Check limits
+  async checkLimitsAndAlert(organizationId: string, provider: string) {
+    const usage = await this.getCurrentUsage(organizationId, provider);
+    const limits = await this.getProviderLimits(organizationId, provider);
+    
+    if (!limits) return;
+    
+    const percentage = (usage.current / limits.max) * 100;
+    
+    // Alert at 80%, 90%, 95%
+    if (percentage >= 80 && !usage.alerted80) {
+      await this.sendUsageAlert(organizationId, provider, percentage);
+      await this.markAlertSent(usage.id, '80');
+    }
+  }
+}
+```
+
+---
+
+### 6.4.5. Real-time Updates (WebSocket)
+
+```typescript
+// После кожного API call відправляємо update
+socket.emit('usage-update', {
+  provider: 'ahrefs',
+  usage: {
+    current: 109,
+    limit: 600,
+    percentage: 18.2
+  }
+});
+
+socket.emit('usage-update', {
+  provider: 'anthropic',
+  usage: {
+    requests: 1248,
+    cost: 20.87
+  }
+});
+```
+
+Frontend автоматично оновлює progress bar! 🔄
+
+---
+
+### 6.4.6. Usage Details Page
+
+```
+/settings/integrations/anthropic/usage
+
+┌────────────────────────────────────────────┐
+│ Anthropic Claude - Usage Details          │
+├────────────────────────────────────────────┤
+│                                            │
+│ 📊 Current Month (November 2025)          │
+│                                            │
+│ Total Requests: 1,247                      │
+│ Input Tokens: 2,451,000                    │
+│ Output Tokens: 891,000                     │
+│ Estimated Cost: $20.85                     │
+│                                            │
+│ [Line Chart: Daily usage]                  │
+│                                            │
+│ 📅 Usage by Day:                           │
+│ Nov 7  │ 150 req │ $2.50                   │
+│ Nov 6  │ 120 req │ $1.80                   │
+│ ...                                        │
+│                                            │
+│ 📤 Export: [CSV] [JSON] [PDF]             │
+└────────────────────────────────────────────┘
+```
+
+---
+
+### 6.4.7. Alerts System
+
+**Коли відправляти:**
+
+```typescript
+// Ahrefs/Serpstat/SEMrush (з API limits)
+if (usagePercentage >= 80) {
+  notification = {
+    type: 'usage_warning',
+    title: 'Ahrefs usage at 80%',
+    message: 'You've used 480/600 credits',
+    actions: ['View Details', 'Upgrade Plan']
+  };
+}
+
+// Claude (опціонально, якщо user встановив budget)
+if (userBudget && costPercentage >= 80) {
+  notification = {
+    type: 'budget_warning',
+    title: 'Claude API budget at 80%',
+    message: 'You've spent $400 of your $500 monthly budget',
+    actions: ['View Usage', 'Increase Budget']
+  };
+}
+```
+
+**Канали:**
+- In-app notification (floating button)
+- Email (при >95%)
+
+---
+
+### 6.4.8. Implementation Priority
+
+**Phase 1 (MVP):**
+- ✅ Tracking для Claude (найважливіше, бо платний)
+- ✅ Progress bars як у Ahrefs
+- ✅ Basic alerts (80%)
+
+**Phase 2:**
+- ✅ Ahrefs/Serpstat/SEMrush tracking
+- ✅ Usage details page
+- ✅ Export reports
+- ✅ Budget management UI
 
 ---
 
