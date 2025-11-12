@@ -1679,111 +1679,320 @@ In-app notifications з floating button та sidebar panel (як в CK3). Всі
 
 #### 5.9.1. Architecture
 
+**Концепція:** Floating stack нотіфікацій справа (як в Crusader Kings 3)
+
+**НЕ floating button! НЕ sidebar panel!**
+
 ```
 Components:
-├─ Floating Button (bottom-right)
-│   ├─ Badge з лічильником
-│   ├─ Animate при критичних
-│   └─ Клік → відкриває panel
+├─ Notification Stack (floating, bottom-right)
+│   ├─ Нотіфікації з'являються знизу
+│   ├─ Нова нотіфікація = розгорнута
+│   ├─ Попередні згортаються до заголовка
+│   ├─ Утворюється вертикальний стек
+│   └─ Клік на згорнуту → розгортається
 │
-├─ Notification Panel (sidebar)
-│   ├─ Auto-grouping по типу
-│   ├─ Expandable details
-│   ├─ Interactive actions
-│   └─ Time grouping
-│
-└─ Popup Toast (top-right)
-    ├─ Спливає для ВСІХ типів
-    ├─ Auto-dismiss через 10 сек
-    └─ Sound effects (optional)
+└─ (Опціонально) Popup Toast (top-right)
+    ├─ Дублює критичні нотіфікації
+    ├─ Auto-dismiss через 5-10 сек
+    └─ Sound effects
 ```
+
+**Відмінність від старої концепції:**
+- ❌ Було: Floating button + Sidebar panel
+- ✅ Тепер: Floating stack (як в CK3)
+
+**Переваги:**
+- Простіше UX (не треба клікати на button)
+- Нотіфікації одразу видно
+- Історія завжди на екрані (згорнута)
+- Як в знайомих іграх (CK3, Europa Universalis)
 
 ---
 
-#### 5.9.2. Floating Button
+#### 5.9.2. Floating Stack Behavior
 
-```
-Position: fixed, bottom: 20px, right: 20px
-
-States:
-├─ No notifications → Gray, 60% opacity
-├─ Has unread → Blue, pulse animation
-└─ Has critical → Red, shake animation
-
-Badge:
-┌─────┐
-│ 🔔  │
-│ (5) │  ← Кількість непрочитаних
-└─────┘
-```
-
-**CSS:**
+**Position:** Fixed, bottom-right corner
 
 ```css
-.notification-button {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
+.notification-stack {
   position: fixed;
   bottom: 20px;
   right: 20px;
+  width: 350px;
+  max-height: 80vh;
   z-index: 1000;
+  display: flex;
+  flex-direction: column-reverse; /* Нові знизу */
+  gap: 8px;
+}
+```
+
+**Як з'являються нотіфікації:**
+
+**1. Перша нотіфікація (розгорнута):**
+```
+                              ┌─────────────────────┐
+                              │ 🔴 site-a.com       │
+                              │ Traffic -35%!       │
+                              │                     │
+                              │ Clicks: 450 → 290   │
+                              │ Impressions: -15%   │
+                              │                     │
+                              │ [View] [Fix] [×]    │
+                              └─────────────────────┘
+```
+
+**2. Друга нотіфікація → перша згортається:**
+```
+                              ┌─────────────────────┐
+                              │ 🔴 site-a.com...    │ ← Згорнута (header only)
+                              ├─────────────────────┤
+                              │ ⚠️ 404 errors!      │ ← Нова (розгорнута)
+                              │                     │
+                              │ 15 pages with 404   │
+                              │ • /old-page-1       │
+                              │ • /old-page-2       │
+                              │                     │
+                              │ [View] [Fix] [×]    │
+                              └─────────────────────┘
+```
+
+**3. Третя → утворюється стек:**
+```
+                              ┌─────────────────────┐
+                              │ 🔴 site-a.com...    │ ← Згорнута
+                              ├─────────────────────┤
+                              │ ⚠️ 404 errors...    │ ← Згорнута
+                              ├─────────────────────┤
+                              │ 🟡 PageSpeed bad    │ ← Нова (розгорнута)
+                              │                     │
+                              │ Mobile: 78 → 45     │
+                              │ LCP: 4.2s ❌        │
+                              │                     │
+                              │ [View] [Test] [×]   │
+                              └─────────────────────┘
+```
+
+**4. Клік на згорнуту → розгортається:**
+```
+                              ┌─────────────────────┐
+                              │ 🔴 site-a.com       │ ← РОЗГОРНУТА
+                              │ Traffic -35%!       │
+                              │                     │
+                              │ Clicks: 450 → 290   │
+                              │ [View] [Fix] [×]    │
+                              ├─────────────────────┤
+                              │ ⚠️ 404 errors...    │ ← Згорнута
+                              ├─────────────────────┤
+                              │ 🟡 PageSpeed...     │ ← Згорнута
+                              └─────────────────────┘
+```
+
+**States:**
+
+```typescript
+interface NotificationState {
+  id: string;
+  isExpanded: boolean; // Тільки одна = true (найнова)
+  isRead: boolean;
+  isDismissed: boolean;
 }
 
-.has-critical {
-  background: #EF4444;
-  animation: shake 0.5s infinite;
+// Logic:
+// - Нова нотіфікація: isExpanded = true
+// - Всі інші: isExpanded = false
+// - Клік на згорнуту: expand цю, collapse інші
+```
+
+**Max visible:** 5-7 нотіфікацій одночасно
+
+**Overflow:** Scroll всередині stack (якщо >7)
+
+---
+
+#### 5.9.3. Notification Card Structure
+
+**Згорнута (collapsed):**
+```
+┌─────────────────────────────────┐
+│ 🔴 site-a.com traffic -35%      │ ← Header (клікабельний)
+└─────────────────────────────────┘
+```
+
+**CSS для згорнутої:**
+```css
+.notification-collapsed {
+  padding: 12px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  background: white;
+  transition: all 0.2s;
 }
 
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
+.notification-collapsed:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
 }
 ```
 
 ---
 
-#### 5.9.3. Notification Panel
-
-**Клік на button → sidebar з правого боку:**
-
+**Розгорнута (expanded):**
 ```
-┌──────────────────────────────────┐
-│ 🔔 Notifications    [Mark all] [×]│
-│ [All] [Unread] [Critical]         │
-├──────────────────────────────────┤
-│                                   │
-│ 🔴 CRITICAL (2)              [▼] │ ← Групування
-│ ├─ 📉 site-a.com traffic -35%    │
-│ │   3 хв тому                    │
-│ │   [▼ Show details]             │
-│ │                                 │
-│ └─ ⚠️ site-b.com: 50+ 404        │
-│     15 хв тому                   │
-│     [View audit] [Fix now]       │
-│                                   │
-│ 💬 MESSAGES (3)              [▼] │
-│ ├─ @mention from Ivan            │
-│ │   in "site-a-team"             │
-│ │   [Open chat] [Reply]          │
-│ │                                 │
-│ └─ New message from Anna         │
-│     [Open chat]                  │
-│                                   │
-│ ✅ TASKS (1)                 [▼] │
-│ └─ Task assigned to you          │
-│     [Accept] [Decline] [View]    │
-│                                   │
-│ 🎉 GOOD NEWS                 [▼] │
-│ └─ site-d.com traffic +25% 🚀    │
-│     [View details]               │
-│                                   │
-│ ──────────────────────────       │
-│ Earlier (yesterday)              │
-│ [Show 12 more...]                │
-└──────────────────────────────────┘
+┌─────────────────────────────────┐
+│ 🔴 site-a.com traffic -35%      │ ← Header
+├─────────────────────────────────┤
+│                                 │ ← Body
+│ Critical drop detected!         │
+│                                 │
+│ 📊 Metrics:                     │
+│ • Clicks: 450 → 290 (-160)      │
+│ • Impressions: 12K → 11K        │
+│ • CTR: 3.75% → 2.64%            │
+│                                 │
+│ 🤖 AI Analysis:                 │
+│ Likely causes:                  │
+│ • Google Core Update (Oct 15)   │
+│ • Competitor activity           │
+│                                 │
+├─────────────────────────────────┤
+│ [View Dashboard] [Create Tasks] │ ← Footer (actions)
+│ [Ask AI] [×]                    │
+└─────────────────────────────────┘
 ```
+
+**CSS для розгорнутої:**
+```css
+.notification-expanded {
+  padding: 16px;
+  border: 2px solid #ef4444; /* Колір залежить від типу */
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+```
+
+---
+
+**Component Structure:**
+
+```tsx
+// components/NotificationStack.tsx
+export function NotificationStack() {
+  const { notifications } = useNotifications();
+  
+  return (
+    
+      {notifications.map((notif, index) => {
+        const isLatest = index === 0; // Найнова знизу
+        
+        return (
+          <NotificationCard
+            key={notif.id}
+            notification={notif}
+            isExpanded={isLatest}
+            onClick={() => expandNotification(notif.id)}
+          />
+        );
+      })}
+    
+  );
+}
+
+// components/NotificationCard.tsx
+interface Props {
+  notification: Notification;
+  isExpanded: boolean;
+  onClick: () => void;
+}
+
+export function NotificationCard({ 
+  notification, 
+  isExpanded, 
+  onClick 
+}: Props) {
+  if (!isExpanded) {
+    return (
+      
+        {notification.icon} {notification.title}
+      
+    );
+  }
+  
+  return (
+    
+      {/* Header */}
+      
+        {notification.icon} {notification.title}
+      
+      
+      {/* Body */}
+      
+        {notification.content}
+        {notification.metadata && (
+          
+        )}
+      
+      
+      {/* Footer */}
+      
+        {notification.actions.map(action => (
+          
+            {action.label}
+          
+        ))}
+        
+          ×
+        
+      
+    
+  );
+}
+```
+
+---
+
+**Animation при появі:**
+
+```typescript
+// Нова нотіфікація
+function showNotification(notification: Notification) {
+  // 1. Додати в стек (знизу)
+  addToStack(notification);
+  
+  // 2. Згорнути всі інші
+  collapseAll();
+  
+  // 3. Розгорнути нову (з анімацією)
+  expandWithAnimation(notification.id);
+  
+  // 4. Sound effect (якщо enabled)
+  playSound(notification.type);
+  
+  // 5. Auto-dismiss (для success/info)
+  if (notification.type === 'success') {
+    setTimeout(() => dismiss(notification.id), 10000);
+  }
+}
+```
+
+---
+
+**Детальний опис UI дивись в розділі 9.5 (UI/UX концепція)**
 
 ---
 
@@ -3511,148 +3720,1177 @@ Admin:
 
 ## 9. UI/UX концепція
 
-### 9.1. Основні сторінки
+### 9.1. Загальна структура інтерфейсу
 
-**1. Dashboard (головна)**
+**Рішення:** Sidebar navigation (ліва панель)
+
+**Обґрунтування:**
+- ✅ Більше items в навігації (Projects, Tasks, Messaging, etc)
+- ✅ Sidebar можна collapse на мобілці
+- ✅ Standard для B2B SaaS (Slack, Linear, Notion)
+- ✅ Постійно видима навігація
+- ✅ Швидкий доступ до всіх секцій
+
+**Layout:**
 ```
-┌────────────────────────────────────────────┐
-│  [Logo] SEO Platform    [🔍] [🔔] [@User] │
-├────────────────────────────────────────────┤
-│                                             │
-│  🌅 Доброго ранку, Іван!                   │
-│                                             │
-│  📊 Огляд проектів (5 активних)            │
-│  ┌──────────────────────────────────────┐  │
-│  │ 🔴 site-a.com                        │  │
-│  │    Критично: 15 нових 404 помилок   │  │
-│  │    Трафік: -12% ⚠️                   │  │
-│  │    [Детальніше] [Створити задачі]   │  │
-│  └──────────────────────────────────────┘  │
-│                                             │
-│  ┌──────────────────────────────────────┐  │
-│  │ 🟢 site-b.com                        │  │
-│  │    Все добре, трафік +8% ✅          │  │
-│  │    [Детальніше]                      │  │
-│  └──────────────────────────────────────┘  │
-│                                             │
-│  💬 AI Assistant                            │
-│  "Питайте мене про будь-який проект..."    │
-│                                             │
-└────────────────────────────────────────────┘
+┌──────────┬─────────────────────────────────┐
+│          │                                 │
+│ Sidebar  │  Main Content Area              │
+│ (200px)  │  (flexible width)               │
+│          │                                 │
+│ Projects │  ┌───────────────────────────┐  │
+│ Tasks    │  │                           │  │
+│ Messages │  │  Current Page Content     │  │
+│ Reports  │  │                           │  │
+│ Settings │  │                           │  │
+│          │  └───────────────────────────┘  │
+│          │                                 │
+└──────────┴─────────────────────────────────┘
 ```
 
-**2. Project Detail**
+**Mobile (< 640px):**
+- Sidebar collapse до hamburger menu
+- Full-width content
+- Bottom navigation bar (опціонально)
+
+---
+
+### 9.2. Повна структура екранів
+
+#### 🔐 Auth & Onboarding (поза sidebar)
+
+**1. `/login` - Login Page**
 ```
-┌────────────────────────────────────────────┐
-│  ← Dashboard  |  site.com                  │
-├────────────────────────────────────────────┤
-│                                             │
-│  📊 Метрики (за 30 днів)                   │
-│  ┌─────┬─────┬─────┬─────┐                │
-│  │ GSC │ GA4 │Speed│Tasks│                │
-│  └─────┴─────┴─────┴─────┘                │
-│                                             │
-│  📈 [Графік трафіку]                       │
-│                                             │
-│  🤖 AI Інсайти                             │
-│  "Органіка +15% завдяки покращенню..."     │
-│                                             │
-│  ⚠️ Проблеми (12)                          │
-│  • 5 сторінок без meta description         │
-│  • 3 битих посилання                       │
-│  • 4 повільних зображення                  │
-│                                             │
-│  ✅ Задачі (8 активних)                    │
-│  [Список задач...]                         │
-│                                             │
-└────────────────────────────────────────────┘
+┌────────────────────────────────┐
+│ 🎯 SEO AI Platform             │
+├────────────────────────────────┤
+│                                │
+│ Email:    [_____________]      │
+│ Password: [_____________]      │
+│                                │
+│ [🔵 Sign In with Google]       │
+│ [Login]                        │
+│                                │
+│ Don't have account? [Sign up]  │
+└────────────────────────────────┘
 ```
 
-**3. Task Manager**
+**2. `/signup` - Registration**
 ```
-┌────────────────────────────────────────────┐
-│  Задачі  |  site.com                       │
-├────────────────────────────────────────────┤
-│                                             │
-│  [Фільтр: Всі ▼] [Сортувати: Пріоритет ▼]│
-│                                             │
-│  🔴 КРИТИЧНІ (3)                           │
-│  ┌──────────────────────────────────────┐  │
-│  │ ☐ Виправити 15 помилок 404          │  │
-│  │   @ivan  |  До: 05.11  |  2 коменти  │  │
-│  │   [Детальніше]                       │  │
-│  └──────────────────────────────────────┘  │
-│                                             │
-│  🟡 ВАЖЛИВІ (5)                            │
-│  ┌──────────────────────────────────────┐  │
-│  │ ☑ Додати meta description (50 стор.)│  │
-│  │   @anna  |  Виконано ✅              │  │
-│  └──────────────────────────────────────┘  │
-│                                             │
-│  [+ Створити задачу]                       │
-│                                             │
-└────────────────────────────────────────────┘
+┌────────────────────────────────┐
+│ Create Account                 │
+├────────────────────────────────┤
+│                                │
+│ Name:          [_____________] │
+│ Email:         [_____________] │
+│ Password:      [_____________] │
+│ Organization:  [_____________] │
+│                                │
+│ [Create Account]               │
+│                                │
+│ Already have? [Login]          │
+└────────────────────────────────┘
 ```
 
-**4. Settings → Integrations**
+**3. `/onboarding` - Onboarding Wizard (4 steps)**
+
+**Step 1: Connect Google**
 ```
-┌────────────────────────────────────────────┐
-│  Налаштування  >  Інтеграції               │
-├────────────────────────────────────────────┤
-│                                             │
-│  📊 Обов'язкові                            │
-│  ┌──────────────────────────────────────┐  │
-│  │ ✅ Google Search Console             │  │
-│  │    Підключено: 3 властивості        │  │
-│  │    [Керувати]                        │  │
-│  └──────────────────────────────────────┘  │
-│                                             │
-│  🤖 AI                                     │
-│  ┌──────────────────────────────────────┐  │
-│  │ ⚡ Anthropic Claude                  │  │
-│  │    Статус: ✅ Активно                │  │
-│  │    Баланс: $45.23                    │  │
-│  │    [Налаштувати]                     │  │
-│  └──────────────────────────────────────┘  │
-│                                             │
-│  📈 SEO Tools (опціонально)                │
-│  ┌──────────────────────────────────────┐  │
-│  │ 🔍 Serpstat                          │  │
-│  │    Статус: ❌ Не підключено          │  │
-│  │    [Підключити]                      │  │
-│  └──────────────────────────────────────┘  │
-│                                             │
-└────────────────────────────────────────────┘
+┌────────────────────────────────┐
+│ Welcome! Let's set up (1/4)    │
+├────────────────────────────────┤
+│                                │
+│ Connect Google Services        │
+│                                │
+│ We need access to:             │
+│ ✅ Google Search Console       │
+│ ✅ Google Analytics GA4        │
+│ ✅ Google Drive/Docs/Sheets    │
+│                                │
+│ [🔵 Connect with Google]       │
+│                                │
+│ [Skip for now] [Next →]        │
+└────────────────────────────────┘
 ```
 
-**5. AI Chat**
+**Step 2: Add First Project**
 ```
-┌────────────────────────────────────────────┐
-│  💬 AI Assistant                           │
-├────────────────────────────────────────────┤
-│                                             │
-│  User: Чому впав трафік на site.com?      │
-│                                             │
-│  AI: Проаналізував дані за тиждень.        │
-│      Знайшов 3 причини:                    │
-│      1. Google Core Update (15.10)         │
-│      2. Конкурент запустив 15 статей       │
-│      3. Сезонність (жовтень -10%)          │
-│                                             │
-│      Найімовірніше #1 + #3.                │
-│      Рекомендую перевірити якість...       │
-│                                             │
-│  [Створити задачі] [Детальний звіт]       │
-│                                             │
-│  [Введіть повідомлення...]    [Надіслати] │
-│                                             │
-└────────────────────────────────────────────┘
+┌────────────────────────────────┐
+│ Add your first project (2/4)   │
+├────────────────────────────────┤
+│                                │
+│ Project Name: [___________]    │
+│ Domain: [https://___________]  │
+│ CMS: [WordPress ▼]             │
+│                                │
+│ [Add Project]                  │
+│                                │
+│ [← Back] [Skip] [Next →]       │
+└────────────────────────────────┘
 ```
 
-### 9.2. Design System
+**Step 3: Connect Claude API**
+```
+┌────────────────────────────────┐
+│ Connect AI Assistant (3/4)     │
+├────────────────────────────────┤
+│                                │
+│ Claude API Key:                │
+│ [sk-ant-___________________]   │
+│                                │
+│ 💡 Get your key at:            │
+│ console.anthropic.com          │
+│                                │
+│ [Test & Save]                  │
+│                                │
+│ [← Back] [Skip] [Next →]       │
+└────────────────────────────────┘
+```
+
+**Step 4: Done!**
+```
+┌────────────────────────────────┐
+│ All set! (4/4) 🎉              │
+├────────────────────────────────┤
+│                                │
+│ ✅ Google connected            │
+│ ✅ Project added               │
+│ ✅ AI ready                    │
+│                                │
+│ What's next?                   │
+│ • Run your first audit         │
+│ • Invite team members          │
+│ • Explore dashboard            │
+│                                │
+│ [Go to Dashboard →]            │
+└────────────────────────────────┘
+```
+
+---
+
+#### 📊 Main App (з sidebar)
+
+**Sidebar Navigation:**
+```
+┌────────────────┐
+│ [Logo]         │
+│ ACME Agency ▼  │ ← Organization selector
+├────────────────┤
+│ 🏠 Dashboard   │
+│ 📁 Projects    │
+│ ✅ Tasks       │
+│ 💬 Messages    │
+│ 📊 Reports     │
+│ ⚙️  Settings   │
+├────────────────┤
+│ [@User]        │
+│ [🌙]           │ ← Theme toggle
+└────────────────┘
+```
+
+---
+
+**4. `/dashboard` - Home (Morning Brief)**
+```
+┌──────────────────────────────────────────────┐
+│ 🌅 Good Morning, Ivan!                       │
+│ Tuesday, November 12, 2025                   │
+├──────────────────────────────────────────────┤
+│                                               │
+│ 📊 Your Projects Overview (5 active)         │
+│                                               │
+│ ┌──────────────────────────────────────────┐ │
+│ │ 🔴 site-a.com                    CRITICAL│ │
+│ │ Traffic: -35% (last 7 days) ⚠️           │ │
+│ │ Issues: 15 new 404 errors found          │ │
+│ │ [View Details] [Create Tasks]            │ │
+│ └──────────────────────────────────────────┘ │
+│                                               │
+│ ┌──────────────────────────────────────────┐ │
+│ │ 🟢 site-b.com                    ALL GOOD│ │
+│ │ Traffic: +12% ✅                         │ │
+│ │ Everything looks great!                  │ │
+│ │ [View Details]                           │ │
+│ └──────────────────────────────────────────┘ │
+│                                               │
+│ ┌──────────────────────────────────────────┐ │
+│ │ 🟡 site-c.com                    WARNING │ │
+│ │ PageSpeed: 45/100 (was 78)               │ │
+│ │ Core Web Vitals degraded                 │ │
+│ │ [View Details] [Run Audit]               │ │
+│ └──────────────────────────────────────────┘ │
+│                                               │
+│ 💬 AI Quick Chat                             │
+│ "Ask me anything about your projects..."     │
+│ [____________________________________] [Send]│
+│                                               │
+│ ✅ Tasks Summary                             │
+│ • 3 critical tasks (due today)               │
+│ • 12 tasks in progress                       │
+│ • 8 completed this week                      │
+│ [View All Tasks →]                           │
+└──────────────────────────────────────────────┘
+```
+
+---
+
+**5. `/projects` - Projects List**
+```
+┌──────────────────────────────────────────────┐
+│ Projects                       [+ New Project]│
+├──────────────────────────────────────────────┤
+│ [🔍 Search] [Filter: All ▼] [Sort: Name ▼]  │
+├──────────────────────────────────────────────┤
+│                                               │
+│ ┌─────────────┬─────────────┬─────────────┐  │
+│ │ site-a.com  │ site-b.com  │ site-c.com  │  │
+│ │ 🔴 Critical │ 🟢 Good     │ 🟡 Warning  │  │
+│ │ -35% ⚠️     │ +12% ✅     │ 45 PageSpd  │  │
+│ │ 15 issues   │ 0 issues    │ 3 issues    │  │
+│ │ 8 tasks     │ 2 tasks     │ 5 tasks     │  │
+│ └─────────────┴─────────────┴─────────────┘  │
+│                                               │
+│ [Load more...]                                │
+└──────────────────────────────────────────────┘
+```
+
+---
+
+**6. `/projects/[id]` - Project Detail 🔥 (ГОЛОВНИЙ ЕКРАН)**
+
+**Концепція:** Це основний екран де команда проводить більшість часу!
+
+**Структура:**
+```
+┌─────────┬─────────────────────────────────────────┐
+│         │ ← Projects | site-a.com   [⚙️] [Audit] │
+│ Sidebar ├─────────────────────────────────────────┤
+│         │                                         │
+│         │ 📊 Widget Dashboard (customizable grid) │
+│         │                                         │
+│         │ ┌───────────┬───────────┬───────────┐   │
+│         │ │ GSC       │ Ahrefs    │ Serpstat  │   │
+│         │ │ Widget    │ Widget    │ Widget    │   │
+│         │ └───────────┴───────────┴───────────┘   │
+│         │                                         │
+│         │ ┌───────────┬───────────┬───────────┐   │
+│         │ │ GA4       │ PageSpeed │ [+add]    │   │
+│         │ │ Widget    │ Widget    │           │   │
+│         │ └───────────┴───────────┴───────────┘   │
+│         │                                         │
+│         ├─────────────────────────────────────────┤
+│         │ 💬 Chat (Ivan, Anna, @AI)         (2)   │
+│         │ Ivan: "Check traffic drop"              │
+│         │ @AI: "Analyzed. 3 causes found..."      │
+│         │ [Type message...] [Send]                │
+│         └─────────────────────────────────────────┘
+└─────────┴─────────────────────────────────────────┘
+
+                       Notifications (справа):
+                       ┌──────────────────────┐
+                       │ site-a.com traffic   │ ← Згорнута
+                       ├──────────────────────┤
+                       │ 404 errors found     │ ← Згорнута
+                       ├──────────────────────┤
+                       │ PageSpeed degraded   │ ← Розгорнута
+                       │                      │
+                       │ Mobile: 45/100 🔴    │
+                       │ Desktop: 78/100 🟡   │
+                       │                      │
+                       │ LCP: 4.2s (bad)      │
+                       │ [View] [Fix] [×]     │
+                       └──────────────────────┘
+```
+
+**Пояснення елементів:**
+
+1. **Header** - назва проекту, кнопки дій
+2. **Widget Dashboard** - customizable grid з віджетами
+3. **Chat Area** - компактна зона для швидкої комунікації (знизу)
+4. **Notifications Stack** - floating справа (як в CK3)
+
+---
+
+### 9.3. Widget System 🧩
+
+**Концепція:** Project Detail = Widget Dashboard (головна площа) + Chat (знизу) + Notifications (floating справа)
+
+#### 9.3.1. MVP Phase (Fixed Layout)
+
+**Підхід для MVP:** 
+- Fixed grid layout (не customizable)
+- 6-8 предефайнених widgets
+- 3 колонки на desktop, 2 на tablet, 1 на mobile
+- Користувач НЕ може змінювати (але бачить все важливе)
+
+**Переваги fixed layout для MVP:**
+- ✅ Швидше розробити (1 тиждень vs 3-4 тижні)
+- ✅ Простіше підтримувати
+- ✅ Користувачі не губляться (все на місцях)
+- ✅ Можна запустити раніше
+
+**Default Grid Layout (desktop):**
+```
+┌─────────────┬─────────────┬─────────────┐
+│ GSC Widget  │ GA4 Widget  │ PageSpeed   │
+│ (medium)    │ (medium)    │ Widget      │
+│             │             │ (small)     │
+├─────────────┼─────────────┼─────────────┤
+│ Crawl       │ Tasks       │ Ahrefs      │
+│ Status      │ Widget      │ Widget      │
+│ (small)     │ (medium)    │ (optional)  │
+├─────────────┴─────────────┴─────────────┤
+│ AI Insights Widget (full width)         │
+│ "Traffic -35% due to Google Update..."  │
+└─────────────────────────────────────────┘
+```
+
+**Responsive behavior:**
+```
+Desktop (1200+):  3 columns
+Tablet (768-1199): 2 columns
+Mobile (0-767):    1 column (stack)
+```
+
+---
+
+#### 9.3.2. Widget Examples (MVP набір)
+
+**1. GSC Widget (Google Search Console)**
+```
+┌──────────────────────────────┐
+│ 🔍 Search Console (Last 30d) │
+├──────────────────────────────┤
+│ Clicks: 1,247 (↓ 12%)        │
+│ Impressions: 45K (↓ 8%)      │
+│ CTR: 2.77% (↓ 0.1%)          │
+│ Avg Position: 18.4 (↑ 1.2)   │
+│                               │
+│ [Line Chart]                  │
+│                               │
+│ ⚠️ New Issues (3)            │
+│ • 15 pages with 404          │
+│ • 8 pages not indexed        │
+│                               │
+│ [View in GSC →]               │
+└──────────────────────────────┘
+```
+
+**Що показує:**
+- Основні метрики (clicks, impressions, CTR, position)
+- Графік динаміки
+- Нові проблеми з індексацією
+- Лінк на GSC для деталей
+
+**Джерело даних:** Google Search Console API
+
+---
+
+**2. GA4 Widget (Google Analytics)**
+```
+┌──────────────────────────────┐
+│ 📊 Analytics (Last 30d)       │
+├──────────────────────────────┤
+│ Sessions: 3,890 (↑ 15%)       │
+│ Organic: 2,145 (↑ 18%)        │
+│ Bounce: 42.3% (↓ 2.1%)        │
+│ Avg Time: 2:34 (↑ 0:15)       │
+│                               │
+│ [Area Chart]                  │
+│                               │
+│ Top Pages:                    │
+│ 1. /blog/seo-guide (450)      │
+│ 2. /services (320)            │
+│                               │
+│ [View in GA4 →]               │
+└──────────────────────────────┘
+```
+
+**Що показує:**
+- Сесії (загальні + органічні)
+- Bounce rate, avg time
+- Графік трафіку
+- Top landing pages
+- Лінк на GA4
+
+**Джерело даних:** Google Analytics Data API
+
+---
+
+**3. PageSpeed Widget**
+```
+┌──────────────────────────────┐
+│ ⚡ PageSpeed Insights         │
+├──────────────────────────────┤
+│ Mobile:   45/100 🔴           │
+│ Desktop:  78/100 🟡           │
+│                               │
+│ Core Web Vitals:              │
+│ LCP: 4.2s 🔴 (target <2.5s)  │
+│ FID: 180ms 🟡                 │
+│ CLS: 0.05 🟢                  │
+│                               │
+│ [Run New Test]                │
+│ Last: 2h ago                  │
+└──────────────────────────────┘
+```
+
+**Що показує:**
+- Mobile/Desktop scores
+- Core Web Vitals breakdown
+- Статус кожної метрики (🔴🟡🟢)
+- Коли останній раз тестили
+- Кнопка Run Test
+
+**Джерело даних:** PageSpeed Insights API
+
+---
+
+**4. Crawl Status Widget**
+```
+┌──────────────────────────────┐
+│ 🕷️ Latest Crawl               │
+├──────────────────────────────┤
+│ Status: ✅ Completed          │
+│ Pages: 1,247 / 1,500          │
+│ Time: 45 min                  │
+│ Date: Nov 11, 10:30           │
+│                               │
+│ Issues Found: 23              │
+│ 🔴 Critical: 5                │
+│ 🟡 Warning: 18                │
+│                               │
+│ [View Report] [Run Again]     │
+└──────────────────────────────┘
+```
+
+**Що показує:**
+- Статус останнього краулінгу
+- Скільки сторінок проскановано
+- Час виконання
+- Кількість знайдених проблем
+- Кнопки View/Run
+
+**Джерело даних:** Audit table (database)
+
+---
+
+**5. Tasks Widget**
+```
+┌──────────────────────────────┐
+│ ✅ Active Tasks (12)          │
+├──────────────────────────────┤
+│ 🔴 Fix 404 errors (@ivan)     │
+│    Due: Today                 │
+│                               │
+│ 🟡 Meta descriptions (@anna)  │
+│    Due: Tomorrow              │
+│                               │
+│ 🟢 Internal links (@petro)    │
+│    Due: Nov 15                │
+│                               │
+│ [+4 more...]                  │
+│                               │
+│ [View All Tasks →]            │
+└──────────────────────────────┘
+```
+
+**Що показує:**
+- Активні задачі проекту
+- Assignee + deadline
+- Пріоритет (колір)
+- Скільки ще задач
+- Лінк на повний task manager
+
+**Джерело даних:** Task table (database)
+
+---
+
+**6. Ahrefs Widget (optional, якщо підключено)**
+```
+┌──────────────────────────────┐
+│ 🔗 Ahrefs                     │
+├──────────────────────────────┤
+│ DR: 45 (↑ 2)                  │
+│ Backlinks: 1,247 (↑ 15)      │
+│ Domains: 189 (↑ 3)            │
+│                               │
+│ New Links (7d): 12            │
+│ Lost Links: 3                 │
+│                               │
+│ Top Anchors:                  │
+│ • "seo services" (45)         │
+│ • "site.com" (38)             │
+│                               │
+│ [View in Ahrefs →]            │
+└──────────────────────────────┘
+```
+
+**Що показує:**
+- Domain Rating + зміна
+- Backlinks, referring domains
+- New/Lost links
+- Top anchor texts
+- Лінк на Ahrefs
+
+**Джерело даних:** Ahrefs API (опціонально)
+
+---
+
+**7. Serpstat Widget (optional, якщо підключено)**
+```
+┌──────────────────────────────┐
+│ 📈 Serpstat Rankings          │
+├──────────────────────────────┤
+│ Keywords: 247 total           │
+│ Top 3: 15 (↑ 2)              │
+│ Top 10: 68 (↑ 5)             │
+│ Top 20: 134 (↑ 8)            │
+│                               │
+│ Visibility: 18.4% (↑ 2.1%)   │
+│                               │
+│ Top Keywords:                 │
+│ • "seo agency" - pos 3        │
+│ • "website audit" - pos 7     │
+│                               │
+│ [View in Serpstat →]          │
+└──────────────────────────────┘
+```
+
+**Що показує:**
+- Загальна кількість keywords
+- Розподіл по топах (3/10/20)
+- Visibility score
+- Top performing keywords
+- Лінк на Serpstat
+
+**Джерело даних:** Serpstat API (опціонально)
+
+---
+
+**8. AI Insights Widget (full width, можливо внизу)**
+```
+┌────────────────────────────────────────────────────┐
+│ 🤖 AI Analysis & Recommendations                   │
+├────────────────────────────────────────────────────┤
+│                                                     │
+│ 🔍 Key Findings:                                   │
+│ • Traffic drop (-35%) likely caused by Google Core │
+│   Update (Oct 15) + seasonal factors               │
+│ • 15 new 404 errors affecting user experience      │
+│ • PageSpeed degraded (78→45) needs urgent fix      │
+│                                                     │
+│ ✅ Recommended Actions:                            │
+│ 1. Fix 404 errors (high priority)                  │
+│ 2. Optimize images (reduce load time)              │
+│ 3. Monitor competitor changes (3 new articles)     │
+│ 4. Review content quality (post-update)            │
+│                                                     │
+│ [Create Tasks] [Generate Report] [Ask AI]          │
+└────────────────────────────────────────────────────┘
+```
+
+**Що показує:**
+- AI-generated insights на основі всіх даних
+- Ключові знахідки (що сталося)
+- Рекомендації (що робити)
+- Quick actions
+
+**Джерело даних:** Claude API analysis
+
+---
+
+#### 9.3.3. Phase 2: Customizable Widgets
+
+**Функціонал Phase 2 (not MVP):**
+
+```
+✨ Features:
+├─ Widget Library (20+ widgets)
+├─ Drag & drop positioning
+├─ Resize widgets (small, medium, large, full)
+├─ Hide/show widgets
+├─ Save custom layouts per user
+├─ Share layouts з командою
+└─ Widget marketplace (community widgets)
+```
+
+**Widget Library UI:**
+```
+┌──────────────────────────────┐
+│ Widget Library        [× Close│
+├──────────────────────────────┤
+│ [🔍 Search widgets...]        │
+├──────────────────────────────┤
+│                               │
+│ 📊 Data Sources:              │
+│ ☑️ GSC Widget                 │
+│ ☑️ GA4 Widget                 │
+│ ☐ Serpstat Rankings          │
+│ ☑️ PageSpeed Insights         │
+│ ☐ Backlinks (Ahrefs)         │
+│                               │
+│ 🛠️ Tools:                     │
+│ ☑️ Crawl Status               │
+│ ☑️ Tasks Summary              │
+│ ☐ Team Activity              │
+│                               │
+│ 🤖 AI:                        │
+│ ☑️ AI Insights                │
+│ ☐ AI Recommendations         │
+│                               │
+│ [Apply Changes]               │
+└──────────────────────────────┘
+```
+
+**Custom Layout Editor:**
+```
+┌────────────────────────────────────┐
+│ [📐 Edit Layout] [💾 Save] [🔙]    │
+├────────────────────────────────────┤
+│ Drag widgets to reorder            │
+│                                    │
+│ ┌─────┐ ┌─────┐ ┌─────┐           │
+│ │ GSC │ │ GA4 │ │Speed│ [×][↔][↕] │ ← Resize
+│ │ ... │ │ ... │ │ ... │           │
+│ └─────┘ └─────┘ └─────┘           │
+│                                    │
+│ ┌───────────────┐                 │
+│ │ AI Insights   │ [×][↕]          │
+│ └───────────────┘                 │
+│                                    │
+│ [+ Add Widget from Library]        │
+└────────────────────────────────────┘
+```
+
+**Timeline:**
+- MVP (Phase 1): Fixed layout - Тиждень 11-12
+- Phase 2: Customizable - Місяці 4-6
+
+---
+
+#### 9.3.4. Grid Layout System
+
+**CSS Grid базова структура:**
+
+```css
+/* Desktop (3 columns) */
+.widget-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 16px;
+}
+
+/* Widget sizes */
+.widget-small {
+  grid-column: span 1;
+  height: 200px;
+}
+
+.widget-medium {
+  grid-column: span 1;
+  height: 400px;
+}
+
+.widget-large {
+  grid-column: span 2;
+  height: 400px;
+}
+
+.widget-full {
+  grid-column: span 3;
+  height: auto;
+}
+
+/* Tablet (2 columns) */
+@media (max-width: 1199px) {
+  .widget-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .widget-large,
+  .widget-full {
+    grid-column: span 2;
+  }
+}
+
+/* Mobile (1 column) */
+@media (max-width: 767px) {
+  .widget-grid {
+    grid-template-columns: 1fr;
+  }
+  .widget-small,
+  .widget-medium,
+  .widget-large,
+  .widget-full {
+    grid-column: span 1;
+  }
+}
+```
+
+**React Component Structure:**
+
+```tsx
+// components/WidgetDashboard.tsx
+export function WidgetDashboard({ projectId }: Props) {
+  // MVP: Fixed widgets
+  const widgets = [
+    { id: 'gsc', component: GSCWidget, size: 'medium' },
+    { id: 'ga4', component: GA4Widget, size: 'medium' },
+    { id: 'pagespeed', component: PageSpeedWidget, size: 'small' },
+    { id: 'crawl', component: CrawlStatusWidget, size: 'small' },
+    { id: 'tasks', component: TasksWidget, size: 'medium' },
+    { id: 'ahrefs', component: AhrefsWidget, size: 'small', optional: true },
+    { id: 'ai-insights', component: AIInsightsWidget, size: 'full' }
+  ];
+
+  return (
+    
+      {widgets.map(w => (
+        
+          
+        
+      ))}
+    
+  );
+}
+```
+
+---
+
+#### 9.3.5. Widget Registry (Phase 2)
+
+**Централізований реєстр widgets:**
+
+```typescript
+// lib/widgets/registry.ts
+export interface WidgetDefinition {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ComponentType;
+  component: React.ComponentType;
+  category: 'data' | 'tools' | 'ai' | 'custom';
+  requiredIntegrations?: string[]; // ['gsc', 'ga4']
+  defaultSize: 'small' | 'medium' | 'large' | 'full';
+  configurable: boolean;
+}
+
+export const WIDGET_REGISTRY: WidgetDefinition[] = [
+  {
+    id: 'gsc',
+    name: 'Google Search Console',
+    description: 'Search performance metrics',
+    icon: Search,
+    component: GSCWidget,
+    category: 'data',
+    requiredIntegrations: ['gsc'],
+    defaultSize: 'medium',
+    configurable: true
+  },
+  // ... інші widgets
+];
+```
+
+---
+
+### 9.4. Chat Area (знизу на Project Detail)
+
+**Концепція:** Компактна зона для швидкої комунікації команди
+
+**Layout:**
+```
+┌─────────────────────────────────────────────┐
+│ 💬 Chat: site-a-team              (2) badge │ ← Непрочитані
+├─────────────────────────────────────────────┤
+│ Ivan: "Check traffic drop"                  │
+│ 10:30                                       │
+│                                             │
+│ Anna: "I see 404 errors in GSC"             │
+│ 10:31                                       │
+│                                             │
+│ @AI: "Analyzed site-a.com.                  │
+│ Found 3 causes:                             │
+│ 1. Google Core Update...                    │
+│ 2. Competitor activity...                   │
+│ 3. Seasonal factors..."                     │
+│ 10:32                                       │
+│                                             │
+│ [Type message...] [@AI] [Send]              │
+└─────────────────────────────────────────────┘
+```
+
+**Features:**
+- Показує останні 5-10 повідомлень
+- Badge з кількістю непрочитаних
+- @AI mention для швидких питань
+- Expand кнопка → відкриває `/messages` (повний чат)
+
+**Height:** Fixed ~250-300px (не займає багато місця)
+
+**НЕ повний чат!** Для повної історії → `/messages`
+
+---
+
+### 9.5. Notification System (Floating Stack) 🔔
+
+**Концепція:** Як в Crusader Kings 3 - стек нотіфікацій справа
+
+#### 9.5.1. Як працює:
+
+**1. З'являється нова нотіфікація:**
+```
+                              ┌─────────────────────┐
+                              │ 🔴 site-a.com       │
+                              │ Traffic -35%!       │
+                              │                     │
+                              │ [Детальний опис...] │
+                              │ Clicks: 450 → 290   │
+                              │ Impressions: -15%   │
+                              │                     │
+                              │ [View] [Fix] [×]    │
+                              └─────────────────────┘
+```
+
+**2. З'являється друга → перша згортається:**
+```
+                              ┌─────────────────────┐
+                              │ 🔴 site-a.com...    │ ← Згорнута
+                              ├─────────────────────┤
+                              │ ⚠️ 404 errors found!│ ← Нова (розгорнута)
+                              │                     │
+                              │ 15 pages with 404   │
+                              │ • /old-page-1       │
+                              │ • /old-page-2       │
+                              │                     │
+                              │ [View] [Fix] [×]    │
+                              └─────────────────────┘
+```
+
+**3. Третя → утворюється стек:**
+```
+                              ┌─────────────────────┐
+                              │ 🔴 site-a.com...    │ ← Згорнута
+                              ├─────────────────────┤
+                              │ ⚠️ 404 errors...    │ ← Згорнута
+                              ├─────────────────────┤
+                              │ 🟡 PageSpeed degraded│ ← Нова (розгорнута)
+                              │                     │
+                              │ Mobile: 78 → 45     │
+                              │ LCP: 4.2s (target <2.5s) │
+                              │                     │
+                              │ [View] [Test] [×]   │
+                              └─────────────────────┘
+```
+
+**4. Клік на згорнуту → розгортається (інші згортаються):**
+```
+                              ┌─────────────────────┐
+                              │ 🔴 site-a.com       │ ← Розгорнута!
+                              │ Traffic -35%!       │
+                              │                     │
+                              │ Clicks: 450 → 290   │
+                              │ Impressions: -15%   │
+                              │ CTR: 2.77% → 2.64%  │
+                              │                     │
+                              │ [View] [Fix] [×]    │
+                              ├─────────────────────┤
+                              │ ⚠️ 404 errors...    │ ← Згорнута
+                              ├─────────────────────┤
+                              │ 🟡 PageSpeed...     │ ← Згорнута
+                              └─────────────────────┘
+```
+
+---
+
+#### 9.5.2. Типи нотіфікацій
+
+**Critical (🔴):**
+- Traffic drop >30%
+- Site down (500 errors)
+- Massive indexing errors (50+)
+- Core Web Vitals all red
+
+**Warning (🟡):**
+- Traffic drop 15-30%
+- New 404 errors (10-50)
+- PageSpeed degraded >20 points
+- Position drops (top 3 → 10+)
+
+**Info (🔵):**
+- Task assigned to you
+- New message (@mention)
+- Audit completed
+- Report generated
+
+**Success (🟢):**
+- Traffic increase >20%
+- All tasks completed
+- Indexing issues resolved
+- PageSpeed improved
+
+---
+
+#### 9.5.3. Notification Card Structure
+
+```
+┌─────────────────────────────────┐
+│ 🔴 [Icon] Title                 │ ← Header (завжди видно)
+├─────────────────────────────────┤
+│                                 │ ← Body (розгортається)
+│ [Детальна інформація]           │
+│ [Метрики, графіки]              │
+│ [Рекомендації AI]               │
+│                                 │
+├─────────────────────────────────┤
+│ [Action 1] [Action 2] [×]       │ ← Footer (кнопки дій)
+└─────────────────────────────────┘
+```
+
+**Згорнута:**
+```
+┌─────────────────────────────────┐
+│ 🔴 site-a.com traffic -35%      │
+└─────────────────────────────────┘
+```
+
+**Розгорнута:**
+```
+┌─────────────────────────────────┐
+│ 🔴 site-a.com traffic -35%      │
+├─────────────────────────────────┤
+│ Critical drop detected!         │
+│                                 │
+│ Clicks: 450 → 290 (-160)        │
+│ Impressions: 12K → 11K          │
+│ CTR: 3.75% → 2.64%              │
+│                                 │
+│ Likely causes:                  │
+│ • Google Core Update (Oct 15)   │
+│ • Competitor activity           │
+│                                 │
+│ [View Dashboard] [Create Tasks] │
+│ [Ask AI] [×]                    │
+└─────────────────────────────────┘
+```
+
+---
+
+#### 9.5.4. Auto-dismiss & Persistence
+
+**Auto-dismiss:**
+- Success notifications: 10 секунд
+- Info notifications: 30 секунд
+- Warning notifications: до manual dismiss
+- Critical notifications: до manual dismiss
+
+**Persistence:**
+- Зберігаються в БД
+- Можна переглянути історію
+- Групування по проектах
+- Archive after 30 days
+
+---
+
+#### 9.5.5. Звуки (optional)
+
+```typescript
+const sounds = {
+  critical: '/sounds/alert-critical.mp3',  // Гучний
+  warning: '/sounds/alert-warning.mp3',    // Середній
+  info: '/sounds/notification.mp3',        // Тихий
+  success: '/sounds/success.mp3'           // Приємний
+};
+```
+
+**Settings:**
+```
+☑️ Enable sounds
+Volume: [▓▓▓▓▓▓▓▓░░] 80%
+
+☐ Do not disturb (21:00 - 09:00)
+```
+
+---
+
+#### 9.5.6. Database Schema (додати до розділу 5.9)
+
+```prisma
+model Notification {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id])
+  
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+  
+  // Type
+  type     String   // "critical" | "warning" | "info" | "success"
+  category String   // "traffic_drop" | "404_errors" | "pagespeed" | etc
+  
+  // Display
+  title    String
+  message  String   @db.Text
+  icon     String   // emoji
+  
+  // Rich content (для розгорнутого стану)
+  metadata Json?    // { metrics, analysis, recommendations }
+  
+  // Actions
+  actions  Json?    // [{ label: "View", url: "/..." }]
+  
+  // State
+  isRead      Boolean  @default(false)
+  isDismissed Boolean  @default(false)
+  isExpanded  Boolean  @default(true)  // Тільки остання розгорнута
+  
+  // Position in stack
+  stackPosition Int?
+  
+  createdAt DateTime @default(now())
+  
+  @@index([userId, createdAt])
+  @@index([projectId, type])
+}
+```
+
+---
+
+### 9.6. Інші важливі екрани
+
+**7. `/tasks` - Global Tasks View**
+```
+┌──────────────────────────────────────────────┐
+│ Tasks                  [@Me ▼] [Filter] [+]   │
+├──────────────────────────────────────────────┤
+│ [Schedule] [Backlog] [Done]    ← TABS        │
+├──────────────────────────────────────────────┤
+│                                               │
+│ Monday, Nov 11          [7.5h / 7.5h] ✅      │
+│ ├─ 🔴 Fix 404 errors (2h) - site-a.com       │
+│ ├─ 🟡 Meta tags (4h) - site-b.com            │
+│ └─ 🟢 Check indexation (1.5h) - site-c.com   │
+│                                               │
+│ Tuesday, Nov 12         [8.2h / 7.5h] ⚠️      │
+│ ├─ ... (overload warning)                    │
+│                                               │
+│ [+ Add Task] [AI Schedule Week]               │
+└──────────────────────────────────────────────┘
+```
+
+**8. `/messages` - Team Messaging (повний)**
+```
+┌──────────┬───────────────────────────────────┐
+│ Chats    │ Chat: "site-a-team"               │
+│          │                                   │
+│ 🤖 AI    │ [Вся історія повідомлень]         │
+│ site-a   │                                   │
+│ site-b   │ Ivan: "Traffic dropped 35%"       │
+│ general  │ Anna: "I see 404 errors"          │
+│          │ @AI: "Analyzed. 3 causes..."      │
+│ [+ New]  │                                   │
+│          │ [Type message...] [@AI] [Send]    │
+└──────────┴───────────────────────────────────┘
+```
+
+**9. `/reports` - Reports Hub**
+```
+┌──────────────────────────────────────────────┐
+│ Reports                  [Generate New ▼]     │
+├──────────────────────────────────────────────┤
+│ [All] [Scheduled] [Manual] [Archived]        │
+├──────────────────────────────────────────────┤
+│                                               │
+│ ┌──────────────────────────────────────────┐ │
+│ │ 📊 October Report - site-a.com           │ │
+│ │ Generated: Nov 1, 2025 (Scheduled)       │ │
+│ │ [View] [Download] [Share]                │ │
+│ └──────────────────────────────────────────┘ │
+│                                               │
+│ Scheduled Reports (3):                        │
+│ • Monthly Summary (1st of month, 09:00)      │
+│ • Weekly Brief (Mondays, 08:00)              │
+│                                               │
+│ [Manage Schedules]                            │
+└──────────────────────────────────────────────┘
+```
+
+**10. `/settings` - Organization Settings**
+```
+┌──────────────────────────────────────────────┐
+│ Settings                                      │
+├──────────────────────────────────────────────┤
+│ [Profile] [Organization] [Team] [Billing]    │
+├──────────────────────────────────────────────┤
+│                                               │
+│ Organization Settings:                        │
+│                                               │
+│ Name: [ACME Agency______________]             │
+│ Plan: Pro ($49/mo)                            │
+│ Projects: 5 / 10                              │
+│ Team: 3 / 3 users                             │
+│                                               │
+│ [Upgrade Plan]                                │
+└──────────────────────────────────────────────┘
+```
+
+**11. `/settings/integrations`**
+
+Детально описано в розділі 6.2 (OAuth vs API Keys)
+
+---
+
+### 9.7. Design System
+
+**Technology Stack for UI:**
+
+**MVP Approach: shadcn/ui + Tailwind CSS** 🎯
+
+**Чому shadcn/ui для MVP:**
+```
+✅ Безкоштовно (MIT license)
+✅ Високоякісний дизайн (професійно виглядає)
+✅ Copy-paste компоненти (швидка розробка)
+✅ Tailwind CSS based (гнучкість)
+✅ Доступність (accessibility built-in)
+✅ Темна/світла тема (out-of-box)
+✅ TypeScript підтримка
+✅ Активна community
+```
+
+**shadcn/ui Components що використаємо:**
+```
+Layout:
+├─ Sidebar
+├─ Card (для widgets)
+├─ Tabs
+└─ Sheet (для modals)
+
+Forms:
+├─ Input, Select, Checkbox
+├─ Label, Form
+└─ Button
+
+Data Display:
+├─ Table
+├─ Badge
+├─ Avatar
+└─ Progress
+
+Feedback:
+├─ Toast (для notifications popup)
+├─ Alert
+├─ Dialog
+└─ Popover
+
+Navigation:
+├─ Breadcrumb
+├─ Menu
+└─ Command (⌘K)
+```
 
 **Колірна палітра:**
-```
+```css
 Primary: #3B82F6 (Blue)
 Success: #10B981 (Green)
 Warning: #F59E0B (Yellow)
@@ -3666,33 +4904,117 @@ Text: #1E293B / #F1F5F9 (Light/Dark)
 Font: Inter (Google Fonts)
 Headings: 600-700 weight
 Body: 400 weight
-Code: 'Fira Code' monospace
 ```
 
 **Spacing:**
 ```
-Base unit: 4px
-xs: 4px
-sm: 8px
-md: 16px
-lg: 24px
-xl: 32px
-2xl: 48px
+Base: 4px (Tailwind)
+p-2: 8px
+p-4: 16px
+p-6: 24px
+p-8: 32px
 ```
 
-### 9.3. Responsive Design
+---
+
+### 9.8. Responsive Design
 
 **Breakpoints:**
 ```
-Mobile: 0-640px
-Tablet: 641-1024px
-Desktop: 1025px+
+sm: 640px   (Mobile landscape)
+md: 768px   (Tablet)
+lg: 1024px  (Desktop small)
+xl: 1280px  (Desktop)
+2xl: 1536px (Desktop large)
 ```
 
-**Mobile-first підхід:**
-- Мобільні користувачі бачать компактний дашборд
-- Tablet — повний функціонал
-- Desktop — максимально інформативний
+**Mobile-first approach:**
+
+**Widget Dashboard (responsive):**
+```
+Desktop (1200px+):  3 columns
+Tablet (768-1199):  2 columns
+Mobile (0-767):     1 column (stack)
+```
+
+**Notifications (mobile):**
+- Повноекранні (overlay)
+- Swipe to dismiss
+- Simplified actions
+
+---
+
+### 9.9. Оновлений Roadmap з UI/UX
+
+**Phase 1 (Тижні 1-20) — MVP:**
+
+**Тиждень 1-2: Foundation**
+- Next.js setup
+- shadcn/ui installation
+- Sidebar layout
+- Auth pages
+
+**Тиждень 3-4: Onboarding**
+- 4-step wizard
+- Google OAuth
+- First project
+
+**Тиждень 5-6: Dashboard**
+- Morning Brief page
+- Projects list
+
+**Тиждень 7-10: Core Modules**
+- Data Collection
+- AI Analysis
+- Crawler
+- APIs
+
+**Тиждень 11-12: Widget System** 🔥
+- BaseWidget component
+- 6-8 MVP widgets (GSC, GA4, PageSpeed, Crawl, Tasks, Ahrefs, AI)
+- Fixed grid layout
+- Project Detail page
+- Chat Area (компактна, знизу)
+- Responsive grid
+
+**Тиждень 13-14: Task Manager**
+- Schedule/Backlog/Done views
+- CRUD operations
+- AI planning
+- Drag & drop
+
+**Тиждень 15-16: Messaging + Notifications**
+- Chat (WebSocket)
+- AI teammate (@mention)
+- Notification Stack (floating справа, як CK3) 🎯
+- Auto-collapse/expand logic
+- Sound system
+
+**Тиждень 17-20: Polish & Testing**
+- UI/UX improvements
+- Mobile optimization
+- Performance
+- Beta testing
+
+**Phase 2 (Місяці 4-6) — Widget Customization:**
+
+**Місяць 4:**
+- Widget Library UI
+- Drag & drop widgets
+- Resize widgets
+- Save custom layouts
+
+**Місяць 5:**
+- 20+ total widgets
+- Advanced filtering
+- Widget analytics
+- Share layouts з командою
+
+**Місяць 6:**
+- Custom widgets (user-created)
+- Widget marketplace
+- A/B testing layouts
+- Performance optimization
 
 ---
 
