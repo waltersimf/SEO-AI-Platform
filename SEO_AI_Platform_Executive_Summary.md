@@ -1,7 +1,12 @@
-# SEO AI Platform - Executive Summary
+# Forgeline - Executive Summary
 
 **Версія:** 2.2  
 **Дата:** 13 листопада 2025  
+
+---
+
+# **Forgeline**
+## *Think strategy. Automate the rest.*
 
 ---
 
