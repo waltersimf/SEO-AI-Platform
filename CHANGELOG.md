@@ -9,7 +9,7 @@
 
 | Версія | Дата | Статус | Функціонал | Час |
 |--------|------|--------|------------|-----|
-| v0.1 | ~20.11.2025 | 📋 Planned | Foundation & Auth | 5 днів |
+| v0.1 | 15.11.2025 | ✅ **ЗАВЕРШЕНО** | Foundation & Auth | 1 день |
 | v0.2 | ~28.11.2025 | 📋 Planned | Google Integration & Dashboard | 6 днів |
 | v0.3 | ~05.12.2025 | 📋 Planned | Chat Infrastructure | 5 днів |
 | v0.4 | ~17.12.2025 | 📋 Planned | AI Teammate + Task Manager (Full) | 10 днів |
@@ -20,9 +20,112 @@
 | v0.9 | ~13.02.2026 | 📋 Planned | Reports & Settings | 8 днів |
 | v1.0 | ~27.02.2026 | 🎉 **Launch** | Production Ready! | 12 днів |
 
-**Загальний прогрес:** 0% (0 з 10 версій)  
-**Milestone 1 (v0.5):** 33 дні до Investor Demo  
-**До v1.0:** 83 робочих дні
+**Загальний прогрес:** 10% (1 з 10 версій) ✅  
+**Milestone 1 (v0.5):** 32 дні до Investor Demo  
+**До v1.0:** 82 робочих дні
+
+---
+
+## 🔥 ЗАВЕРШЕНІ ВЕРСІЇ
+
+### 📦 v0.1 - Foundation & Auth ✅
+
+**Дата:** 15.11.2025  
+**Статус:** ✅ ЗАВЕРШЕНО
+
+**Що було реалізовано:**
+- ✅ Next.js 14 проект з App Router
+- ✅ shadcn/ui + Tailwind CSS setup
+- ✅ NestJS backend з TypeScript
+- ✅ PostgreSQL + Prisma ORM
+- ✅ JWT authentication
+- ✅ User + Organization models (multi-tenancy)
+- ✅ Docker Compose (PostgreSQL + Redis)
+- ✅ Auth pages (Login, Signup)
+- ✅ Dashboard з Sidebar navigation
+- ✅ Mobile responsive layout
+- ✅ Монорепо структура (pnpm workspace + turbo)
+
+**Результат:**
+🎉 **Повноцінний робочий прототип!** User може створити акаунт, залогінитись, побачити dashboard з sidebar navigation. Authentication працює через JWT. Organization створюється автоматично при signup. База даних готова до масштабування.
+
+**Оновлені/створені файли:**
+```
+apps/
+├── api/
+│   └── src/
+│       ├── auth/
+│       │   ├── auth.controller.ts
+│       │   ├── auth.module.ts
+│       │   ├── auth.service.ts
+│       │   ├── dto/auth.dto.ts
+│       │   ├── guards/jwt-auth.guard.ts
+│       │   └── strategies/
+│       │       ├── jwt.strategy.ts
+│       │       └── local.strategy.ts
+│       ├── prisma/
+│       │   ├── prisma.module.ts
+│       │   └── prisma.service.ts
+│       ├── app.module.ts
+│       └── main.ts
+└── web/
+    └── src/
+        ├── app/
+        │   ├── auth/
+        │   │   ├── login/page.tsx
+        │   │   └── signup/page.tsx
+        │   ├── dashboard/
+        │   │   ├── layout.tsx
+        │   │   └── page.tsx
+        │   ├── layout.tsx
+        │   ├── page.tsx
+        │   └── globals.css
+        ├── components/
+        │   ├── ui/ (shadcn components)
+        │   └── sidebar.tsx
+        └── lib/utils.ts
+
+packages/
+└── db/
+    └── schema.prisma
+
+docker-compose.yml
+.env
+package.json
+pnpm-workspace.yaml
+turbo.json
+```
+
+**Acceptance Criteria - ВСІ ПРОЙДЕНІ:**
+- ✅ User signup → Organization створюється автоматично
+- ✅ User login → JWT token працює
+- ✅ Dashboard видно після login
+- ✅ Sidebar з навігацією працює
+- ✅ Mobile responsive
+- ✅ Docker containers (PostgreSQL + Redis) запускаються
+- ✅ Prisma migrations працюють
+
+**Час розробки:** 1 день (3 години активної роботи)
+
+**Технічні особливості:**
+- TypeScript strict mode
+- ESLint + Prettier configured
+- Hot reload working (frontend + backend)
+- Error handling з ValidationPipe
+- Password hashing з bcrypt
+- CORS налаштовано для localhost:3000
+
+**Проблеми під час розробки:**
+1. ❌ TypeScript помилки (unused imports) → ✅ Виправлено
+2. ❌ Docker не встановлено → ✅ Встановлено Docker Desktop + WSL2
+3. ❌ Frontend робив запити на себе замість backend → ✅ Змінено URL на localhost:4000
+4. ❌ Port 4000 зайнятий → ✅ Перезапущено процес
+
+**Screenshots:**
+- Landing page: "Welcome to Forgeline" ✅
+- Signup form: Working ✅
+- Login form: Working ✅
+- Dashboard: "Welcome to Forgeline! 🎉" + sidebar ✅
 
 ---
 
@@ -141,33 +244,6 @@
 
 ---
 
-### 📦 v0.1 - Foundation & Auth
-
-**Дата:** TBD  
-**Статус:** 📋 PLANNED
-
-**Що буде реалізовано:**
-- [ ] Next.js 14 проект (App Router)
-- [ ] shadcn/ui + Tailwind setup
-- [ ] NestJS backend
-- [ ] PostgreSQL + Prisma ORM
-- [ ] JWT authentication (NextAuth.js)
-- [ ] User + Organization models
-- [ ] Docker Compose setup
-- [ ] Auth pages (Login, Signup)
-
-**Deliverable:** ✅ Можна створити акаунт та залогінитись
-
-**Acceptance Criteria:**
-- ✅ User signup → Organization створюється
-- ✅ User login → JWT працює
-- ✅ Sidebar з навігацією
-- ✅ Mobile responsive
-
-**Час розробки:** 5 днів
-
----
-
 ## 🧪 MILESTONE 2: Beta Version (v0.6 → v0.8)
 
 ### 📦 v0.8 - Notifications (Full) + Polish
@@ -277,34 +353,6 @@
 
 ---
 
-## 📝 Формат changelog
-
-**Після завершення кожної версії оновлюй:**
-
-```markdown
-## 📦 vX.X - Назва версії
-
-**Дата:** DD.MM.YYYY  
-**Статус:** ✅ ЗАВЕРШЕНО
-
-### Реалізовано:
-- ✅ Feature 1
-- ✅ Feature 2
-- ✅ Feature 3
-
-### Результат:
-Опис ключових досягнень
-
-**Оновлені файли:**
-- `path/to/file.ts`
-- `path/to/another-file.tsx`
-
-**Час розробки:** X днів  
-**Проблеми:** [якщо були]
-```
-
----
-
 ## 🎯 Success Metrics
 
 ### v0.5 (Investor Demo)
@@ -327,12 +375,12 @@
 
 ---
 
-**Останнє оновлення:** 14.11.2025  
-**Поточна версія:** Розробка не почалась  
-**Наступна версія:** v0.1 (Foundation & Auth)  
-**До Investor Demo:** 33 дні  
-**До v1.0 Launch:** 83 робочих дні
+**Останнє оновлення:** 15.11.2025  
+**Поточна версія:** v0.1 ✅  
+**Наступна версія:** v0.2 (Google Integration & Dashboard)  
+**До Investor Demo:** 32 дні  
+**До v1.0 Launch:** 82 робочих дні
 
 ---
 
-**Let's ship! 🚀**
+**v0.1 Complete! Let's ship v0.2! 🚀**
