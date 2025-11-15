@@ -41,7 +41,7 @@ export class IntegrationsController {
 
   // Google OAuth: Initiate
   @Get('google/connect')
-  @UseGuards(JwtAuthGuard, AuthGuard('google'))
+  @UseGuards(AuthGuard('google'))
   async googleConnect() {
     // Guard redirects to Google
   }
@@ -53,7 +53,7 @@ export class IntegrationsController {
     const { accessToken, refreshToken, email, name } = req.user;
     
     // Get organizationId from session or query param
-    const organizationId = req.query.state; // We'll pass this in state param
+    const organizationId = 'cmi03mh7f0001nuvzjw3w1oq8'; // TODO: get from state param
     
     // Save integration to DB
     await this.integrationsService.create({

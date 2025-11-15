@@ -6,6 +6,8 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(configService: ConfigService) {
+    console.log('🔍 GOOGLE_CALLBACK_URL:', configService.get('GOOGLE_CALLBACK_URL'));
+    
     super({
       clientID: configService.get('GOOGLE_CLIENT_ID'),
       clientSecret: configService.get('GOOGLE_CLIENT_SECRET'),
@@ -14,6 +16,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         'email',
         'profile',
         'https://www.googleapis.com/auth/webmasters.readonly',
+
       ],
     });
   }
@@ -25,7 +28,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     done: VerifyCallback,
   ): Promise<any> {
     const { id, emails, displayName } = profile;
-    
+
     const user = {
       googleId: id,
       email: emails[0].value,
@@ -33,7 +36,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       accessToken,
       refreshToken,
     };
-    
+
     done(null, user);
   }
 }

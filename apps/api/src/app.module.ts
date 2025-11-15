@@ -6,9 +6,10 @@ import { IntegrationsModule } from './integrations/integrations.module'; // ← 
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
+  ConfigModule.forRoot({
+   isGlobal: true,
+    envFilePath: '../../.env', // ← ДОДАЙ ЦЕЙ РЯДОК
+  }),
     PrismaModule,
     AuthModule,
     IntegrationsModule, // ← ДОДАЙ СЮДИ

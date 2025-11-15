@@ -1,8 +1,8 @@
 # Forgeline - Development Roadmap
 
-**Версія:** 2.3  
-**Дата:** 15.11.2025  
-**Формат:** Версійна розробка (як Auditor)
+**Версія:** 2.4  
+**Дата:** 15.11.2025 (вечір)  
+**Формат:** Версійна розробка
 
 ---
 
@@ -19,6 +19,40 @@
 ```
 
 **v1.0 = повна Phase 1** з техдоку
+
+---
+
+## 📊 Progress Tracker
+
+```
+v0.1 ████████████████████ 100% ✅
+v0.2 ██████████░░░░░░░░░░  50% 🔄 (OAuth done, Dashboard UI pending)
+v0.3 ░░░░░░░░░░░░░░░░░░░░   0%
+v0.4 ░░░░░░░░░░░░░░░░░░░░   0%
+v0.5 ░░░░░░░░░░░░░░░░░░░░   0%
+     └─ INVESTOR DEMO: 30% 🔄
+
+v0.6 ░░░░░░░░░░░░░░░░░░░░   0%
+v0.7 ░░░░░░░░░░░░░░░░░░░░   0%
+v0.8 ░░░░░░░░░░░░░░░░░░░░   0%
+     └─ BETA VERSION: 0%
+
+v0.9 ░░░░░░░░░░░░░░░░░░░░   0%
+v1.0 ░░░░░░░░░░░░░░░░░░░░   0%
+     └─ PUBLIC LAUNCH: 0%
+
+═══════════════════════════════════════
+MILESTONE 1 (Investor Demo): 30% (1.5/5) 🔄
+MILESTONE 2 (Beta):           0% (0/3)
+MILESTONE 3 (Launch):         0% (0/2)
+═══════════════════════════════════════
+TOTAL PROGRESS: 15% (1.5/10 versions) 🔄
+```
+
+**До наступних milestones:**
+- 🔥 Investor Demo (v0.5): ~28 днів (v0.2 50% done)
+- 🧪 Beta (v0.8): ~58 днів
+- 🚀 Launch (v1.0): ~78 днів
 
 ---
 
@@ -67,55 +101,70 @@
 - [✅] Sidebar з навігацією видно
 - [✅] Mobile responsive
 
-**Результат:** 🎉 Повноцінний робочий прототип! Dashboard працює, auth працює, база готова.
-
 ---
 
 ### 📦 v0.2 - Google Integration & Dashboard
 
 **Час:** 6 днів  
-**Статус:** 🔄 **IN PROGRESS** (Старт: 15.11.2025)  
+**Статус:** 🔄 **IN PROGRESS** (50% complete)  
+**Старт:** 15.11.2025  
 **Deliverable:** ✅ Реальні дані з Google Search Console на dashboard
 
-**День 1-2: Google OAuth** 🔄
-- [✅] Integration model (DB) - Prisma schema created
+**День 1-3: Google OAuth** ✅ **DONE!**
+- [✅] Integration model (DB) - Prisma schema
 - [✅] Prisma migration applied
-- [✅] IntegrationsModule створено (NestJS)
-- [✅] IntegrationsService (CRUD operations)
+- [✅] IntegrationsModule (NestJS)
+- [✅] IntegrationsService (CRUD)
 - [✅] IntegrationsController (REST endpoints)
-- [⏸️] Google OAuth flow (Passport.js) - GoogleStrategy created but disabled
-- [⏸️] `/integrations/google/connect` endpoint - created but OAuth disabled
-- [⏸️] `/integrations/google/callback` endpoint - created but OAuth disabled
-- [ ] Google credentials from Console
-- [ ] Token encryption (AES-256)
-- [ ] Test OAuth flow end-to-end
+- [✅] Google OAuth flow (Passport.js + GoogleStrategy)
+- [✅] `/api/integrations/google/connect` endpoint
+- [✅] `/api/integrations/google/callback` endpoint
+- [✅] Google Cloud Console OAuth client setup
+- [✅] Token storage в БД (encrypted fields ready)
+- [✅] OAuth flow tested end-to-end
 
-**День 3-4: Google Search Console API**
+**Проблеми що вирішили:**
+1. ✅ `redirect_uri_mismatch` - додали `/api` prefix в callback URL
+2. ✅ `OAuth2Strategy requires clientID` - додали GoogleStrategy в providers
+3. ✅ `Foreign key constraint` - використали реальний UUID organizationId
+4. ✅ `access_denied 403` - додали test user в Google Console
+5. ✅ `EADDRINUSE port 4000` - kill-port before restart
+
+**День 3-4: Google Search Console API** ❌ **PENDING**
 - [ ] GSC API wrapper
 - [ ] `/api/gsc/metrics` endpoint
 - [ ] Token refresh logic
 - [ ] Error handling (expired tokens)
 
-**День 5-6: Dashboard UI**
-- [ ] Dashboard page
+**День 5-6: Dashboard UI** ❌ **PENDING**
+- [ ] Integrations management page (`/dashboard/integrations`)
+- [ ] Connected services cards
+- [ ] Integration status indicators
+- [ ] Toast notifications for OAuth events
 - [ ] 2-3 графіки (recharts): clicks, impressions, CTR
 - [ ] Loading states + skeletons
 - [ ] Error handling UI
 - [ ] Responsive grid
 
 **Acceptance Criteria:**
-- ⏸️ "Connect Google" button → OAuth popup → success
+- [✅] "Connect Google" button → OAuth popup → success
 - [ ] Після auth бачимо GSC дані на dashboard
 - [ ] Графіки показують last 30 days
 - [ ] Токени encrypted в БД
+- [ ] Integrations page з connected services
 
-**Проміжні результати (15.11.2025, 14:15):**
-- ✅ Database schema extended (Integration model)
-- ✅ Backend infrastructure ready
-- ✅ Packages installed: @nestjs/passport, passport, passport-google-oauth20
-- ✅ REST API endpoints created
-- ⏸️ GoogleStrategy temporarily disabled (pending real credentials)
-- 🎯 **Готовність:** ~40% (backend infrastructure complete)
+**Поточний стан (15.11.2025, evening):**
+- ✅ OAuth infrastructure 100% complete
+- ✅ Tokens в БД
+- ✅ Dashboard redirects after OAuth
+- ❌ GSC API integration pending
+- ❌ Dashboard UI improvements pending
+
+**TODO для production:**
+- [ ] Pass organizationId via OAuth state parameter (поки hardcoded)
+- [ ] Implement token refresh mechanism
+- [ ] Add domain verification for Search Console scope
+- [ ] Error handling improvements
 
 ---
 
@@ -193,8 +242,6 @@
 - ✅ AI може розподілити backlog на тиждень
 - ✅ Group task для всіх членів команди
 
-**Час розробки:** 10 днів
-
 ---
 
 ### 📦 v0.5 - Site Audit (AI) 🎯 INVESTOR DEMO
@@ -233,7 +280,7 @@
 - ✅ AI аналізує top 50 issues
 - ✅ Dashboard показує critical issues
 - ✅ Export в Google Docs працює
-- ✅ **INVESTOR DEMO READY!** 🎉
+- ✅ **INVESTOR DEMO READY!** 🎯
 
 ---
 
@@ -463,7 +510,8 @@ feature/v0.x-feature-name
 **Commits:**
 ```
 feat(v0.1): Complete Foundation & Auth ✅
-feat(v0.2): Add Google OAuth infrastructure (WIP)
+feat(v0.2): Add Google OAuth integration ✅
+feat(v0.2): Add GSC API wrapper (WIP)
 feat(v0.4): Add AI teammate in group chats
 fix(v0.5): Crawler timeout on large sites
 refactor(v0.2): Optimize GSC API calls
@@ -486,46 +534,13 @@ docs(v1.0): Add API documentation
 - v2.0 - Initial version-based roadmap
 - v2.1 - Moved Investor Demo to v0.5 (full Task Manager + Audit)
 - v2.2 - v0.1 COMPLETED! 🎉 (15.11.2025)
-- v2.3 - v0.2 IN PROGRESS! Backend infrastructure ready (15.11.2025, 14:15)
+- v2.3 - v0.2 IN PROGRESS! Backend infrastructure ready (15.11.2025)
+- v2.4 - v0.2 OAuth COMPLETE! Dashboard UI pending (15.11.2025, evening)
 
 ---
 
-## 📊 Progress Tracker
-
-```
-v0.1 ████████████████████ 100% ✅
-v0.2 ████████░░░░░░░░░░░░  40% 🔄 (backend ready, OAuth pending)
-v0.3 ░░░░░░░░░░░░░░░░░░░░   0%
-v0.4 ░░░░░░░░░░░░░░░░░░░░   0%
-v0.5 ░░░░░░░░░░░░░░░░░░░░   0%
-     └─ INVESTOR DEMO: 28% 🔄
-
-v0.6 ░░░░░░░░░░░░░░░░░░░░   0%
-v0.7 ░░░░░░░░░░░░░░░░░░░░   0%
-v0.8 ░░░░░░░░░░░░░░░░░░░░   0%
-     └─ BETA VERSION: 0%
-
-v0.9 ░░░░░░░░░░░░░░░░░░░░   0%
-v1.0 ░░░░░░░░░░░░░░░░░░░░   0%
-     └─ PUBLIC LAUNCH: 0%
-
-═══════════════════════════════════════
-MILESTONE 1 (Investor Demo): 28% (1.4/5) 🔄
-MILESTONE 2 (Beta):           0% (0/3)
-MILESTONE 3 (Launch):         0% (0/2)
-═══════════════════════════════════════
-TOTAL PROGRESS: 14% (1.4/10 versions) 🔄
-```
-
-**До наступних milestones:**
-- 🔥 Investor Demo (v0.5): ~31 день (v0.2 40% done)
-- 🧪 Beta (v0.8): ~61 день
-- 🚀 Launch (v1.0): ~81 день
-
----
-
-**Останнє оновлення:** 15.11.2025, 14:15  
-**Поточна версія:** v0.2 (40% complete) 🔄  
+**Останнє оновлення:** 15.11.2025, evening  
+**Поточна версія:** v0.2 (50% complete - OAuth done) 🔄  
 **Наступна версія:** v0.3 - Chat Infrastructure
 
-**v0.1 Complete! v0.2 In Progress! Next: Google OAuth! 🚀**
+**Keep building! 🚀**
