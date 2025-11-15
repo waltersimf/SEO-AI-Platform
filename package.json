@@ -1,0 +1,35 @@
+{
+  "name": "forgeline",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SEO AI Platform - Team collaboration with AI teammate",
+  "scripts": {
+    "dev": "pnpm --parallel run dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter api dev",
+    "build": "pnpm --recursive run build",
+    "build:web": "pnpm --filter web build",
+    "build:api": "pnpm --filter api build",
+    "lint": "pnpm --recursive run lint",
+    "test": "pnpm --recursive run test",
+    "db:migrate": "pnpm --filter db migrate",
+    "db:generate": "pnpm --filter db generate",
+    "db:studio": "pnpm --filter db studio"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "@types/node": "^20.10.6",
+    "prettier": "^3.1.1",
+    "eslint": "^8.56.0",
+    "turbo": "^1.11.2"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.1"
+}
