@@ -14,10 +14,11 @@ model Organization {
   id          String   @id @default(cuid())
   name        String
   slug        String   @unique
-  plan        String   @default("free") // free, pro, agency
+  plan        String   @default("free")
   maxProjects Int      @default(5)
   
-  users       User[]
+  users        User[]
+  integrations Integration[]  // ← ДОДАЙ ЦЕЙ РЯДОК
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -40,4 +41,24 @@ model User {
   updatedAt      DateTime @updatedAt
 
   @@map("users")
+}
+
+model Integration {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  provider       String   // "google", "ahrefs", "serpstat"
+  accessToken    String   @db.Text
+  refreshToken   String?  @db.Text
+  tokenExpiry    DateTime?
+  scopes         String[] // ["https://www.googleapis.com/auth/webmasters.readonly"]
+  
+  metadata       Json?    // { email: "user@gmail.com", connectedAt: "..." }
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  @@unique([organizationId, provider])
+  @@map("integrations")
 }

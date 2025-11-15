@@ -1,6 +1,6 @@
 # Forgeline - Development Roadmap
 
-**Версія:** 2.2  
+**Версія:** 2.3  
 **Дата:** 15.11.2025  
 **Формат:** Версійна розробка (як Auditor)
 
@@ -25,7 +25,7 @@
 ## 🔥 MILESTONE 1: Investor Demo (v0.1 → v0.5)
 
 **Загальний час:** 33 дні  
-**Прогрес:** 1/5 версій (20%) ✅  
+**Прогрес:** 1.5/5 версій (30%) 🔄  
 **Ціль:** Показати інвесторам killer combo:
 - ✅ AI Teammate (в чаті з командою)
 - ✅ Повний Task Manager (Schedule/Backlog/Done + AI planning)
@@ -74,15 +74,21 @@
 ### 📦 v0.2 - Google Integration & Dashboard
 
 **Час:** 6 днів  
-**Статус:** 📋 PLANNED  
+**Статус:** 🔄 **IN PROGRESS** (Старт: 15.11.2025)  
 **Deliverable:** ✅ Реальні дані з Google Search Console на dashboard
 
-**День 1-2: Google OAuth**
-- [ ] Google OAuth flow (Passport.js)
-- [ ] `/integrations/google/connect` endpoint
-- [ ] `/integrations/google/callback` endpoint
+**День 1-2: Google OAuth** 🔄
+- [✅] Integration model (DB) - Prisma schema created
+- [✅] Prisma migration applied
+- [✅] IntegrationsModule створено (NestJS)
+- [✅] IntegrationsService (CRUD operations)
+- [✅] IntegrationsController (REST endpoints)
+- [⏸️] Google OAuth flow (Passport.js) - GoogleStrategy created but disabled
+- [⏸️] `/integrations/google/connect` endpoint - created but OAuth disabled
+- [⏸️] `/integrations/google/callback` endpoint - created but OAuth disabled
+- [ ] Google credentials from Console
 - [ ] Token encryption (AES-256)
-- [ ] Integration model (DB)
+- [ ] Test OAuth flow end-to-end
 
 **День 3-4: Google Search Console API**
 - [ ] GSC API wrapper
@@ -98,10 +104,18 @@
 - [ ] Responsive grid
 
 **Acceptance Criteria:**
-- ✅ "Connect Google" button → OAuth popup → success
-- ✅ Після auth бачимо GSC дані на dashboard
-- ✅ Графіки показують last 30 days
-- ✅ Токени encrypted в БД
+- ⏸️ "Connect Google" button → OAuth popup → success
+- [ ] Після auth бачимо GSC дані на dashboard
+- [ ] Графіки показують last 30 days
+- [ ] Токени encrypted в БД
+
+**Проміжні результати (15.11.2025, 14:15):**
+- ✅ Database schema extended (Integration model)
+- ✅ Backend infrastructure ready
+- ✅ Packages installed: @nestjs/passport, passport, passport-google-oauth20
+- ✅ REST API endpoints created
+- ⏸️ GoogleStrategy temporarily disabled (pending real credentials)
+- 🎯 **Готовність:** ~40% (backend infrastructure complete)
 
 ---
 
@@ -179,90 +193,79 @@
 - ✅ AI може розподілити backlog на тиждень
 - ✅ Group task для всіх членів команди
 
+**Час розробки:** 10 днів
+
 ---
 
-### 📦 v0.5 - Site Audit + AI Analysis 🕷️
+### 📦 v0.5 - Site Audit (AI) 🎯 INVESTOR DEMO
 
-**Час:** 7 днів  
+**Час:** 12 днів  
 **Статус:** 📋 PLANNED  
-**Deliverable:** ✅ Можна запустити аудит + AI знаходить проблеми
+**Deliverable:** ✅ Site Audit до 500 pages + AI аналіз
 
-**День 1-3: Crawler**
-- [ ] Crawlee + Playwright setup
-- [ ] Crawler до 500 pages
-- [ ] SEO checks:
-  - [ ] HTTP status codes
-  - [ ] Meta tags (title, description)
-  - [ ] Headings structure
-  - [ ] Images (alt, size)
-  - [ ] Internal/external links
-- [ ] BullMQ queue setup
+**День 1-4: Crawler (Crawlee + Playwright)**
+- [ ] Crawler module setup
+- [ ] Page metadata extraction
+- [ ] Lighthouse integration (CWV)
+- [ ] Parallel crawling (10 concurrent)
 - [ ] Progress tracking
 
-**День 4-5: Real-time Progress**
-- [ ] WebSocket events (progress update)
-- [ ] Frontend: progress bar
-- [ ] ETA calculation
-- [ ] Cancel crawl option
+**День 5-7: Audit Analysis**
+- [ ] Issues detection (broken links, missing meta, slow pages)
+- [ ] Priority scoring (low/medium/high/critical)
+- [ ] Page grouping (by template/type)
+- [ ] Historical comparison
 
-**День 6-7: AI Analysis**
-- [ ] AI prompt: audit analysis
-- [ ] Claude API call (batch)
-- [ ] Parse results → structured format
-- [ ] AI generates:
-  - [ ] Summary (1-2 paragraphs)
-  - [ ] Top 10 issues
-  - [ ] Recommendations
-  - [ ] Priority scores
-- [ ] "Create Tasks" button
-- [ ] Auto-create tasks from AI findings
+**День 8-10: AI Analysis**
+- [ ] Claude API integration for audit
+- [ ] Issue explanation generator
+- [ ] Fix suggestions
+- [ ] Impact estimation
+
+**День 11-12: Audit UI**
+- [ ] Audit dashboard
+- [ ] Issues list (filterable)
+- [ ] Page details view
+- [ ] Export to Google Docs
 
 **Acceptance Criteria:**
-- ✅ User клікає "Run Audit" → crawler стартує
-- ✅ Progress bar real-time
-- ✅ Результати за 3-5 хв (500 pages)
-- ✅ AI генерує summary + рекомендації
-- ✅ Можна створити tasks з результатів
-
-**🎉 MILESTONE 1 COMPLETE!** → **Investor Demo Ready!**
+- ✅ Audit crawls 500 pages за <10 хв
+- ✅ AI аналізує top 50 issues
+- ✅ Dashboard показує critical issues
+- ✅ Export в Google Docs працює
+- ✅ **INVESTOR DEMO READY!** 🎉
 
 ---
 
 ## 🧪 MILESTONE 2: Beta Version (v0.6 → v0.8)
 
-**Загальний час:** 30 днів  
-**Ціль:** Розширити функціонал + залучити beta users
-
----
-
 ### 📦 v0.6 - Google APIs (Full) + Data Collection
 
 **Час:** 8 днів  
 **Статус:** 📋 PLANNED  
-**Deliverable:** ✅ Всі Google APIs + щоденний збір даних
+**Deliverable:** ✅ Всі Google APIs + щоденний збір
 
-**День 1-3: Google Analytics GA4**
-- [ ] GA4 API integration
-- [ ] Metrics: users, sessions, bounce rate
-- [ ] Dashboard widgets
+**День 1-3: Google APIs**
+- [ ] Google Analytics GA4
+- [ ] Google Drive API
+- [ ] Google Docs API
+- [ ] Google Sheets API
 
-**День 4-5: Google Drive/Docs/Sheets**
-- [ ] Drive API (list files)
-- [ ] Docs API (export reports)
-- [ ] Sheets API (export data)
+**День 4-6: Data Collection**
+- [ ] Cron jobs (daily at 6 AM)
+- [ ] DataSnapshot model
+- [ ] Parallel collection
+- [ ] Error handling + retry
 
-**День 6-8: Data Collection**
-- [ ] DataSnapshot model (DB)
-- [ ] Cron job (daily 06:00)
-- [ ] Collect from GSC + GA4
-- [ ] Store snapshots
-- [ ] Comparison logic
+**День 7-8: Dashboard Updates**
+- [ ] GA4 widgets
+- [ ] Historical charts
+- [ ] Data export
 
 **Acceptance Criteria:**
-- ✅ GA4 дані на dashboard
-- ✅ Можна експортувати в Docs
-- ✅ Можна експортувати в Sheets (таблиця)
-- ✅ Щоранку о 06:00 дані збираються автоматично
+- ✅ Всі Google APIs працюють
+- ✅ Щоденний збір без помилок
+- ✅ Dashboard з повними даними
 
 ---
 
@@ -270,206 +273,126 @@
 
 **Час:** 6 днів  
 **Статус:** 📋 PLANNED  
-**Deliverable:** ✅ AI аналізує зміни + генерує morning brief
+**Deliverable:** ✅ AI аналізує зміни + morning brief
 
-**День 1-3: AI Analysis Engine**
-- [ ] Analysis model (DB)
-- [ ] Compare snapshots (current vs previous)
-- [ ] AI prompt: аналіз змін
-- [ ] Claude API call (batch)
-- [ ] Parse AI response (structured JSON)
-- [ ] Save analysis results
-- [ ] Severity detection (info/warning/critical)
+**День 1-3: Analysis Engine**
+- [ ] Snapshot comparison
+- [ ] Change detection (↑↓ metrics)
+- [ ] Anomaly detection
+- [ ] Trend analysis
 
-**День 4-5: Morning Brief**
-- [ ] Morning brief endpoint
-- [ ] AI генерує summary всіх проектів
-- [ ] UI: brief section на dashboard
+**День 4-6: Morning Brief**
+- [ ] AI summary generation
 - [ ] Critical issues highlight
-- [ ] Project cards з статусами
-
-**День 6: Notifications (Basic)**
-- [ ] Notification model (DB)
-- [ ] WebSocket: notification events
-- [ ] Trigger: critical data changes
-- [ ] Simple toast popup (top-right)
+- [ ] Actionable recommendations
+- [ ] Email delivery (SendGrid)
 
 **Acceptance Criteria:**
-- ✅ User відкриває dashboard → бачить готовий morning brief
-- ✅ AI показує що змінилось у кожному проекті
-- ✅ Critical issues виділені червоним
-- ✅ При критичній проблемі → notification popup
+- ✅ AI аналізує зміни щодня
+- ✅ Morning brief генерується о 7:00
+- ✅ Email надходить користувачам
 
 ---
 
-### 📦 v0.8 - Notifications (Full) & Polish
+### 📦 v0.8 - Notifications (Full) + Polish
 
 **Час:** 16 днів  
 **Статус:** 📋 PLANNED  
-**Deliverable:** ✅ Розумна система notifications + UI polish
+**Deliverable:** ✅ Розумні notifications + повний polish
 
-**День 1-6: Notification System**
-- [ ] Notification Stack (floating right, як CK3)
-- [ ] Notification card (collapsed/expanded)
-- [ ] Auto-collapse старих
-- [ ] Групування (type + project)
-- [ ] Інтерактивні actions:
-  - [ ] View Details
-  - [ ] Create Tasks
-  - [ ] Dismiss
+**День 1-5: Notification System**
+- [ ] Notification Stack UI (floating)
+- [ ] Auto-collapse + grouping
+- [ ] Interactive actions
 - [ ] Sound effects (optional)
-- [ ] Notification settings:
-  - [ ] Enable/disable sounds
-  - [ ] Volume control
-  - [ ] Do not disturb hours
+- [ ] Notification center
 
-**День 7-10: Recurring Tasks**
-- [ ] Recurring pattern (daily, weekly, monthly, custom)
-- [ ] RecurringTask model (DB)
-- [ ] Cron job: create instances
-- [ ] UI: recurring indicator
-- [ ] Edit recurring task (this one / all future)
+**День 6-8: Recurring Tasks**
+- [ ] Recurring task model
+- [ ] Cron scheduler
+- [ ] Task instances
 
-**День 11-13: Advanced Crawler**
+**День 9-12: Advanced Crawler**
 - [ ] Crawl до 5K pages
-- [ ] Parallel crawling optimization
-- [ ] Scheduled crawls (weekly/monthly)
-- [ ] Audit history + comparison UI
-- [ ] Performance improvements
+- [ ] JS rendering optimization
+- [ ] Incremental crawling
 
-**День 14-16: UI/UX Polish**
-- [ ] Loading states everywhere
-- [ ] Error boundaries
-- [ ] Empty states (красиві)
-- [ ] Animations (framer-motion)
-- [ ] Mobile responsive final check
-- [ ] Consistency check (buttons, spacing)
-- [ ] Success toasts
-- [ ] Loading skeletons
+**День 13-16: UI/UX Polish**
+- [ ] Performance optimization
+- [ ] Loading improvements
+- [ ] Error handling polish
+- [ ] Accessibility fixes
+- [ ] Mobile improvements
 
 **Acceptance Criteria:**
-- ✅ Notifications працюють як в CK3 (stack справа)
-- ✅ Recurring tasks створюють instances автоматично
-- ✅ Crawler може обробити 5K pages за 10-15 хв
-- ✅ UI виглядає професійно + mobile готово
+- ✅ Notifications працюють smooth
+- ✅ Recurring tasks виконуються
+- ✅ Crawler обробляє 5K pages
 - ✅ Lighthouse score >85
-
-**🧪 MILESTONE 2 COMPLETE!** → **Beta Version Ready!**
+- ✅ **BETA READY!** 🧪
 
 ---
 
 ## 🚀 MILESTONE 3: Public Launch (v0.9 → v1.0)
 
-**Загальний час:** 20 днів  
-**Ціль:** Production-ready для публічного запуску
+### 📦 v0.9 - Reports & Team Management
 
----
-
-### 📦 v0.9 - Reports & Settings
-
-**Час:** 8 днів  
+**Час:** 10 днів  
 **Статус:** 📋 PLANNED  
-**Deliverable:** ✅ AI звіти + Team management
+**Deliverable:** ✅ Reports + повне team management
 
-**День 1-4: Reports Generation**
-- [ ] Report model (DB)
-- [ ] AI report generation (Claude)
-- [ ] Report templates:
-  - [ ] Weekly Summary
-  - [ ] Monthly Report
-  - [ ] Audit Report
-- [ ] Export to Google Docs (formatted)
-- [ ] Export to Google Sheets
-- [ ] PDF export (Puppeteer) - optional
-- [ ] Scheduled reports (cron)
+**День 1-5: Reports System**
+- [ ] Report templates
+- [ ] Custom reports
+- [ ] Scheduled reports
+- [ ] Export formats (PDF, Docs, Sheets)
 
-**День 5-6: Settings Pages**
-- [ ] User settings:
-  - [ ] Profile (name, email, avatar)
-  - [ ] Password change
-  - [ ] Work schedule
-  - [ ] Notification preferences
-- [ ] Organization settings:
-  - [ ] Org info (name, logo)
-  - [ ] Plan management
-  - [ ] Usage stats
-
-**День 7-8: Team Management**
-- [ ] Invite user (email)
-- [ ] Invite link generation
-- [ ] Team members list
-- [ ] Role assignment (Admin, SEO, AM)
-- [ ] Remove user
-- [ ] Permissions check
+**День 6-10: Team Management**
+- [ ] Invite users
+- [ ] Role permissions
+- [ ] User activity log
+- [ ] Usage tracking per user
 
 **Acceptance Criteria:**
-- ✅ AI генерує професійний звіт за 30-60 сек
-- ✅ Експорт у Docs виглядає гарно
-- ✅ Admin може запросити teammate
-- ✅ Різні ролі мають різні права
+- ✅ Reports генеруються
+- ✅ Team management працює
+- ✅ Permissions enforcement
 
 ---
 
 ### 📦 v1.0 - Production Launch! 🎉
 
-**Час:** 12 днів  
+**Час:** 10 днів  
 **Статус:** 📋 PLANNED  
-**Deliverable:** ✅ ГОТОВО ДО ПУБЛІЧНОГО ЗАПУСКУ!
+**Deliverable:** ✅ PUBLIC LAUNCH!
 
-**День 1-3: Security & Performance**
-- [ ] Security audit (OWASP Top 10)
+**День 1-3: Security**
+- [ ] Security audit (OWASP)
+- [ ] Penetration testing
 - [ ] Rate limiting
-- [ ] Input validation hardening
-- [ ] SQL injection prevention
-- [ ] XSS protection
-- [ ] CSRF tokens
-- [ ] Performance optimization:
-  - [ ] DB query optimization
-  - [ ] Caching strategy (Redis)
-  - [ ] CDN setup
-  - [ ] Image optimization
+- [ ] CSRF protection
 
-**День 4-6: Monitoring & Logging**
-- [ ] Sentry integration
-- [ ] Error tracking
-- [ ] Performance monitoring
-- [ ] Logging (Winston)
-- [ ] Alerts (critical errors)
-- [ ] Uptime monitoring (UptimeRobot)
+**День 4-6: Performance**
+- [ ] Performance audit
+- [ ] API optimization (<200ms)
+- [ ] Frontend optimization
+- [ ] Caching strategy
 
-**День 7-9: Production Deployment**
-- [ ] Vercel (frontend)
-- [ ] Railway (backend)
-- [ ] Supabase (database)
-- [ ] Upstash (redis)
-- [ ] Environment variables
-- [ ] SSL certificates
-- [ ] Custom domain
-- [ ] CI/CD pipeline (GitHub Actions)
-
-**День 10-12: Final Polish & Launch**
+**День 7-10: Launch Prep**
+- [ ] Monitoring (Sentry)
+- [ ] Logging infrastructure
+- [ ] Production deployment
 - [ ] Landing page
-- [ ] Product tour (onboarding)
-- [ ] Documentation:
-  - [ ] Getting Started
-  - [ ] API docs
-  - [ ] FAQ
-- [ ] Pricing page
-- [ ] Stripe integration (payments)
+- [ ] Documentation
 - [ ] Product Hunt submission
-- [ ] Social media announce
 
 **Acceptance Criteria:**
-- ✅ Production stable (99.9% uptime)
-- ✅ Lighthouse score >90
-- ✅ Zero critical bugs
 - ✅ Security audit passed
-- ✅ Product Hunt live
-- ✅ Can accept payments
-- ✅ Onboarding < 5 min
-- ✅ First 10 customers
-
-**🎉 v1.0 LAUNCH!** → **Public Available!**
+- ✅ Lighthouse >90
+- ✅ API <200ms average
+- ✅ Zero critical bugs
+- ✅ 99.9% uptime
+- ✅ **PRODUCTION LIVE!** 🚀
 
 ---
 
@@ -540,6 +463,7 @@ feature/v0.x-feature-name
 **Commits:**
 ```
 feat(v0.1): Complete Foundation & Auth ✅
+feat(v0.2): Add Google OAuth infrastructure (WIP)
 feat(v0.4): Add AI teammate in group chats
 fix(v0.5): Crawler timeout on large sites
 refactor(v0.2): Optimize GSC API calls
@@ -555,13 +479,14 @@ docs(v1.0): Add API documentation
 **Tracking:**
 - ✅ Completed
 - 🔄 In progress
-- ⏸️ Blocked
+- ⏸️ Blocked/Paused
 - 📊 Metrics update
 
 **Version Log:**
 - v2.0 - Initial version-based roadmap
 - v2.1 - Moved Investor Demo to v0.5 (full Task Manager + Audit)
 - v2.2 - v0.1 COMPLETED! 🎉 (15.11.2025)
+- v2.3 - v0.2 IN PROGRESS! Backend infrastructure ready (15.11.2025, 14:15)
 
 ---
 
@@ -569,11 +494,11 @@ docs(v1.0): Add API documentation
 
 ```
 v0.1 ████████████████████ 100% ✅
-v0.2 ░░░░░░░░░░░░░░░░░░░░   0%
+v0.2 ████████░░░░░░░░░░░░  40% 🔄 (backend ready, OAuth pending)
 v0.3 ░░░░░░░░░░░░░░░░░░░░   0%
 v0.4 ░░░░░░░░░░░░░░░░░░░░   0%
 v0.5 ░░░░░░░░░░░░░░░░░░░░   0%
-     └─ INVESTOR DEMO: 20% ✅
+     └─ INVESTOR DEMO: 28% 🔄
 
 v0.6 ░░░░░░░░░░░░░░░░░░░░   0%
 v0.7 ░░░░░░░░░░░░░░░░░░░░   0%
@@ -585,22 +510,22 @@ v1.0 ░░░░░░░░░░░░░░░░░░░░   0%
      └─ PUBLIC LAUNCH: 0%
 
 ═══════════════════════════════════════
-MILESTONE 1 (Investor Demo): 20% (1/5) ✅
+MILESTONE 1 (Investor Demo): 28% (1.4/5) 🔄
 MILESTONE 2 (Beta):           0% (0/3)
 MILESTONE 3 (Launch):         0% (0/2)
 ═══════════════════════════════════════
-TOTAL PROGRESS: 10% (1/10 versions) ✅
+TOTAL PROGRESS: 14% (1.4/10 versions) 🔄
 ```
 
 **До наступних milestones:**
-- 🔥 Investor Demo (v0.5): 32 дні
-- 🧪 Beta (v0.8): 62 дні
-- 🚀 Launch (v1.0): 82 дні
+- 🔥 Investor Demo (v0.5): ~31 день (v0.2 40% done)
+- 🧪 Beta (v0.8): ~61 день
+- 🚀 Launch (v1.0): ~81 день
 
 ---
 
-**Останнє оновлення:** 15.11.2025  
-**Поточна версія:** v0.1 ✅  
-**Наступна версія:** v0.2 - Google Integration & Dashboard
+**Останнє оновлення:** 15.11.2025, 14:15  
+**Поточна версія:** v0.2 (40% complete) 🔄  
+**Наступна версія:** v0.3 - Chat Infrastructure
 
-**v0.1 Complete! Next: v0.2! 🚀**
+**v0.1 Complete! v0.2 In Progress! Next: Google OAuth! 🚀**
