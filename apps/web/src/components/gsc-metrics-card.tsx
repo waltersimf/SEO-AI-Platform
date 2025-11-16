@@ -24,20 +24,30 @@ export function GscMetricsCard() {
   const fetchMetrics = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(
-        'http://localhost:4000/api/gsc/metrics?siteUrl=https://example.com',
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      
+      // Правильне кодування URL параметрів
+      const params = new URLSearchParams({
+        siteUrl: 'https://forgeline.io'
+      });
+
+      const url = `http://localhost:4000/api/gsc/metrics?${params.toString()}`;
+      
+      const response = await fetch(url, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+      });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch metrics');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to fetch metrics');
       }
 
       const result = await response.json();
       setData(result.rows || []);
     } catch (err) {
+      console.error('GSC Metrics Error:', err);
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setLoading(false);
@@ -60,8 +70,27 @@ export function GscMetricsCard() {
       <Card>
         <CardHeader>
           <CardTitle>Google Search Console</CardTitle>
-          <CardDescription className="text-red-500">{error}</CardDescription>
+          <CardDescription className="text-red-500">Failed to fetch metrics</CardDescription>
         </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Google Search Console</CardTitle>
+          <CardDescription>No data available</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            No metrics found for the last 30 days. Make sure the site is verified in Search Console.
+          </p>
+        </CardContent>
       </Card>
     );
   }
@@ -76,12 +105,12 @@ export function GscMetricsCard() {
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="keys[0]" />
+            <XAxis dataKey="keys" />
             <YAxis />
             <Tooltip />
             <Legend />
-            <Line type="monotone" dataKey="clicks" stroke="#8884d8" />
-            <Line type="monotone" dataKey="impressions" stroke="#82ca9d" />
+            <Line type="monotone" dataKey="clicks" stroke="#8884d8" name="Clicks" />
+            <Line type="monotone" dataKey="impressions" stroke="#82ca9d" name="Impressions" />
           </LineChart>
         </ResponsiveContainer>
       </CardContent>

@@ -1,14 +1,31 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { google } from 'googleapis';
 import { IntegrationsService } from '../integrations/integrations.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class GscService {
-  constructor(private integrationsService: IntegrationsService) {}
+  constructor(
+    private integrationsService: IntegrationsService,
+    private prisma: PrismaService,
+) {}
 
 async getMetrics(organizationId: string, siteUrl: string, startDate: string, endDate: string) {
-  // Get Google integration from DB
-  const integration = await this.integrationsService.findOne(organizationId, 'google');
+  console.log('🔍 GSC Service called with:', { organizationId, siteUrl, startDate, endDate });
+  
+  const integration = await this.prisma.integration.findUnique({
+    where: {
+      organizationId_provider: {
+        organizationId,
+        provider: 'google',
+      },
+    },
+  });
+
+  console.log('✅ Integration found:', {
+    hasAccessToken: !!integration?.accessToken,
+    hasRefreshToken: !!integration?.refreshToken,
+  });
 
   if (!integration) {
     throw new UnauthorizedException('Google account not connected');

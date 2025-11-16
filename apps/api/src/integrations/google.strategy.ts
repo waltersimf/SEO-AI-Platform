@@ -16,11 +16,15 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         'email',
         'profile',
         'https://www.googleapis.com/auth/webmasters.readonly',
-
-      ],
+     ],
     });
   }
-
+  authorizationParams(): { [key: string]: string } {
+    return {
+      access_type: 'offline',
+      prompt: 'consent',
+    };
+  }
   async validate(
     accessToken: string,
     refreshToken: string,
