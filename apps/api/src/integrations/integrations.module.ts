@@ -4,6 +4,7 @@ import { IntegrationsController } from './integrations.controller';
 import { IntegrationsService } from './integrations.service';
 import { GoogleStrategy } from './google.strategy';
 import { PrismaModule } from '../prisma/prisma.module';
+import { EncryptionService } from '../common/encryption.service';
 
 @Module({
   imports: [
@@ -11,7 +12,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     PassportModule.register({ defaultStrategy: 'google' }),
   ],
   controllers: [IntegrationsController],
-  providers: [IntegrationsService, GoogleStrategy], // ← ДОДАЙ GoogleStrategy
+  providers: [IntegrationsService, GoogleStrategy, EncryptionService,], // ← ДОДАЙ GoogleStrategy
   exports: [IntegrationsService],
 })
 export class IntegrationsModule {}

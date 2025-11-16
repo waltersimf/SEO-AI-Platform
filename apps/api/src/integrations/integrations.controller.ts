@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Delete,
@@ -6,6 +7,7 @@ import {
   UseGuards,
   Req,
   Res,
+  Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { IntegrationsService } from './integrations.service';
@@ -40,22 +42,47 @@ export class IntegrationsController {
   }
 
   // Google OAuth: Initiate
-  @Get('google/connect')
-  @UseGuards(AuthGuard('google'))
-  async googleConnect() {
-    // Guard redirects to Google
-  }
+@Get('google/connect')
+// @UseGuards(JwtAuthGuard)  // TODO v0.3: Enable when cookies auth is ready
+googleConnect(@Res() res) {
+  // TODO v0.3: Get from req.user.organizationId when JWT guard enabled
+  const organizationId = 'cmi03mh7f0001nuvzjw3w1oq8';
+
+  const state = Buffer.from(JSON.stringify({ organizationId })).toString('base64');
+
+  const scopes = [
+    'email',
+    'profile',
+    'https://www.googleapis.com/auth/webmasters.readonly'
+  ].join(' ');
+
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${process.env.GOOGLE_CLIENT_ID}&` +
+    `redirect_uri=${encodeURIComponent(process.env.GOOGLE_CALLBACK_URL)}&` +
+    `response_type=code&` +
+    `scope=${encodeURIComponent(scopes)}&` +
+    `access_type=offline&` +
+    `prompt=consent&` +
+    `state=${state}`;
+
+  res.redirect(authUrl);
+}
 
   // Google OAuth: Callback
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  async googleCallback(@Req() req, @Res() res) {
+  async googleCallback(@Req() req, @Res() res, @Query('state') state: string) {
     const { accessToken, refreshToken, email, name } = req.user;
     
-    // Get organizationId from session or query param
-    const organizationId = 'cmi03mh7f0001nuvzjw3w1oq8'; // TODO: get from state param
+    // Decode organizationId from state
+    let organizationId: string;
+    try {
+      const decoded = JSON.parse(Buffer.from(state, 'base64').toString());
+      organizationId = decoded.organizationId;
+    } catch (error) {
+      throw new BadRequestException('Invalid state parameter');
+    }
     
-    // Save integration to DB
     await this.integrationsService.create({
       organizationId,
       provider: 'google',
@@ -65,7 +92,6 @@ export class IntegrationsController {
       metadata: { email, name },
     });
 
-    // Redirect back to frontend
     res.redirect(`${process.env.FRONTEND_URL}/dashboard?google=connected`);
   }
 }

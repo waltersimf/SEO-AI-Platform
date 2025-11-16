@@ -3,7 +3,6 @@ import { GscController } from './gsc.controller';
 import { GscService } from './gsc.service';
 import { IntegrationsModule } from '../integrations/integrations.module';
 
-
 @Module({
   imports: [IntegrationsModule],
   controllers: [GscController],

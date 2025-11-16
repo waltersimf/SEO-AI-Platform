@@ -1,6 +1,7 @@
 'use client';
 
 import { GscMetricsCard } from '@/components/gsc-metrics-card';
+import { GoogleConnectButton } from '@/components/integrations/google-connect-button';
 
 export default function DashboardPage() {
   return (
@@ -12,6 +13,15 @@ export default function DashboardPage() {
           <p className="text-muted-foreground mt-2">
             Your SEO AI Platform is ready to use.
           </p>
+        </div>
+
+        {/* Google Connect Section */}
+        <div className="bg-card rounded-lg border p-6">
+          <h2 className="text-xl font-semibold mb-2">Google Search Console</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Connect your Google account to access Search Console data
+          </p>
+          <GoogleConnectButton />
         </div>
 
         {/* Status Card */}
@@ -160,8 +170,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* GSC Metrics - NEW! */}
-        <GscMetricsCard />
+        {/* GSC Metrics - TODO: додати після підключення сайту */}
+        {/* <GscMetricsCard /> */}
         
       </div>
     </div>
