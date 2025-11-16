@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { IntegrationsModule } from './integrations/integrations.module'; // ← ДОДАЙ ЦЕЙ IMPORT
+import { GscModule } from './gsc/gsc.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { IntegrationsModule } from './integrations/integrations.module'; // ← 
     PrismaModule,
     AuthModule,
     IntegrationsModule, // ← ДОДАЙ СЮДИ
+    GscModule,
   ],
 })
 export class AppModule {}

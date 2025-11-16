@@ -39,28 +39,6 @@ export class IntegrationsService {
     });
   }
 
-  async update(
-    organizationId: string,
-    provider: string,
-    data: {
-      accessToken?: string;
-      refreshToken?: string;
-      tokenExpiry?: Date;
-      scopes?: string[];
-      metadata?: any;
-    },
-  ) {
-    return this.prisma.integration.update({
-      where: {
-        organizationId_provider: {
-          organizationId,
-          provider,
-        },
-      },
-      data,
-    });
-  }
-
   async delete(organizationId: string, provider: string) {
     return this.prisma.integration.delete({
       where: {
@@ -71,4 +49,18 @@ export class IntegrationsService {
       },
     });
   }
+  async update(organizationId: string, provider: string, data: { accessToken: string }) {
+  return this.prisma.integration.update({
+    where: {
+      organizationId_provider: {
+        organizationId,
+        provider,
+      },
+    },
+    data: {
+      accessToken: data.accessToken,
+      updatedAt: new Date(),
+    },
+  });
+}
 }

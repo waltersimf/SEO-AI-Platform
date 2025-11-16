@@ -50,7 +50,7 @@ export default function SignupPage() {
       localStorage.setItem('token', data.token);
       
       // Redirect до onboarding або dashboard
-      router.push('/onboarding');
+      router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {

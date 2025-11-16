@@ -1,3 +1,7 @@
+'use client';
+
+import { GscMetricsCard } from '@/components/gsc-metrics-card';
+
 export default function DashboardPage() {
   return (
     <div className="p-8">
@@ -155,6 +159,10 @@ export default function DashboardPage() {
             <p className="mt-2 text-xs text-muted-foreground">Coming in v0.3-v0.4</p>
           </div>
         </div>
+
+        {/* GSC Metrics - NEW! */}
+        <GscMetricsCard />
+        
       </div>
     </div>
   );
