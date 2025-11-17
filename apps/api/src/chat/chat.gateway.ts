@@ -11,6 +11,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { ChatService } from './chat.service';
+import { CreateMessageDto } from './dto/create-message.dto';
 
 @WebSocketGateway({
   cors: {
@@ -28,8 +29,8 @@ export class ChatGateway
   constructor(private chatService: ChatService) {}
 
   afterInit(_server: Server) {
-    this.logger.log('WebSocket Gateway initialized');
-  }
+  this.logger.log('WebSocket Gateway initialized');
+}
 
   handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
@@ -51,17 +52,27 @@ export class ChatGateway
 
   @SubscribeMessage('send_message')
   async handleMessage(
-    @ConnectedSocket() _client: Socket,
-    @MessageBody() payload: { chatId: string; authorId: string; content: string },
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: CreateMessageDto,
   ) {
-    const message = await this.chatService.createMessage(
-      payload.chatId,
-      payload.authorId,
-      payload.content,
-    );
+    try {
+      this.logger.log(`Message from ${client.id}: ${payload.content}`);
 
-    this.server.to(payload.chatId).emit('receive_message', message);
-    return message;
+      // Зберігаємо в БД
+      const message = await this.chatService.createMessage(
+        payload.chatId,
+        payload.authorId,
+        payload.content,
+      );
+
+      // Broadcast до всіх в room
+      this.server.to(payload.chatId).emit('receive_message', message);
+
+      return message;
+    } catch (error) {
+      this.logger.error('Error handling message:', error);
+      return { error: 'Failed to send message' };
+    }
   }
 
   @SubscribeMessage('typing_start')
