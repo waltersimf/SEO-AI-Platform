@@ -1,11 +1,276 @@
 # Forgeline - Change Log
 
-**Версія:** 1.3  
+**Версія:** 1.4  
 **Формат:** Keep a Changelog
 
 ---
 
-## 📋 Released
+## 📋 In Progress
+
+### v0.3 - Chat Infrastructure 🔄
+
+**Старт:** 17.11.2025  
+**Статус:** 🔄 **IN PROGRESS (50%)**  
+**Реальний час:** 3+ години (багато troubleshooting)
+
+---
+
+## ✅ ЩО РЕАЛІЗОВАНО (50%):
+
+### Backend Infrastructure (50%)
+
+**WebSocket Gateway:**
+- ✅ Socket.io інтеграція (v4.8.1)
+- ✅ TestGateway працює (PROOF OF CONCEPT)
+- ✅ Real-time messaging між клієнтами
+- ✅ Room-based broadcasting
+- ✅ Events: `join_room`, `send_message`, `typing_start`, `typing_stop`
+- ❌ ChatGateway (основний) - НЕ працює через TypeError
+- ❌ ChatService - викликає помилки з Prisma
+- ❌ Database persistence - повідомлення не зберігаються
+
+**Database Schema:**
+- ✅ Chat model створено
+- ✅ Message model створено
+- ✅ ChatMember model створено
+- ✅ Migrations застосовані
+- ❌ Фактично НЕ використовується (in-memory storage)
+
+### Frontend (80%)
+
+**ChatBox Component:**
+- ✅ UI повністю готовий
+- ✅ Socket.io-client підключення
+- ✅ Відправка повідомлень
+- ✅ Отримання повідомлень real-time
+- ✅ Message bubbles (свої/чужі)
+- ✅ Auto-scroll до нових повідомлень
+- ✅ Typing indicators (UI готовий)
+- ❌ Message history з БД
+- ❌ Показ історії при завантаженні
+
+**Integration:**
+- ✅ ChatBox додано на Dashboard
+- ✅ User info передається (userId, userName)
+- ⚠️ chatId hardcoded як "test-room" (для тесту)
+
+---
+
+## 🐛 ПРОБЛЕМИ ПІД ЧАС РОЗРОБКИ:
+
+### 1. **CSS не працював** ✅
+   - **Проблема:** Dashboard показувався без стилів, тільки HTML
+   - **Причина:** Tailwind CSS не компілювався
+   - **Симптоми:** Біла сторінка з несформатованим текстом
+   - **Рішення:** Перезапуск frontend (Ctrl+C → pnpm dev)
+   - **Час:** 10 хвилин
+
+### 2. **Frontend не компілювався** ✅
+   - **Проблема:** `GET /dashboard 404` постійно
+   - **Причина:** page.tsx мав синтаксичну помилку
+   - **Симптоми:** Термінал показував "Found 0 errors" але сторінка 404
+   - **Рішення:** Перевірка файлу, виправлення синтаксису
+   - **Час:** 15 хвилин
+
+### 3. **TypeError: instanceof is not an object** ❌ КРИТИЧНА
+   - **Проблема:** Backend падає при підключенні WebSocket
+   - **Симптоми:**
+     ```
+     TypeError: Right-hand side of 'instanceof' is not an object
+     at WsExceptionsHandler.handleUnknownError
+     ```
+   - **Спроби виправлення:**
+     - Додали IoAdapter в main.ts
+     - Встановили @nestjs/platform-socket.io
+     - Змінили конфігурацію Gateway
+   - **Результат:** НЕ ВИРІШЕНО
+   - **Workaround:** Створили простий TestGateway БЕЗ ChatService
+   - **Час витрачено:** 1.5+ години
+
+### 4. **Socket.io version mismatch** ✅
+   - **Проблема:** Думали що версії конфліктують
+   - **Перевірка:** Backend v4.8.1, Frontend v4.8.1 ✅
+   - **Результат:** Версії сумісні, проблема не тут
+   - **Час:** 20 хвилин
+
+### 5. **WebSocket connection fails** ✅ ЧАСТКОВО
+   - **Проблема:** Socket підключається і одразу відключається
+   - **Симптоми:**
+     ```
+     Socket connected
+     Socket disconnected
+     ERR_CONNECTION_REFUSED
+     ```
+   - **Причина:** ChatGateway з ChatService викликає TypeError
+   - **Рішення:** Використали TestGateway (простий, без service)
+   - **Час:** 30 хвилин
+
+### 6. **Broadcasting не працює** ✅
+   - **Проблема:** Повідомлення не з'являються в інших вкладках
+   - **Причина:** Різні `chatId` для кожного користувача
+   - **Деталі:**
+     - Client 1: `chatId = user.organizationId` → різний UUID
+     - Client 2: інший organizationId
+     - Clients в різних rooms!
+   - **Рішення:** Hardcoded `chatId="test-room"` для тесту
+   - **Час:** 20 хвилин
+
+### 7. **User authentication в інкогніто** ✅
+   - **Проблема:** Інкогніто показує того самого юзера (Володимир)
+   - **Причина:** localStorage.token спільний між вкладками
+   - **Рішення:** Логін під різними акаунтами (test3@forgeline.dev)
+   - **Час:** 10 хвилин
+
+### 8. **ChatService Prisma TypeError** ❌ НЕ ВИРІШЕНО
+   - **Проблема:** ChatService викликає instanceof TypeError
+   - **Спроби:**
+     - Спрощення service методів
+     - Видалення складної логіки
+     - Різні варіанти imports
+   - **Результат:** Залишається нерозв'язаною
+   - **Workaround:** TestGateway без service (in-memory)
+   - **TODO:** Виправити в наступній сесії з web_search
+
+### 9. **Git Bash для терміналу** ✅
+   - **Проблема:** PowerShell питає "Terminate batch job?" після Ctrl+C
+   - **Розв'язання:** Switch на Git Bash в VS Code
+   - **Як:** Ctrl+Shift+P → "Terminal: Select Default Profile" → Git Bash
+   - **Час:** 2 хвилини
+
+---
+
+## 📊 ТЕХНІЧНІ ДЕТАЛІ:
+
+**Нові файли:**
+```
+apps/api/src/chat/
+├── chat.module.ts (оновлено - TestGateway в providers)
+├── chat.gateway.ts (НЕ ПРАЦЮЄ - TypeError)
+├── test.gateway.ts (ПРАЦЮЄ - простий POC)
+├── chat.service.ts (НЕ ПРАЦЮЄ - викликає помилки)
+└── chat.controller.ts
+
+apps/web/src/components/chat/
+├── chat-box.tsx (повний UI компонент)
+└── socket.ts (Socket.io client setup)
+
+packages/db/
+├── prisma/schema.prisma (Chat, Message, ChatMember models)
+└── migrations/
+    └── 20251117033925_add_chat_models/
+```
+
+**Пакети додані:**
+```json
+{
+  "socket.io": "^4.8.1",
+  "socket.io-client": "^4.8.1",
+  "@nestjs/websockets": "^11.1.9",
+  "@nestjs/platform-socket.io": "^11.1.9"
+}
+```
+
+**Environment Variables:**
+```bash
+# Без змін - використовуємо існуючі
+```
+
+---
+
+## 🎯 ACCEPTANCE CRITERIA:
+
+**v0.3 Criteria - ЧАСТКОВО ВИКОНАНІ:**
+
+- [✅] Socket.io підключення працює
+- [✅] Real-time messaging між клієнтами
+- [✅] ChatBox UI component
+- [✅] Room-based chat
+- [⚠️] Typing indicators (UI готовий, backend частково)
+- [❌] **Database persistence** - критично!
+- [❌] **Message history** з БД
+- [❌] **Production-ready gateway** (ChatGateway)
+- [❌] Multiple rooms per organization
+- [❌] Chat list/navigation
+
+**Поточний статус:** 4/10 критеріїв виконано (40%) 🔄
+
+---
+
+## 🔍 ЩО ПРАЦЮЄ ЗАРАЗ:
+
+**✅ Working (TestGateway POC):**
+```
+User 1 відправляє повідомлення 
+→ Socket.io emit 'send_message'
+→ TestGateway.handleMessage()
+→ server.to(chatId).emit('receive_message')
+→ User 2 отримує миттєво
+→ Показує в UI
+```
+
+**❌ What's Missing:**
+- Повідомлення НЕ зберігаються в БД
+- Після перезавантаження - історія зникає
+- chatId = "test-room" hardcoded
+- Немає ChatService (in-memory тільки)
+
+---
+
+## 📈 ПРОГРЕС ДО MILESTONES:
+
+**v0.3 = 50% COMPLETE** 🔄
+
+**Що залишилось:**
+1. **Виправити ChatService** (1-2 дні)
+   - web_search best practices
+   - Скопіювати working example
+   - Протестувати з Prisma
+2. **Database persistence** (1 день)
+   - Зберігати messages
+   - Завантажувати history
+3. **Production gateway** (1 день)
+   - Повернути ChatGateway
+   - Видалити TestGateway
+   - Full integration test
+
+**Наступні кроки:**
+- v0.4 - AI Teammate + Task Manager (10 днів)
+- v0.5 - Site Audit (12 днів) = **INVESTOR DEMO** 🔥
+
+---
+
+## 🎓 LESSONS LEARNED:
+
+**Що працювало добре:**
+- ✅ Простий TestGateway як proof of concept
+- ✅ Step-by-step debugging
+- ✅ Hardcoded test-room для тестування broadcasting
+- ✅ Git Bash замість PowerShell
+
+**Що не спрацювало:**
+- ❌ Складний ChatService з Prisma одразу
+- ❌ Намагання виправити TypeError "наосліп"
+- ❌ Не використали web_search для best practices
+
+**Для наступного разу:**
+- 💡 ЗАВЖДИ web_search спочатку для незнайомих тем
+- 💡 Простий POC перед складною логікою
+- 💡 Не витрачати >30 хв на одну проблему без search
+- 💡 Документувати кожну проблему одразу
+
+**Відкладено на продовження v0.3:**
+- ChatService з Prisma (правильна реалізація)
+- Database persistence
+- Message history API endpoint
+- Multiple chat rooms
+- Chat list UI
+- Typing indicators (backend)
+- Read receipts
+- User online status
+
+---
+
+## 📦 Released Versions
 
 ### v0.2 - Google Integration & Dashboard ✅
 
@@ -76,190 +341,6 @@ Dashboard → Click "Connect" → Backend OAuth → Google screen
 
 ---
 
-## 🐛 ПРОБЛЕМИ ПІД ЧАС РОЗРОБКИ (всі вирішені):
-
-### OAuth Troubleshooting:
-
-1. **Redirect URI mismatch** ✅
-   - Проблема: Google відхиляв callback
-   - Причина: NestJS додає `/api` prefix
-   - Рішення: `GOOGLE_CALLBACK_URL=.../api/integrations/google/callback`
-
-2. **OAuth2Strategy requires clientID** ✅
-   - Проблема: Passport не створював strategy
-   - Причина: `GoogleStrategy` не в providers
-   - Рішення: Додали до `IntegrationsModule.providers`
-
-3. **Foreign key constraint** ✅
-   - Проблема: `organizationId = '1'` не існує
-   - Рішення: Використали реальний UUID з БД
-
-4. **Access denied 403** ✅
-   - Проблема: Google блокував test user
-   - Рішення: Додали email у Google Console → Test Users
-
-5. **refreshToken = NULL** ✅
-   - Проблема: Google не повертав refresh token
-   - Рішення: `authorizationParams()` method з `access_type: 'offline'`
-
-6. **EADDRINUSE port 4000** ✅
-   - Проблема: Порт зайнятий
-   - Рішення: `npx kill-port 4000`
-
-7. **Unique constraint failed** ✅ **НОВА ПРОБЛЕМА!**
-   - Проблема: При повторному OAuth → `Unique constraint failed on (organizationId, provider)`
-   - Причина: Integration record вже існує в БД
-   - Рішення: 
-     - Видалити старі records через Prisma Studio
-     - АБО implement update logic замість create
-     - TODO v0.3: Додати "Disconnect" функціонал
-
-8. **Token encryption implementation** ✅
-   - Завдання: Зашифрувати токени в БД
-   - Рішення: 
-     - Створили `EncryptionService`
-     - `encrypt()` method з AES-256-GCM
-     - `decrypt()` method
-     - IV зберігається разом з ciphertext (через `:`)
-
-9. **Dynamic organizationId** ✅
-   - Завдання: Прибрати hardcoded orgId
-   - Рішення: `req.user.organizationId` через JwtAuthGuard
-   - NOTE: Guard тимчасово закоментований для dev (прямий URL)
-
-10. **JWT_SECRET fallback** ✅
-    - Завдання: Видалити небезпечний fallback
-    - Рішення: `process.env.JWT_SECRET` без `|| 'default'`
-
-### Frontend Issues:
-
-11. **Button redirect не працював** ✅
-    - Проблема: 401/500 помилки
-    - Причина: Guard блокував, localStorage vs cookies
-    - Рішення: Direct redirect на backend URL (простіше)
-
-12. **Auto-detection статусу** ✅
-    - Завдання: Показувати "Connected" якщо вже підключено
-    - Рішення: useEffect + fetch GET /integrations/:provider
-
----
-
-## 📊 ТЕХНІЧНІ ДЕТАЛІ:
-
-**Нові/оновлені файли:**
-```
-apps/api/src/
-├── integrations/
-│   ├── integrations.module.ts (GoogleStrategy в providers)
-│   ├── integrations.controller.ts (OAuth + status endpoints)
-│   ├── integrations.service.ts (CRUD + encryption)
-│   ├── google.strategy.ts (authorizationParams method)
-│   └── encryption.service.ts (НОВИЙ - AES-256-GCM)
-└── auth/
-    └── jwt.strategy.ts (removed fallback)
-
-apps/web/src/
-├── components/integrations/
-│   └── google-connect-button.tsx (НОВИЙ - auto-detection)
-└── app/dashboard/
-    └── page.tsx (updated - додана кнопка)
-
-.env (root):
-+ ENCRYPTION_KEY=your-super-secret-encryption-key-min-32-chars-long-please
-
-packages/db/
-└── prisma/schema.prisma (Integration model)
-```
-
-**Пакети додані:**
-```json
-{
-  "@nestjs/passport": "^10.0.3",
-  "passport": "^0.7.0", 
-  "passport-google-oauth20": "^2.0.0",
-  "lucide-react": "^0.263.1"
-}
-```
-
-**Environment Variables (оновлені):**
-```bash
-# Google OAuth
-GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=xxxxx
-GOOGLE_CALLBACK_URL=http://localhost:4000/api/integrations/google/callback
-
-# Security
-JWT_SECRET=your-secret-key-change-in-production-use-strong-random-string
-ENCRYPTION_KEY=your-super-secret-encryption-key-min-32-chars-long-please
-
-# Frontend
-FRONTEND_URL=http://localhost:3000
-```
-
----
-
-## 🎯 ACCEPTANCE CRITERIA:
-
-**v0.2 Criteria - ВСІ ПРОЙДЕНІ:** ✅
-
-- [✅] Google OAuth працює end-to-end
-- [✅] Refresh token зберігається в БД
-- [✅] Dashboard показує connection status
-- [✅] **Токени зашифровані (AES-256-GCM)** ✅
-- [✅] **organizationId динамічний (req.user)** ✅
-- [✅] **JWT_SECRET без fallback** ✅
-- [✅] Error handling на backend
-- [✅] Error handling на frontend
-- [✅] UI user-friendly
-
-**Поточний статус:** 9/9 критеріїв виконано (100%) ✅
-
----
-
-## 📈 ПРОГРЕС ДО MILESTONES:
-
-**v0.2 = 100% ЗАВЕРШЕНО!** 🎉
-
-**Наступні кроки:**
-- v0.3 - Chat Infrastructure (5 днів)
-- v0.4 - AI Teammate + Task Manager (10 днів)
-- v0.5 - Site Audit (12 днів) = **INVESTOR DEMO** 🔥
-
----
-
-## 🔍 ВИСНОВКИ:
-
-**Сильні сторони:**
-- ✅ OAuth інтеграція реалізована правильно
-- ✅ Security best practices (encryption, no fallbacks)
-- ✅ Модульна архітектура (легко розширювати)
-- ✅ Детальне troubleshooting documentation
-- ✅ Multi-tenancy закладено правильно
-- ✅ Production-ready OAuth flow
-
-**Lessons Learned:**
-- 💡 OAuth troubleshooting займає багато часу - документуй кожну проблему
-- 💡 Encryption критично для production - робити одразу, не відкладати
-- 💡 JwtAuthGuard + direct URL = проблеми → тимчасово закоментувати для dev
-- 💡 Unique constraints → треба логіка update/disconnect, не тільки create
-- 💡 Step-by-step approach працює краще ніж довгі списки інструкцій
-
-**Відкладено на v0.3+:**
-- Disconnect functionality (видалення integration)
-- Update tokens logic (замість delete → create)
-- Auto-refresh expired tokens
-- UI improvements (skeleton loaders, animations)
-- GSC API integration (Data Collection)
-- Task Manager
-- AI Claude integration
-- Socket.io real-time
-- BullMQ/Cron jobs
-- Site Audit (Crawlee)
-
----
-
-## 📦 Released Versions
-
 ### v0.1 - Foundation & Auth ✅
 
 **Дата:** 15.11.2025  
@@ -309,10 +390,10 @@ FRONTEND_URL=http://localhost:3000
 |---------|---------|--------|--------|-----------------|
 | v0.1 | 5 days | 1 day | ✅ Complete | 15.11.2025 |
 | v0.2 | 6 days | 2 days | ✅ Complete | 16.11.2025 |
-| v0.3 | 5 days | TBD | 📋 Planned | - |
+| v0.3 | 5 days | TBD | 🔄 In Progress (50%) | - |
 | v0.4 | 10 days | TBD | 📋 Planned | - |
 | v0.5 | 12 days | TBD | 📋 Planned | - |
-| **Milestone 1** | **38 days** | **TBD** | **40% Complete** | **Target: Investor Demo** |
+| **Milestone 1** | **38 days** | **TBD** | **45% Complete** | **Target: Investor Demo** |
 
 ---
 
@@ -321,10 +402,10 @@ FRONTEND_URL=http://localhost:3000
 **Investor Demo (v0.5):**
 - ✅ v0.1 Foundation (100%)
 - ✅ v0.2 Google Integration (100%)
-- ⏳ v0.3 Chat Infrastructure (0%)
+- 🔄 v0.3 Chat Infrastructure (50%)
 - ⏳ v0.4 AI Teammate + Tasks (0%)
 - ⏳ v0.5 Site Audit (0%)
-- **Overall: 40%** (2/5 versions) 🔄
+- **Overall: 50%** (2.5/5 versions) 🔄
 
 **Beta Version (v0.8):**
 - **Overall: 0%** (0/3 versions after Investor Demo)
@@ -332,12 +413,12 @@ FRONTEND_URL=http://localhost:3000
 **Public Launch (v1.0):**
 - **Overall: 0%** (0/2 versions after Beta)
 
-**Total Progress:** 20% (2/10 versions) 🔄
+**Total Progress:** 25% (2.5/10 versions) 🔄
 
 ---
 
-**Останнє оновлення:** 16.11.2025, evening  
-**Поточна версія:** v0.2 ✅ **ЗАВЕРШЕНО!** 🎉  
-**Наступний крок:** v0.3 - Chat Infrastructure (5 днів)
+**Останнє оновлення:** 17.11.2025, evening  
+**Поточна версія:** v0.3 🔄 **IN PROGRESS (50%)**  
+**Наступний крок:** Виправити ChatService + Database persistence
 
 **Keep building! 🚀**
