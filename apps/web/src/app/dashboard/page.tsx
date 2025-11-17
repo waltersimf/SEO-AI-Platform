@@ -2,8 +2,35 @@
 
 import { GscMetricsCard } from '@/components/gsc-metrics-card';
 import { GoogleConnectButton } from '@/components/integrations/google-connect-button';
+import { ChatBox } from '@/components/chat/chat-box';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
+  const [user, setUser] = useState<any>(null);
+const router = useRouter();
+
+useEffect(() => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    router.push('/auth/login');
+    return;
+  }
+
+  // Decode JWT to get user info
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    setUser({
+      id: payload.sub,
+      email: payload.email,
+      organizationId: payload.organizationId,
+    });
+  } catch (error) {
+    console.error('Invalid token:', error);
+    router.push('/auth/login');
+  }
+}, [router]);
+
   return (
     <div className="p-8">
       <div className="max-w-6xl mx-auto space-y-8">
@@ -173,6 +200,16 @@ export default function DashboardPage() {
         {/* GSC Metrics - TODO: додати після підключення сайту */}
         {/* <GscMetricsCard /> */}
         
+        {/* Chat Test - v0.3 */}
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold mb-4">Team Chat (v0.3 Test)</h2>
+          <ChatBox 
+            chatId={user?.organizationId || 'test'} 
+            userId={user?.id || 'test'}
+            userName={user?.email || 'Test User'}
+          />
+        </div>
+
       </div>
     </div>
   );
