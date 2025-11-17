@@ -74,28 +74,17 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            {/* Google Connect Section */}
-            <div className="bg-card rounded-lg border p-6">
-              <h2 className="text-xl font-semibold mb-2">
-                Google Search Console
-              </h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                Connect your Google account to access Search Console data
-              </p>
-              <GoogleConnectButton />
-            </div>
-
             {/* Status Card */}
-            <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl p-8 space-y-6">
+            <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
               <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
                     strokeWidth={2}
                     stroke="currentColor"
-                    className="h-6 w-6"
+                    className="h-6 w-6 text-primary"
                   >
                     <path
                       strokeLinecap="round"
@@ -105,44 +94,33 @@ export default function DashboardPage() {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-2xl font-semibold text-primary mb-2">
-                    ✅ v0.2 Complete! Now v0.3 Chat (75%)
+                  <h2 className="text-xl font-semibold mb-2">
+                    Now v0.3 Chat (85%)
                   </h2>
                   <p className="text-muted-foreground">
-                    Authentication & Google OAuth work! v0.3 Chat with real-time messaging and database
-                    persistence is 75% complete. Try the chat on the left! →
+                    Authentication & Google OAuth work! v0.3 Chat with real-time messaging, database
+                    persistence, and online status tracking is 85% complete. Try the chat on the left! →
                   </p>
                 </div>
               </div>
 
-              <div className="border-t border-primary/20 pt-6">
+              <div className="border-t border-primary/20 pt-6 mt-6">
                 <h3 className="font-semibold mb-3">What's Next? (v0.3 completion)</h3>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="flex items-start gap-3 text-sm">
-                    <div className="flex h-6 w-6 items-center justify-center rounded bg-primary/20 text-primary">
-                      1
+                    <div className="flex h-6 w-6 items-center justify-center rounded bg-green-500/20 text-green-600">
+                      ✓
                     </div>
                     <div>
-                      <p className="font-medium">Dynamic Chat IDs</p>
+                      <p className="font-medium">Online Status</p>
                       <p className="text-muted-foreground">
-                        Create multiple chats per organization
+                        See who's online real-time 🟢
                       </p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3 text-sm">
                     <div className="flex h-6 w-6 items-center justify-center rounded bg-primary/20 text-primary">
                       2
-                    </div>
-                    <div>
-                      <p className="font-medium">Online Status</p>
-                      <p className="text-muted-foreground">
-                        See who's online real-time
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 text-sm">
-                    <div className="flex h-6 w-6 items-center justify-center rounded bg-primary/20 text-primary">
-                      3
                     </div>
                     <div>
                       <p className="font-medium">@Mentions</p>
@@ -153,12 +131,12 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-start gap-3 text-sm">
                     <div className="flex h-6 w-6 items-center justify-center rounded bg-primary/20 text-primary">
-                      4
+                      3
                     </div>
                     <div>
-                      <p className="font-medium">Connection Indicator</p>
+                      <p className="font-medium">Connection Status</p>
                       <p className="text-muted-foreground">
-                        Socket.io status
+                        See connection state
                       </p>
                     </div>
                   </div>
@@ -166,48 +144,45 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Quick Stats Placeholder */}
-            <div className="grid gap-6 sm:grid-cols-3">
+            {/* Quick Stats */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <div className="rounded-lg border bg-card p-6">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
                       strokeWidth={1.5}
                       stroke="currentColor"
-                      className="h-5 w-5"
+                      className="h-6 w-6 text-blue-600 dark:text-blue-400"
                     >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"
+                        d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
                       />
                     </svg>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      Projects
+                      Your Account
                     </p>
-                    <p className="text-2xl font-bold">-</p>
+                    <p className="text-2xl font-bold">{user.email}</p>
                   </div>
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Coming in v0.4
-                </p>
               </div>
 
               <div className="rounded-lg border bg-card p-6">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
                       strokeWidth={1.5}
                       stroke="currentColor"
-                      className="h-5 w-5"
+                      className="h-6 w-6 text-green-600 dark:text-green-400"
                     >
                       <path
                         strokeLinecap="round"
@@ -218,26 +193,26 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      Tasks
+                      Status
                     </p>
-                    <p className="text-2xl font-bold">-</p>
+                    <p className="text-2xl font-bold">Active</p>
                   </div>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Coming in v0.4
+                  All systems operational
                 </p>
               </div>
 
               <div className="rounded-lg border bg-card p-6">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
                       strokeWidth={1.5}
                       stroke="currentColor"
-                      className="h-5 w-5"
+                      className="h-6 w-6 text-purple-600 dark:text-purple-400"
                     >
                       <path
                         strokeLinecap="round"
@@ -259,6 +234,12 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            {/* Google Integration */}
+            <div>
+              <h2 className="text-2xl font-bold mb-4">Google Integration</h2>
+              <GoogleConnectButton />
+            </div>
+
             {/* GSC Metrics */}
             <GscMetricsCard />
 
@@ -270,6 +251,7 @@ export default function DashboardPage() {
                   chatId={activeChatId}
                   userId={user.id}
                   userName={user.email}
+                  organizationId={user.organizationId}
                 />
               </div>
             )}

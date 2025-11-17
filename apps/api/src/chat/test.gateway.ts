@@ -34,14 +34,10 @@ export class TestGateway implements OnGatewayConnection, OnGatewayDisconnect {
     for (const [userId, socketId] of this.onlineUsers.entries()) {
       if (socketId === client.id) {
         this.onlineUsers.delete(userId);
-        
-        // Notify others that user went offline
-        this.server.emit('user_status', {
-          userId,
-          status: 'offline',
-        });
-        
         this.logger.log(`User ${userId} went offline`);
+        
+        // Broadcast updated online users list to ALL clients
+        this.broadcastOnlineUsers();
         break;
       }
     }
@@ -52,25 +48,21 @@ export class TestGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { userId: string; organizationId: string },
   ) {
-    this.logger.log(`User ${payload.userId} is online`);
+    this.logger.log(`User ${payload.userId} is now online`);
     
     // Store user as online
     this.onlineUsers.set(payload.userId, client.id);
     
-    // Join organization room
+    // Join organization room (for future features)
     client.join(`org:${payload.organizationId}`);
     
-    // Notify others in organization
-    client.to(`org:${payload.organizationId}`).emit('user_status', {
-      userId: payload.userId,
-      status: 'online',
-    });
+    // Broadcast updated online users list to ALL clients
+    this.broadcastOnlineUsers();
     
-    // Send list of currently online users to the new user
-    const onlineUserIds = Array.from(this.onlineUsers.keys());
-    client.emit('online_users', onlineUserIds);
-    
-    return { status: 'online', onlineUsers: onlineUserIds };
+    return { 
+      status: 'success', 
+      onlineUsers: Array.from(this.onlineUsers.keys()) 
+    };
   }
 
   @SubscribeMessage('join_room')
@@ -90,7 +82,7 @@ export class TestGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     this.logger.log(`Message from ${client.id}: ${payload.content}`);
     
-    // Create fake message object
+    // Create fake message object (in-memory, no DB)
     const message = {
       id: Date.now().toString(),
       content: payload.content,
@@ -130,7 +122,21 @@ export class TestGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
-  // Helper method to get online users (for API endpoint if needed)
+  /**
+   * Broadcast updated list of online users to ALL connected clients
+   */
+  private broadcastOnlineUsers() {
+    const onlineUserIds = Array.from(this.onlineUsers.keys());
+    
+    // Emit to ALL clients
+    this.server.emit('online_users_updated', onlineUserIds);
+    
+    this.logger.log(`Broadcasting online users: ${onlineUserIds.length} online`);
+  }
+
+  /**
+   * Get list of currently online users (for API endpoint if needed)
+   */
   getOnlineUsers(): string[] {
     return Array.from(this.onlineUsers.keys());
   }

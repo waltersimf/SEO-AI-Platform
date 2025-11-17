@@ -16,43 +16,29 @@ export const initSocket = (userId: string, organizationId: string): Socket => {
   });
 
   socket.on('connect', () => {
-    console.log('Socket connected:', socket?.id);
+    console.log('✅ Socket connected:', socket?.id);
     
     // Notify server that user is online
     socket?.emit('user_online', { userId, organizationId });
   });
 
   socket.on('disconnect', () => {
-    console.log('Socket disconnected');
+    console.log('❌ Socket disconnected');
   });
 
   socket.on('connect_error', (error) => {
-    console.error('Socket connection error:', error);
+    console.error('❌ Socket connection error:', error);
   });
 
-  // Listen for user status changes
-  socket.on('user_status', (data: { userId: string; status: 'online' | 'offline' }) => {
-    console.log(`User ${data.userId} is now ${data.status}`);
+  // Listen for FULL list of online users (NEW event from backend)
+  socket.on('online_users_updated', (userIds: string[]) => {
+    console.log('👥 Online users updated:', userIds);
     
-    if (data.status === 'online') {
-      onlineUsers.add(data.userId);
-    } else {
-      onlineUsers.delete(data.userId);
-    }
-    
-    // Trigger custom event for components to listen
-    window.dispatchEvent(new CustomEvent('user_status_change', { 
-      detail: { userId: data.userId, status: data.status } 
-    }));
-  });
-
-  // Receive list of online users on connect
-  socket.on('online_users', (userIds: string[]) => {
-    console.log('Online users:', userIds);
+    // Update local cache
     onlineUsers = new Set(userIds);
     
-    // Trigger event
-    window.dispatchEvent(new CustomEvent('online_users_updated', { 
+    // Trigger custom event for React components to listen
+    window.dispatchEvent(new CustomEvent('online_users_changed', { 
       detail: { userIds } 
     }));
   });
@@ -67,14 +53,23 @@ export const getSocket = (): Socket => {
   return socket;
 };
 
+/**
+ * Check if specific user is currently online
+ */
 export const isUserOnline = (userId: string): boolean => {
   return onlineUsers.has(userId);
 };
 
+/**
+ * Get array of all online user IDs
+ */
 export const getOnlineUsers = (): string[] => {
   return Array.from(onlineUsers);
 };
 
+/**
+ * Disconnect socket and clear online users cache
+ */
 export const disconnectSocket = () => {
   if (socket) {
     socket.disconnect();

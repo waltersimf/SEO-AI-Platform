@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { getSocket } from '@/lib/socket';
+import { initSocket, getSocket } from '../chat/socket';
 import { Send } from 'lucide-react';
 
 interface Message {
@@ -14,16 +14,47 @@ interface Message {
   createdAt: string;
 }
 
-export function ChatBox({ chatId, userId, userName }: { 
+export function ChatBox({ 
+  chatId, 
+  userId, 
+  userName,
+  organizationId 
+}: { 
   chatId: string; 
   userId: string;
   userName: string;
+  organizationId: string;
 }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState<{ userId: string; userName: string } | null>(null);
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const socketRef = useRef(getSocket());
+  const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
+
+  // Initialize socket with userId and organizationId
+  useEffect(() => {
+    socketRef.current = initSocket(userId, organizationId);
+    
+    console.log('📡 ChatBox initialized socket for user:', userId);
+  }, [userId, organizationId]);
+
+  // Listen for online users updates
+  useEffect(() => {
+    const handleOnlineUsersChange = (event: Event) => {
+      const customEvent = event as CustomEvent<{ userIds: string[] }>;
+      const userIds = customEvent.detail.userIds;
+      
+      console.log('👥 Online users updated:', userIds);
+      setOnlineUsers(userIds);
+    };
+
+    window.addEventListener('online_users_changed', handleOnlineUsersChange);
+
+    return () => {
+      window.removeEventListener('online_users_changed', handleOnlineUsersChange);
+    };
+  }, []);
 
   useEffect(() => {
     // Завантажити історію повідомлень з БД
@@ -48,6 +79,7 @@ export function ChatBox({ chatId, userId, userName }: {
     loadMessageHistory();
 
     const socket = socketRef.current;
+    if (!socket) return;
 
     // Join chat room
     socket.emit('join_room', chatId);
@@ -62,7 +94,7 @@ export function ChatBox({ chatId, userId, userName }: {
     // Listen for typing
     socket.on('user_typing', (data: { userId: string; userName: string; isTyping: boolean }) => {
       if (data.userId !== userId) {
-        setIsTyping(data.isTyping ? data : null);
+        setIsTyping(data.isTyping ? { userId: data.userId, userName: data.userName } : null);
       }
     });
 
@@ -81,6 +113,7 @@ export function ChatBox({ chatId, userId, userName }: {
     if (!inputValue.trim()) return;
 
     const socket = socketRef.current;
+    if (!socket) return;
     
     socket.emit('send_message', {
       chatId,
@@ -98,12 +131,18 @@ export function ChatBox({ chatId, userId, userName }: {
     setInputValue(value);
 
     const socket = socketRef.current;
+    if (!socket) return;
 
     if (value.length > 0) {
       socket.emit('typing_start', { chatId, userId, userName });
     } else {
       socket.emit('typing_stop', { chatId, userId });
     }
+  };
+
+  // Check if user is online
+  const isUserOnline = (authorId: string): boolean => {
+    return onlineUsers.includes(authorId);
   };
 
   return (
@@ -118,14 +157,22 @@ export function ChatBox({ chatId, userId, userName }: {
             <div
               className={`max-w-[70%] rounded-lg p-3 ${
                 message.author.id === userId
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-900'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted'
               }`}
             >
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <p className="text-xs font-semibold">{message.author.name}</p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-xs font-semibold">
+                  {message.author.name}
+                </p>
+                {/* Online Status Indicator */}
+                {isUserOnline(message.author.id) && (
+                  <span className="text-green-500" title="Online">
+                    🟢
+                  </span>
+                )}
                 <p className="text-xs opacity-70">
-                  {new Date(message.createdAt).toLocaleTimeString('uk-UA', {
+                  {new Date(message.createdAt).toLocaleTimeString('en-US', {
                     hour: '2-digit',
                     minute: '2-digit'
                   })}
@@ -168,4 +215,4 @@ export function ChatBox({ chatId, userId, userName }: {
       </div>
     </div>
   );
-} 
+}
