@@ -123,7 +123,7 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat }: ChatListP
                       </div>
 
                       {/* Last Message Preview */}
-                      {lastMessage ? (
+                      {lastMessage && lastMessage.author ? (
                         <p className="text-xs text-muted-foreground truncate">
                           {lastMessage.author.name}: {lastMessage.content}
                         </p>
