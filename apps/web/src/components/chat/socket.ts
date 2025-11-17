@@ -60,7 +60,7 @@ export const initSocket = (userId: string, organizationId: string): Socket => {
   return socket as Socket;
 };
 
-export const getSocket = () => {
+export const getSocket = (): Socket => {
   if (!socket) {
     throw new Error('Socket not initialized. Call initSocket first.');
   }
