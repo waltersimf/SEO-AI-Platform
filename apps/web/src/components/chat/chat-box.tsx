@@ -26,6 +26,27 @@ export function ChatBox({ chatId, userId, userName }: {
   const socketRef = useRef(getSocket());
 
   useEffect(() => {
+    // Завантажити історію повідомлень з БД
+    const loadMessageHistory = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:4000/api/chat/${chatId}/messages`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const history = await response.json();
+          setMessages(history);
+        }
+      } catch (error) {
+        console.error('Failed to load message history:', error);
+      }
+    };
+
+    loadMessageHistory();
+
     const socket = socketRef.current;
 
     // Join chat room
@@ -101,7 +122,15 @@ export function ChatBox({ chatId, userId, userName }: {
                   : 'bg-gray-100 text-gray-900'
               }`}
             >
-              <p className="text-xs font-semibold mb-1">{message.author.name}</p>
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <p className="text-xs font-semibold">{message.author.name}</p>
+                <p className="text-xs opacity-70">
+                  {new Date(message.createdAt).toLocaleTimeString('uk-UA', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
               <p className="text-sm">{message.content}</p>
             </div>
           </div>
@@ -139,4 +168,4 @@ export function ChatBox({ chatId, userId, userName }: {
       </div>
     </div>
   );
-}
+} 
