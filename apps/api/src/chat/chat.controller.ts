@@ -7,7 +7,7 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';  // ← ВИПРАВ ЦЕЙ РЯДОК
 import { ChatService } from './chat.service';
 
 @Controller('chat')

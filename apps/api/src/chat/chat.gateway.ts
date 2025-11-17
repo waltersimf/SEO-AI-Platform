@@ -12,6 +12,22 @@ import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { ChatService } from './chat.service';
 
+interface JoinRoomPayload {
+  chatId: string;
+}
+
+interface SendMessagePayload {
+  chatId: string;
+  authorId: string;
+  content: string;
+}
+
+interface TypingPayload {
+  chatId: string;
+  userId: string;
+  userName?: string;
+}
+
 @WebSocketGateway({
   cors: {
     origin: 'http://localhost:3000',
@@ -41,17 +57,17 @@ export class ChatGateway
   @SubscribeMessage('join_room')
   handleJoinRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody() chatId: string,
+    @MessageBody() data: JoinRoomPayload,
   ) {
-    client.join(chatId);
-    this.logger.log(`Client ${client.id} joined room ${chatId}`);
-    return { event: 'joined_room', data: chatId };
+    client.join(data.chatId);
+    this.logger.log(`Client ${client.id} joined room ${data.chatId}`);
+    return { event: 'joined_room', data: data.chatId };
   }
 
   @SubscribeMessage('send_message')
   async handleMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { chatId: string; authorId: string; content: string },
+    @MessageBody() payload: SendMessagePayload,
   ) {
     const message = await this.chatService.createMessage(
       payload.chatId,
@@ -59,16 +75,14 @@ export class ChatGateway
       payload.content,
     );
 
-    // Broadcast to all users in the room
     this.server.to(payload.chatId).emit('receive_message', message);
-
     return message;
   }
 
   @SubscribeMessage('typing_start')
   handleTypingStart(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { chatId: string; userId: string; userName: string },
+    @MessageBody() payload: TypingPayload,
   ) {
     client.to(payload.chatId).emit('user_typing', {
       userId: payload.userId,
@@ -80,7 +94,7 @@ export class ChatGateway
   @SubscribeMessage('typing_stop')
   handleTypingStop(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { chatId: string; userId: string },
+    @MessageBody() payload: TypingPayload,
   ) {
     client.to(payload.chatId).emit('user_typing', {
       userId: payload.userId,
