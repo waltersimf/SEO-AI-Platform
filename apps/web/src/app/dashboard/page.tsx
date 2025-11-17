@@ -201,13 +201,12 @@ export default function DashboardPage() {
           <div className="mt-8">
             <h2 className="text-2xl font-bold mb-4">Team Chat (v0.3 Test)</h2>
             <ChatBox 
-              chatId={user.organizationId} 
+              chatId="test-room"
               userId={user.id}
               userName={user.email}
             />
           </div>
         )}
-
       </div>
     </div>
   );
