@@ -1,6 +1,6 @@
 'use client';
 
-import { GscMetricsCard } from '@/components/gsc-metrics-card';
+//import { GscMetricsCard } from '@/components/gsc-metrics-card';
 import { GoogleConnectButton } from '@/components/integrations/google-connect-button';
 import { ChatBox } from '@/components/chat/chat-box';
 import { useEffect, useState } from 'react';
