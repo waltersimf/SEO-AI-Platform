@@ -2,7 +2,6 @@ import {
   WebSocketGateway,
   WebSocketServer,
   SubscribeMessage,
-  OnGatewayInit,
   OnGatewayConnection,
   OnGatewayDisconnect,
   MessageBody,
@@ -10,26 +9,16 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
-import { ChatService } from './chat.service';
 
 @WebSocketGateway({
   cors: {
     origin: 'http://localhost:3000',
     credentials: true,
   },
-  transports: ['websocket', 'polling'],
 })
-export class ChatGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
-{
+export class TestGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
-  private logger: Logger = new Logger('ChatGateway');
-
-  constructor(private chatService: ChatService) {}
-
-  afterInit(_server: Server) {
-    this.logger.log('WebSocket Gateway initialized');
-  }
+  private logger = new Logger('TestGateway');
 
   handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
@@ -50,17 +39,26 @@ export class ChatGateway
   }
 
   @SubscribeMessage('send_message')
-  async handleMessage(
-    @ConnectedSocket() _client: Socket,
+  handleMessage(
+    @ConnectedSocket() client: Socket,
     @MessageBody() payload: { chatId: string; authorId: string; content: string },
   ) {
-    const message = await this.chatService.createMessage(
-      payload.chatId,
-      payload.authorId,
-      payload.content,
-    );
+    this.logger.log(`Message from ${client.id}: ${payload.content}`);
+    
+    // Create fake message object
+    const message = {
+      id: Date.now().toString(),
+      content: payload.content,
+      author: {
+        id: payload.authorId,
+        name: 'User',
+      },
+      createdAt: new Date().toISOString(),
+    };
 
+    // Broadcast to room
     this.server.to(payload.chatId).emit('receive_message', message);
+    
     return message;
   }
 
