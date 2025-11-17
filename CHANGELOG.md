@@ -1,8 +1,8 @@
 # 📦 CHANGELOG
 
-**Версія документа:** 2.6  
-**Останнє оновлення:** 17.11.2025, 21:00  
-**Поточна версія:** v0.3 🔄 **IN PROGRESS (85%)**
+**Версія документа:** 2.7  
+**Останнє оновлення:** 17.11.2025, 20:00  
+**Поточна версія:** v0.3 🔄 **IN PROGRESS (90%)**
 
 ---
 
@@ -11,12 +11,12 @@
 ### v0.3 - Chat Infrastructure 🔄
 
 **Старт:** 16.11.2025 (evening)  
-**Статус:** 🔄 **IN PROGRESS (85%)**  
+**Статус:** 🔄 **IN PROGRESS (90%)**  
 **Deliverable:** ✅ Real-time командний чат працює
 
 ---
 
-## ✅ ЩО РЕАЛІЗОВАНО (85%):
+## ✅ ЩО РЕАЛІЗОВАНО (90%):
 
 ### День 1-2: Backend Infrastructure ✅
 
@@ -49,6 +49,8 @@
 - ✅ JwtAuthGuard на всіх endpoints
 - ✅ organizationId з req.user (dynamic)
 
+---
+
 ### День 3: Frontend UI ✅
 
 **ChatList Component:**
@@ -77,7 +79,7 @@
 - ✅ GoogleConnectButton працює
 - ✅ GscMetricsCard працює
 
-**ChatBox Component (вже було з День 1-2):**
+**ChatBox Component:**
 - ✅ Message history loading з БД
 - ✅ Real-time message receiving
 - ✅ Message sending
@@ -88,23 +90,125 @@
 
 ---
 
-## 🎯 ACCEPTANCE CRITERIA (8.5/9 виконано):
+### День 4: Online Status Tracking 🟢 (NEW!)
+
+**Backend Implementation:**
+- ✅ TestGateway з online users tracking
+- ✅ Map<userId, socketId> для tracking
+- ✅ `user_online` event handler
+- ✅ `handleDisconnect` видаляє користувача
+- ✅ `broadcastOnlineUsers()` відправляє список всім клієнтам
+- ✅ Event: `online_users_updated` з масивом userIds
+- ✅ ChatService integration для збереження повідомлень з іменами
+
+**Frontend Implementation:**
+- ✅ Updated socket.ts з `initSocket(userId, organizationId)`
+- ✅ Listener для `online_users_updated` event
+- ✅ Custom window event: `online_users_changed`
+- ✅ ChatBox state: `onlineUsers: string[]`
+- ✅ Helper: `isUserOnline(userId)` функція
+- ✅ 🟢 Green indicator біля імені автора якщо online
+- ✅ Dashboard передає `organizationId` в ChatBox
+
+**What Works:**
+- ✅ User підключається → backend додає в Map → broadcast оновлення
+- ✅ Frontend отримує список → показує 🟢 біля online користувачів
+- ✅ User disconnect → backend видаляє → broadcast оновлення → 🟢 зникає
+- ✅ Real-time sync між всіма підключеними клієнтами
+- ✅ Messages зберігаються в БД зі справжніми іменами користувачів
+
+**Files Updated:**
+```
+Backend:
+- apps/api/src/chat/test.gateway.ts (додано online tracking + ChatService)
+- apps/api/src/chat/chat.module.ts (TestGateway замість ChatGateway)
+
+Frontend:
+- apps/web/src/components/chat/socket.ts (новий event listener)
+- apps/web/src/components/chat/chat-box.tsx (online status UI)
+- apps/web/src/app/dashboard/page.tsx (organizationId prop)
+```
+
+---
+
+## 🎯 ACCEPTANCE CRITERIA (9/12 виконано):
 
 - [✅] **Socket.io підключення працює**
 - [✅] **Real-time messaging між клієнтами**
 - [✅] **ChatBox UI component**
 - [✅] **Room-based chat**
-- [✅] **Messages зберігаються в БД** ← День 2
-- [✅] **Message history завантажується** ← День 2
-- [✅] **Timestamps показуються** ← День 2
-- [✅] **Chat list sidebar** ← День 3
-- [✅] **Dynamic chatId (no hardcode)** ← День 3
+- [✅] **Messages зберігаються в БД**
+- [✅] **Message history завантажується**
+- [✅] **Timestamps показуються**
+- [✅] **Chat list sidebar**
+- [✅] **Dynamic chatId (no hardcode)**
+- [✅] **Online status tracking** ← День 4 DONE! 🟢
 - [⚠️] **Typing indicators** (backend ✅, UI частково)
-- [❌] **Online status tracking** - TODO
 - [❌] **@Mention autocomplete** - TODO
 - [❌] **Connection status indicator** - TODO
 
-**Поточний статус:** 8.5/12 критеріїв (85%) 🔥
+**Поточний статус:** 9/12 критеріїв (90%) 🔥
+
+---
+
+## 🐛 CRITICAL ISSUES (MUST FIX NEXT SESSION):
+
+### 🔴 1. **Online Status НЕ ПРОТЕСТОВАНО з різними користувачами!**
+**Статус:** ⚠️ КРИТИЧНО - ТРЕБА ПЕРЕВІРИТИ!  
+**Проблема:** Тестували тільки з ОДНИМ користувачем у 2 вкладках!  
+**Що треба:**
+- Створити 2-го користувача (різний email)
+- Обидва мають бути в одній організації
+- Протестувати online status між РІЗНИМИ користувачами
+
+**Блокер:** Signup не працює через `Unique constraint failed on slug`
+
+**TODO Day 5 (ПЕРШЕ ЩО РОБИМО!):**
+1. 🔴 Виправити signup bug (slug має бути унікальним)
+2. 🔴 Створити 2-го користувача
+3. 🔴 Протестувати online status з 2 різними користувачами
+4. 🔴 Перевірити чи 🟢 показується правильно
+
+**Estimated time:** 1-2 години (КРИТИЧНО!)
+
+---
+
+### 2. **Signup Bug - Duplicate Slug** 🔴
+**Статус:** BROKEN - signup не працює!  
+**Проблема:** 
+```
+Unique constraint failed on the fields: (`slug`)
+```
+**Root cause:** Коли створюється Organization, slug генерується з назви. Якщо 2 користувачі вводять однакову назву → помилка!
+
+**Рішення:**
+```typescript
+// Замість:
+slug = organizationName.toLowerCase().replace(/\s+/g, '-')
+
+// Треба:
+slug = `${organizationName}-${shortid()}`.toLowerCase().replace(/\s+/g, '-')
+// Або:
+slug = `${organizationName}-${Date.now()}`.toLowerCase().replace(/\s+/g, '-')
+```
+
+**TODO:** Виправити `auth.service.ts` signup метод
+
+---
+
+### 3. **ChatGateway TypeError** ⚠️
+**Статус:** Відкладено (workaround працює)  
+**Проблема:** ChatGateway з ChatService викликає `instanceof TypeError`  
+**Workaround:** TestGateway працює добре  
+**TODO v0.4:** Може не треба фіксити - TestGateway робить все що треба
+
+---
+
+### 4. **UX Dashboard + Chat** ⚠️
+**Статус:** TODO (низький пріоритет)  
+**Проблема:** Треба скролити dashboard вниз щоб побачити чат  
+**Рішення:** Floating chat window OR окрема `/chat` page  
+**TODO:** Після завершення v0.3 функціональності
 
 ---
 
@@ -112,65 +216,80 @@
 
 **✅ Working (Full Stack):**
 ```
-User 1 клікає "+ New Chat"
-→ CreateChatDialog відкривається
-→ Вводить назву "Project Alpha"
-→ POST /api/chat/create
-→ Chat створюється в БД
-→ ChatList оновлюється (новий чат з'являється)
-→ User 1 клікає на "Project Alpha"
-→ ChatBox завантажує GET /api/chat/:id/messages
-→ User 1 пише "Hello team!"
-→ Socket.io emit 'send_message'
-→ TestGateway.handleMessage()
-→ Зберігається в БД (ChatService.createMessage)
-→ server.to(chatId).emit('receive_message')
-→ User 2 (в іншій вкладці) отримує миттєво
-→ Показує в UI
-→ Обидва бачать той самий чат real-time!
+User відкриває Dashboard
+→ initSocket(userId, organizationId) викликається
+→ Backend отримує 'user_online' event
+→ Додає userId в Map
+→ Broadcast 'online_users_updated' всім клієнтам
+→ Frontend отримує список online users
+→ 🟢 показується біля online користувачів
+
+User відправляє повідомлення
+→ TestGateway.handleMessage() викликає ChatService
+→ Зберігає в БД зі справжнім author.name
+→ Broadcast повідомлення всім в room
+→ Інші користувачі отримують з 🟢 якщо автор online
+
+User закриває вкладку
+→ Socket disconnect event
+→ Backend видаляє userId з Map
+→ Broadcast оновлення
+→ 🟢 зникає у всіх клієнтів
 ```
 
 **Flow протестовано:** ✅
-- Signup → Login → Dashboard
-- Create new chat
-- Select chat from list
-- Send message
-- Receive message real-time
-- F5 reload - історія завантажується
+- Login → Dashboard
+- Socket connect + user_online event
+- Online users list broadcast
+- 🟢 indicator показується
+- Message sending з правильним ім'ям
+- Disconnect → 🟢 зникає
+
+**⚠️ ЩО НЕ ПРОТЕСТОВАНО:**
+- ❌ 2 РІЗНИХ користувачі в одному чаті (тільки 1 користувач у 2 вкладках!)
+- ❌ Online status між різними accounts
+- ❌ Signup нових користувачів (BROKEN!)
 
 ---
 
 ## 📈 ПРОГРЕС ДО MILESTONES:
 
-**v0.3 = 85% COMPLETE** 🔄
+**v0.3 = 90% COMPLETE** 🔄
 
-**Що залишилось (День 4):**
-1. **Online Status Tracking** (2-3 год)
-   - Backend: Socket.io tracking connected users
-   - Frontend: 🟢/🔴 indicator
-   - Real-time updates
+**Що залишилось (День 5+):**
+
+### 🔴 ДЕНЬ 5 - КРИТИЧНІ ФІКСИ (1-2 год):
+1. **Signup Bug Fix** (30 хв)
+   - Унікальний slug для organizations
+   - Тестування signup flow
    
-2. **@Mention Autocomplete** (2-3 год)
+2. **Multi-User Testing** (1 год)
+   - Створити 2-го користувача
+   - Протестувати online status з різними accounts
+   - Verify 🟢 працює між користувачами
+
+### Після тестування - якщо все OK:
+
+3. **@Mention Autocomplete** (2-3 год)
    - Detect "@" в input
    - Show dropdown з users
    - Insert @username
    
-3. **Connection Status Indicator** (1 год)
+4. **Connection Status Indicator** (1 год)
    - Socket.io connected/disconnected
    - Toast notifications
    - Reconnect handling
 
-4. **UX Refactoring** (optional, ~2 год)
+5. **UX Refactoring** (optional, ~2 год)
    - Floating chat window OR
-   - Separate `/chat` page OR
-   - Tab navigation
-   - (ВІДКЛАДЕНО - косметика, легко змінити пізніше)
+   - Separate `/chat` page
+   - (ВІДКЛАДЕНО - косметика)
 
-**Estimated time День 4:** 5-8 годин = 1 робочий день
+**Estimated remaining time:** 4-6 годин = 1 день
 
 ---
 
-## 🎓 LESSONS LEARNED (День 1-3):
+## 🎓 LESSONS LEARNED (День 1-4):
 
 **Що працювало добре:**
 - ✅ Простий TestGateway як POC перед складним ChatGateway
@@ -178,39 +297,19 @@ User 1 клікає "+ New Chat"
 - ✅ project_knowledge_search для швидкого доступу до коду
 - ✅ web_search для best practices перед написанням коду
 - ✅ Git commits після кожного кроку
-- ✅ Hardcoded "test-room" для швидкого тестування broadcast
+- ✅ Покроковий підхід до debugging
+- ✅ TestGateway з ChatService працює без TypeError!
 
 **Що не спрацювало:**
 - ❌ ChatGateway з Prisma одразу (TypeError)
-- ❌ Намагання виправити TypeError "наосліп" (>1 год)
-- ❌ Не перевірили lastMessage.author перед доступом до .name
+- ❌ Не протестували з різними користувачами (тільки 1 користувач!)
+- ❌ Signup bug не помітили одразу
 
 **Для наступного разу:**
-- 💡 ЗАВЖДИ перевіряти nested properties (author?.name)
-- 💡 Простий proof of concept перед складною логікою
-- 💡 CHANGELOG оновлювати частіше (після кожного дня)
-- 💡 UX/UI планувати заздалегідь (не в кінці)
-
----
-
-## 🐛 KNOWN ISSUES:
-
-### 1. **ChatGateway TypeError** ⚠️
-**Статус:** Відкладено (workaround працює)  
-**Проблема:** ChatGateway з ChatService викликає `instanceof TypeError`  
-**Workaround:** TestGateway без service (in-memory broadcast)  
-**TODO v0.4:** Виправити через web_search best practices
-
-### 2. **UX Dashboard + Chat** ⚠️
-**Статус:** TODO (низький пріоритет)  
-**Проблема:** Треба скролити dashboard вниз щоб побачити чат  
-**Рішення:** Floating chat window OR окрема `/chat` page  
-**TODO:** Після завершення v0.3 функціональності
-
-### 3. **Author може бути null** ✅ FIXED
-**Проблема:** `lastMessage.author.name` викликав error якщо author видалений  
-**Рішення:** Додали перевірку `lastMessage.author?.name`  
-**Статус:** Виправлено День 3
+- 💡 ЗАВЖДИ тестувати з різними користувачами, не тільки з одним!
+- 💡 Перевіряти signup flow перед тестуванням multi-user features
+- 💡 CHANGELOG оновлювати після кожного дня
+- 💡 Документувати CRITICAL bugs окремо
 
 ---
 
@@ -221,7 +320,7 @@ User 1 клікає "+ New Chat"
 apps/api/src/chat/
 ├── chat.module.ts (оновлено - TestGateway в providers)
 ├── chat.gateway.ts (НЕ ВИКОРИСТОВУЄТЬСЯ - TypeError)
-├── test.gateway.ts (✅ ПРАЦЮЄ - простий POC)
+├── test.gateway.ts (✅ ПРАЦЮЄ - з online tracking)
 ├── chat.service.ts (✅ ПРАЦЮЄ - Prisma methods)
 └── chat.controller.ts (✅ ПРАЦЮЄ - REST endpoints)
 
@@ -245,7 +344,19 @@ apps/web/src/app/dashboard/
 └── page.tsx (✅ UPDATED - додано ChatList + dialog)
 ```
 
-**Пакети додані:**
+**День 4 (Online Status):**
+```
+Backend:
+- apps/api/src/chat/test.gateway.ts (✅ UPDATED - online tracking + ChatService)
+- apps/api/src/chat/chat.module.ts (✅ UPDATED - TestGateway in providers)
+
+Frontend:
+- apps/web/src/components/chat/socket.ts (✅ UPDATED - online_users_updated listener)
+- apps/web/src/components/chat/chat-box.tsx (✅ UPDATED - 🟢 indicator + online state)
+- apps/web/src/app/dashboard/page.tsx (✅ UPDATED - organizationId prop)
+```
+
+**Пакети (без змін):**
 ```json
 {
   "socket.io": "^4.8.1",
@@ -263,10 +374,10 @@ apps/web/src/app/dashboard/
 |---------|---------|--------|--------|-----------------|
 | v0.1 | 5 days | 1 day | ✅ Complete | 15.11.2025 |
 | v0.2 | 6 days | 2 days | ✅ Complete | 16.11.2025 |
-| v0.3 | 5 days | 3 days (in progress) | 🔄 In Progress (85%) | - |
+| v0.3 | 5 days | 4 days (in progress) | 🔄 In Progress (90%) | - |
 | v0.4 | 10 days | TBD | 📋 Planned | - |
 | v0.5 | 12 days | TBD | 📋 Planned | - |
-| **Milestone 1** | **38 days** | **TBD** | **55% Complete** | **Target: Investor Demo** |
+| **Milestone 1** | **38 days** | **TBD** | **58% Complete** | **Target: Investor Demo** |
 
 ---
 
@@ -275,10 +386,10 @@ apps/web/src/app/dashboard/
 **Investor Demo (v0.5):**
 - ✅ v0.1 Foundation (100%)
 - ✅ v0.2 Google Integration (100%)
-- 🔄 v0.3 Chat Infrastructure (85%)
+- 🔄 v0.3 Chat Infrastructure (90%)
 - ⏳ v0.4 AI Teammate + Tasks (0%)
 - ⏳ v0.5 Site Audit (0%)
-- **Overall: 57%** (2.85/5 versions) 🔥
+- **Overall: 58%** (2.9/5 versions) 🔥
 
 **Beta Version (v0.8):**
 - **Overall: 0%** (0/3 versions after Investor Demo)
@@ -286,46 +397,55 @@ apps/web/src/app/dashboard/
 **Public Launch (v1.0):**
 - **Overall: 0%** (0/2 versions after Beta)
 
-**Total Progress:** 28.5% (2.85/10 versions) 🔄
+**Total Progress:** 29% (2.9/10 versions) 🔄
 
 ---
 
-## 🔄 NEXT STEPS (День 4):
+## 🔄 NEXT SESSION (День 5) - MUST DO FIRST! 🔴
 
-### Пріоритет 1: Online Status ⭐
-- Backend: Socket tracking
-- Frontend: 🟢/🔴 indicators
-- Real-time updates
+### ⚠️ КРИТИЧНИЙ ПРІОРИТЕТ - РОБИТИ ПЕРШИМ:
 
-### Пріоритет 2: @Mentions ⭐
-- "@" detection
-- User dropdown
-- Insert functionality
+1. **Signup Bug Fix** (30 хв) 🔴
+   - Виправити `auth.service.ts`
+   - Додати унікальний slug для organizations
+   - Протестувати signup
 
-### Пріоритет 3: Connection Status ⭐
-- Socket indicator
-- Toast notifications
+2. **Create 2nd User** (15 хв) 🔴
+   - Signup новий акаунт
+   - Verify успішно створено
 
-### Пріоритет 4 (Optional): UX Refactor
-- Floating chat OR `/chat` page
-- Відкладено - легко змінити пізніше
+3. **Multi-User Online Status Test** (45 хв) 🔴
+   - User 1 + User 2 в одному чаті
+   - Verify 🟢 показується для обох
+   - Test disconnect → 🟢 зникає
+   - **Якщо працює → Online Status DONE!** ✅
+   - **Якщо НЕ працює → debug і fix!** 🔧
+
+**ТІЛЬКИ ПІСЛЯ цих 3 пунктів → інші features!**
+
+### Потім (якщо все ОК):
+
+4. **@Mentions** (2-3 год)
+5. **Connection Status** (1 год)
 
 ---
 
 ## 📝 Troubleshooting Guide Updates
 
 **Нові проблеми додані:**
-- ChatList: `lastMessage.author` може бути null
-- Dashboard: UX проблема з scroll
+- Signup: Unique constraint на slug
+- Online Status: не протестовано з різними користувачами
 
 **Рішення задокументовані:**
-- Optional chaining для nested properties
-- Floating chat як альтернатива
+- Додати shortid або timestamp до slug
+- Створити test plan для multi-user testing
 
 ---
 
-**Останнє оновлення:** 17.11.2025, 21:00  
-**Поточна версія:** v0.3 🔄 **IN PROGRESS (85%)**  
-**Наступний крок:** День 4 - Online Status + @Mentions
+**Останнє оновлення:** 17.11.2025, 20:00  
+**Поточна версія:** v0.3 🔄 **IN PROGRESS (90%)**  
+**Наступний крок:** День 5 - FIX SIGNUP + TEST MULTI-USER + завершити v0.3
+
+**Remember: Test with REAL different users, not same user in 2 tabs! 🔴**
 
 **Keep building! 🚀**

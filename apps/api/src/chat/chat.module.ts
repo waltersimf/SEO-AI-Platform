@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ChatGateway } from './chat.gateway';       // ✅ ChatGateway
-// import { TestGateway } from './test.gateway';    // ❌ Видаляємо import
+// import { ChatGateway } from './chat.gateway';    // ❌ Старий з TypeError
+import { TestGateway } from './test.gateway';       // ✅ Новий з online status
 import { ChatService } from './chat.service';
 import { ChatController } from './chat.controller';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -9,8 +9,8 @@ import { PrismaModule } from '../prisma/prisma.module';
   imports: [PrismaModule],
   controllers: [ChatController],
   providers: [
-    ChatGateway,    // ✅ Використовуємо ChatGateway
-    // TestGateway, // ❌ Видаляємо TestGateway
+    TestGateway,    // ✅ Використовуємо TestGateway з online status
+    // ChatGateway, // ❌ Старий закоментований
     ChatService,
   ],
 })

@@ -9,6 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
+import { ChatService } from './chat.service';
 
 @WebSocketGateway({
   cors: {
@@ -22,6 +23,8 @@ export class TestGateway implements OnGatewayConnection, OnGatewayDisconnect {
   
   // Track online users: userId → socketId
   private onlineUsers = new Map<string, string>();
+
+  constructor(private chatService: ChatService) {}
 
   handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
@@ -76,27 +79,28 @@ export class TestGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('send_message')
-  handleMessage(
+  async handleMessage(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { chatId: string; authorId: string; content: string },
   ) {
-    this.logger.log(`Message from ${client.id}: ${payload.content}`);
-    
-    // Create fake message object (in-memory, no DB)
-    const message = {
-      id: Date.now().toString(),
-      content: payload.content,
-      author: {
-        id: payload.authorId,
-        name: 'User',
-      },
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      this.logger.log(`Message from ${client.id}: ${payload.content}`);
 
-    // Broadcast to room
-    this.server.to(payload.chatId).emit('receive_message', message);
-    
-    return message;
+      // Save to database using ChatService
+      const message = await this.chatService.createMessage(
+        payload.chatId,
+        payload.authorId,
+        payload.content,
+      );
+
+      // Broadcast to room with REAL author name from DB
+      this.server.to(payload.chatId).emit('receive_message', message);
+      
+      return message;
+    } catch (error) {
+      this.logger.error('Error handling message:', error);
+      return { error: 'Failed to send message' };
+    }
   }
 
   @SubscribeMessage('typing_start')
