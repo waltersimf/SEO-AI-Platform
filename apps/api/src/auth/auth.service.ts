@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto'; // ← ДОДАНО для унікальних slugs
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -28,11 +29,12 @@ export class AuthService {
     // Hash password
     const passwordHash = await bcrypt.hash(data.password, 10);
 
-    // Generate organization slug
-    const slug = data.organizationName
+    // Generate organization slug (with random suffix for uniqueness)
+    // ✅ ВИПРАВЛЕННЯ: randomBytes гарантує що slug ЗАВЖДИ унікальний!
+    const slug = `${data.organizationName}-${randomBytes(4).toString('hex')}`
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '');
 
     // Create organization and user in transaction
     const user = await this.prisma.user.create({
