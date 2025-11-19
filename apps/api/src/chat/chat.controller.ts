@@ -73,7 +73,28 @@ export class ChatController {
   @Get('list')
   async listChats(@Req() req) {
     const organizationId = req.user.organizationId;
-    return this.chatService.getOrganizationChats(organizationId);
+    const currentUserId = req.user.id;
+    return this.chatService.getOrganizationChats(organizationId, currentUserId);
+  }
+
+  @Post(':chatId/read')
+  async markChatAsRead(@Req() req, @Param('chatId') chatId: string) {
+    try {
+      if (!req.user || !req.user.id) {
+        throw new BadRequestException('User not authenticated');
+      }
+
+      return this.chatService.markChatAsRead(chatId, req.user.id);
+    } catch (error) {
+      console.error('Error marking chat as read:', error);
+
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      const errorMessage = error instanceof Error ? error.message : 'Failed to mark chat as read';
+      throw new InternalServerErrorException(errorMessage);
+    }
   }
 
   @Get(':id/messages')

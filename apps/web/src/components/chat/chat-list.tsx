@@ -6,6 +6,7 @@ import { Plus, MessageCircle } from "lucide-react";
 interface Chat {
   id: string;
   name: string;
+  unreadCount?: number;
   members: {
     user: {
       id: string;
@@ -26,15 +27,24 @@ interface ChatListProps {
   activeChatId?: string;
   onChatSelect: (chatId: string) => void;
   onCreateChat: () => void;
+  onRefresh?: () => void;
 }
 
-export function ChatList({ activeChatId, onChatSelect, onCreateChat }: ChatListProps) {
+export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh }: ChatListProps) {
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadChats();
   }, []);
+
+  // Expose loadChats to parent via onRefresh callback
+  useEffect(() => {
+    if (onRefresh) {
+      // Store loadChats function for parent to call
+      (window as any).refreshChatList = loadChats;
+    }
+  }, [onRefresh]);
 
   const loadChats = async () => {
     try {
@@ -106,11 +116,20 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat }: ChatListP
                     {/* Chat Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <h3 className="font-semibold text-sm truncate">
-                          {chat.name}
-                        </h3>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <h3 className={`text-sm truncate ${
+                            (chat.unreadCount ?? 0) > 0 ? "font-bold" : "font-semibold"
+                          }`}>
+                            {chat.name}
+                          </h3>
+                          {(chat.unreadCount ?? 0) > 0 && (
+                            <span className="flex-shrink-0 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full">
+                              {chat.unreadCount}
+                            </span>
+                          )}
+                        </div>
                         {lastMessage && (
-                          <span className="text-xs text-muted-foreground ml-2">
+                          <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
                             {new Date(lastMessage.createdAt).toLocaleTimeString(
                               "en-US",
                               {

@@ -87,12 +87,13 @@ model ChatMember {
   id     String @id @default(cuid())
   userId String
   chatId String
-  
+
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   chat   Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  
-  joinedAt DateTime @default(now())
-  
+
+  joinedAt   DateTime  @default(now())
+  lastReadAt DateTime?
+
   @@unique([userId, chatId])
   @@map("chat_members")
 }
