@@ -51,7 +51,7 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
 
     // Listen for online users updates
     const handleOnlineUsersChanged = (event: any) => {
-      setOnlineUsers(event.detail || []);
+      setOnlineUsers(event.detail?.userIds || []);
     };
 
     window.addEventListener('online_users_changed', handleOnlineUsersChanged);
