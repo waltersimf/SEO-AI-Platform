@@ -385,7 +385,7 @@ export class ChatGateway
 
   // Health check endpoint for monitoring
   @SubscribeMessage('ping')
-  handlePing(@ConnectedSocket() client: Socket) {
+  handlePing(@ConnectedSocket() _client: Socket) {
     return {
       success: true,
       pong: true,
