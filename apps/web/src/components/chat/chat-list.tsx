@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, MessageCircle } from "lucide-react";
+import { io } from "socket.io-client";
 
 interface Chat {
   id: string;
@@ -36,6 +37,17 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh }
 
   useEffect(() => {
     loadChats();
+
+    // Listen for new messages to update unread counts
+    const socket = io("http://localhost:4000");
+
+    socket.on("new_message", () => {
+      loadChats(); // Reload to get updated unread counts
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   // Expose loadChats to parent via onRefresh callback
