@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, MessageCircle } from "lucide-react";
+import { Plus, MessageCircle, User, Users } from "lucide-react";
 import { io } from "socket.io-client";
 
 interface Chat {
   id: string;
-  name: string;
+  name: string | null;
+  type?: string;
   unreadCount?: number;
   members: {
     user: {
@@ -29,11 +30,13 @@ interface ChatListProps {
   onChatSelect: (chatId: string) => void;
   onCreateChat: () => void;
   onRefresh?: () => void;
+  currentUserId?: string;
 }
 
-export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh }: ChatListProps) {
+export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, currentUserId }: ChatListProps) {
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
 
   useEffect(() => {
     loadChats();
@@ -46,8 +49,16 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh }
       loadChats(); // Refresh to update unread counts
     });
 
+    // Listen for online users updates
+    const handleOnlineUsersChanged = (event: any) => {
+      setOnlineUsers(event.detail || []);
+    };
+
+    window.addEventListener('online_users_changed', handleOnlineUsersChanged);
+
     return () => {
       socket.disconnect();
+      window.removeEventListener('online_users_changed', handleOnlineUsersChanged);
     };
   }, []);
 
@@ -79,6 +90,36 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh }
     }
   };
 
+  // Helper: Get chat display name
+  const getChatDisplayName = (chat: Chat): string => {
+    if (chat.type === 'direct') {
+      // For direct chats, find the other user (not current user)
+      const otherUser = chat.members.find(m => m.user.id !== currentUserId);
+      return otherUser?.user.name || 'Unknown User';
+    }
+    // For group chats, use the chat name
+    return chat.name || 'Unnamed Chat';
+  };
+
+  // Helper: Get other user ID for direct chat
+  const getOtherUserId = (chat: Chat): string | null => {
+    if (chat.type === 'direct') {
+      const otherUser = chat.members.find(m => m.user.id !== currentUserId);
+      return otherUser?.user.id || null;
+    }
+    return null;
+  };
+
+  // Helper: Check if user is online
+  const isUserOnline = (userId: string | null): boolean => {
+    if (!userId) return false;
+    return onlineUsers.includes(userId);
+  };
+
+  // Separate chats into direct and group
+  const directChats = chats.filter(chat => chat.type === 'direct');
+  const groupChats = chats.filter(chat => chat.type !== 'direct');
+
   if (loading) {
     return (
       <div className="w-80 border-r bg-muted/10 p-4">
@@ -86,6 +127,96 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh }
       </div>
     );
   }
+
+  // Render individual chat item
+  const renderChatItem = (chat: Chat) => {
+    const lastMessage = chat.messages[0];
+    const isActive = chat.id === activeChatId;
+    const displayName = getChatDisplayName(chat);
+    const isDirect = chat.type === 'direct';
+    const otherUserId = getOtherUserId(chat);
+    const online = isUserOnline(otherUserId);
+
+    return (
+      <button
+        key={chat.id}
+        onClick={() => onChatSelect(chat.id)}
+        className={`w-full p-4 text-left hover:bg-muted/50 transition-colors ${
+          isActive ? "bg-muted border-l-4 border-primary" : ""
+        }`}
+      >
+        <div className="flex items-start gap-3">
+          {/* Avatar */}
+          <div className="relative flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+            {isDirect ? (
+              <User className="h-5 w-5 text-primary" />
+            ) : (
+              <Users className="h-5 w-5 text-primary" />
+            )}
+            {/* Online status indicator for direct chats */}
+            {isDirect && online && (
+              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+            )}
+          </div>
+
+          {/* Chat Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2 min-w-0">
+                <h3 className={`text-sm truncate ${
+                  (chat.unreadCount ?? 0) > 0 ? "font-bold" : "font-semibold"
+                }`}>
+                  {displayName}
+                </h3>
+                {(chat.unreadCount ?? 0) > 0 && (
+                  <span className="flex-shrink-0 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full">
+                    {chat.unreadCount}
+                  </span>
+                )}
+              </div>
+              {lastMessage && (
+                <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
+                  {new Date(lastMessage.createdAt).toLocaleTimeString(
+                    "en-US",
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }
+                  )}
+                </span>
+              )}
+            </div>
+
+            {/* Last Message Preview */}
+            {lastMessage && lastMessage.author ? (
+              <p className="text-xs text-muted-foreground truncate">
+                {lastMessage.author.name}: {lastMessage.content}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground italic">
+                No messages yet
+              </p>
+            )}
+
+            {/* Members count (group chats only) or online status (direct chats) */}
+            {isDirect ? (
+              <p className="text-xs text-muted-foreground mt-1">
+                {online ? (
+                  <span className="text-green-600 font-medium">🟢 Online</span>
+                ) : (
+                  <span>Offline</span>
+                )}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-1">
+                {chat.members.length} member{chat.members.length !== 1 ? "s" : ""}
+              </p>
+            )}
+          </div>
+        </div>
+      </button>
+    );
+  };
 
   return (
     <div className="w-80 border-r bg-muted/10 flex flex-col">
@@ -96,7 +227,7 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh }
           className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
         >
           <Plus className="h-4 w-4" />
-          <span className="font-medium">New Chat</span>
+          <span className="font-medium">New Group Chat</span>
         </button>
       </div>
 
@@ -104,77 +235,38 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh }
       <div className="flex-1 overflow-y-auto">
         {chats.length === 0 ? (
           <div className="p-4 text-center text-muted-foreground text-sm">
-            No chats yet. Create your first chat!
+            No chats yet. Start a conversation!
           </div>
         ) : (
-          <div className="divide-y">
-            {chats.map((chat) => {
-              const lastMessage = chat.messages[0];
-              const isActive = chat.id === activeChatId;
+          <>
+            {/* Direct Messages Section */}
+            {directChats.length > 0 && (
+              <div>
+                <div className="px-4 py-2 bg-muted/30">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Direct Messages
+                  </h3>
+                </div>
+                <div className="divide-y">
+                  {directChats.map(renderChatItem)}
+                </div>
+              </div>
+            )}
 
-              return (
-                <button
-                  key={chat.id}
-                  onClick={() => onChatSelect(chat.id)}
-                  className={`w-full p-4 text-left hover:bg-muted/50 transition-colors ${
-                    isActive ? "bg-muted border-l-4 border-primary" : ""
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    {/* Avatar */}
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                      <MessageCircle className="h-5 w-5 text-primary" />
-                    </div>
-
-                    {/* Chat Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <h3 className={`text-sm truncate ${
-                            (chat.unreadCount ?? 0) > 0 ? "font-bold" : "font-semibold"
-                          }`}>
-                            {chat.name}
-                          </h3>
-                          {(chat.unreadCount ?? 0) > 0 && (
-                            <span className="flex-shrink-0 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full">
-                              {chat.unreadCount}
-                            </span>
-                          )}
-                        </div>
-                        {lastMessage && (
-                          <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
-                            {new Date(lastMessage.createdAt).toLocaleTimeString(
-                              "en-US",
-                              {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              }
-                            )}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Last Message Preview */}
-                      {lastMessage && lastMessage.author ? (
-                        <p className="text-xs text-muted-foreground truncate">
-                          {lastMessage.author.name}: {lastMessage.content}
-                        </p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground italic">
-                          No messages yet
-                        </p>
-                      )}
-
-                      {/* Members count */}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {chat.members.length} member{chat.members.length !== 1 ? "s" : ""}
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+            {/* Group Chats Section */}
+            {groupChats.length > 0 && (
+              <div>
+                <div className="px-4 py-2 bg-muted/30">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Group Chats
+                  </h3>
+                </div>
+                <div className="divide-y">
+                  {groupChats.map(renderChatItem)}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

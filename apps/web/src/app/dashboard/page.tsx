@@ -136,6 +136,7 @@ export default function DashboardPage() {
         activeChatId={activeChatId || undefined}
         onChatSelect={handleChatSelect}
         onCreateChat={() => setIsCreateDialogOpen(true)}
+        currentUserId={user?.id}
       />
 
       {/* Main Content */}
