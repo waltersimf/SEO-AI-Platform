@@ -143,6 +143,26 @@
 
 ---
 
+### День 5: Unread Message Counters ⚠️ (Частково)
+
+**Що працює:**
+- ✅ Database: `ChatMember.lastReadAt` поле
+- ✅ Backend: POST `/api/chat/:chatId/read` endpoint
+- ✅ Backend: GET `/api/chat/list` з `unreadCount`
+- ✅ Frontend: Червоний badge з числом
+- ✅ Frontend: Bold текст для непрочитаних
+- ✅ Badge зникає при кліку на чат
+
+**Не працює:**
+- ❌ Real-time оновлення (треба F5)
+- ❌ Badge не з'являється автоматично
+
+**Bug Fixes:**
+- Fixed upsert в markChatAsRead
+- Fixed TypeScript error handling
+
+---
+
 ## 🔴 ЩО ЗАЛИШИЛОСЬ (50% - КРИТИЧНО):
 
 ### День 5-6: Essential UX Features (8-10 год)
