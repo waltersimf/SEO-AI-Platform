@@ -40,6 +40,8 @@
    - Shows chat name in **bold** when there are unread messages
    - Badge shows actual number of unread messages
    - Badge only appears when unreadCount > 0
+   - **Real-time updates**: WebSocket listener auto-refreshes unread counts when new messages arrive
+   - Automatically disconnects WebSocket on component unmount
 
 2. **Dashboard** (`apps/web/src/app/dashboard/page.tsx`)
    - Automatically marks chat as read when opened
@@ -153,7 +155,18 @@ pnpm dev
 5. Expected: Badge clears
 ```
 
-### Test Case 5: API Testing
+### Test Case 5: Real-Time Unread Badge Updates
+```
+1. User A and User B both have chat list open
+2. User A sends message in shared chat
+3. Expected: User B's badge appears/updates INSTANTLY (no page refresh needed)
+4. User B opens the chat
+5. Expected: Badge clears immediately for User B
+6. Test with multiple rapid messages
+7. Expected: Count updates in real-time with each message
+```
+
+### Test Case 6: API Testing
 ```bash
 # Mark chat as read
 curl -X POST http://localhost:4000/api/chat/CHAT_ID/read \
@@ -239,6 +252,30 @@ model ChatMember {
    ↓
 9. New unread count is 0 (badge disappears)
 ```
+
+### Real-Time Update Flow:
+
+```
+1. ChatList component mounts
+   ↓
+2. Connect to WebSocket server (http://localhost:4000)
+   ↓
+3. Listen for "new_message" events
+   ↓
+4. When new message arrives:
+   - WebSocket emits "new_message" event
+   - ChatList receives event
+   - Auto-calls loadChats() to refresh unread counts
+   - Badges update in real-time without user interaction
+   ↓
+5. Component unmounts → WebSocket disconnects
+```
+
+**Key Benefits:**
+- ✅ Unread badges appear **instantly** when new messages arrive
+- ✅ No need to manually refresh the page
+- ✅ Works for all users in real-time
+- ✅ Clean WebSocket disconnect on component unmount (no memory leaks)
 
 ### Key Logic in `getOrganizationChats()`:
 
