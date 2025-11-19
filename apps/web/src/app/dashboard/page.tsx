@@ -14,6 +14,7 @@ export default function DashboardPage() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const router = useRouter();
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -52,10 +53,8 @@ export default function DashboardPage() {
         },
       });
 
-      // Refresh chat list to update unread counts
-      if ((window as any).refreshChatList) {
-        (window as any).refreshChatList();
-      }
+      setRefreshKey(prev => prev + 1);
+
     } catch (error) {
       console.error("Error marking chat as read:", error);
     }
@@ -133,6 +132,7 @@ export default function DashboardPage() {
     <div className="flex h-screen bg-background">
       {/* Sidebar - Chat List */}
       <ChatList
+        key={refreshKey}  // ← ДОДАЙ
         activeChatId={activeChatId || undefined}
         onChatSelect={handleChatSelect}
         onCreateChat={() => setIsCreateDialogOpen(true)}

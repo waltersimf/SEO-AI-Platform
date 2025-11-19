@@ -202,14 +202,19 @@ export class ChatService {
   async markChatAsRead(chatId: string, userId: string) {
     try {
       // Update lastReadAt to current time
-      await this.prisma.chatMember.update({
+      await this.prisma.chatMember.upsert({
         where: {
           userId_chatId: {
             userId,
             chatId,
           },
         },
-        data: {
+        update: {
+          lastReadAt: new Date(),
+        },
+        create: {
+          userId,
+          chatId,
           lastReadAt: new Date(),
         },
       });
