@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { initSocket, getSocket } from '../chat/socket';
 import { Send } from 'lucide-react';
+import { TypingIndicator } from './typing-indicator';
 
 interface Message {
   id: string;
@@ -31,6 +32,8 @@ export function ChatBox({
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hideTypingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize socket with userId and organizationId
   useEffect(() => {
@@ -94,13 +97,37 @@ export function ChatBox({
     // Listen for typing
     socket.on('user_typing', (data: { userId: string; userName: string; isTyping: boolean }) => {
       if (data.userId !== userId) {
-        setIsTyping(data.isTyping ? { userId: data.userId, userName: data.userName } : null);
+        if (data.isTyping) {
+          setIsTyping({ userId: data.userId, userName: data.userName });
+
+          // Auto-hide typing indicator after 3 seconds
+          if (hideTypingTimeoutRef.current) {
+            clearTimeout(hideTypingTimeoutRef.current);
+          }
+
+          hideTypingTimeoutRef.current = setTimeout(() => {
+            setIsTyping(null);
+          }, 3000);
+        } else {
+          setIsTyping(null);
+          if (hideTypingTimeoutRef.current) {
+            clearTimeout(hideTypingTimeoutRef.current);
+          }
+        }
       }
     });
 
     return () => {
       socket.off('receive_message');
       socket.off('user_typing');
+
+      // Cleanup timeouts
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      if (hideTypingTimeoutRef.current) {
+        clearTimeout(hideTypingTimeoutRef.current);
+      }
     };
   }, [chatId, userId]);
 
@@ -133,9 +160,21 @@ export function ChatBox({
     const socket = socketRef.current;
     if (!socket) return;
 
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
     if (value.length > 0) {
+      // Send typing_start immediately on first character
       socket.emit('typing_start', { chatId, userId, userName });
+
+      // Debounce: Send typing_stop after 3 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.emit('typing_stop', { chatId, userId });
+      }, 3000);
     } else {
+      // Empty input - immediately stop typing
       socket.emit('typing_stop', { chatId, userId });
     }
   };
@@ -182,16 +221,16 @@ export function ChatBox({
             </div>
           </div>
         ))}
-        
-        {/* Typing indicator */}
-        {isTyping && (
-          <div className="text-sm text-gray-500 italic">
-            {isTyping.userName} is typing...
-          </div>
-        )}
-        
+
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Typing indicator - positioned above input */}
+      {isTyping && (
+        <div className="border-t">
+          <TypingIndicator userName={isTyping.userName} />
+        </div>
+      )}
 
       {/* Input */}
       <div className="border-t p-4">
