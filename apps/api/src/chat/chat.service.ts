@@ -120,16 +120,17 @@ export class ChatService {
       }
 
       // Handle Prisma-specific errors
-      if (error.code === 'P2002') {
+      if ((error as any).code === 'P2002') {
         throw new WsException('A chat with this name already exists');
       }
 
-      if (error.code === 'P2003') {
+      if ((error as any).code === 'P2003') {
         throw new WsException('Invalid organization or user reference');
       }
 
       // Generic error
-      throw new WsException(`Failed to create chat: ${error.message || 'Unknown error'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new WsException(`Failed to create chat: ${errorMessage}`);
     }
   }
 
