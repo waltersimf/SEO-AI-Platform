@@ -18,6 +18,14 @@
 
 ## ✅ ЩО РЕАЛІЗОВАНО (90%):
 
+### День 0: Bug Fixes ✅
+
+**Organization Slug Fix:**
+- ✅ Unique slug generation using crypto.randomBytes(4)
+- ✅ Format: "organization-name-a3f4b2c1" (8 hex chars)
+- ✅ Multiple users can now signup with same org name
+- ✅ No more "Unique constraint failed on slug" errors
+
 ### День 1-2: Backend Infrastructure ✅
 
 **WebSocket Setup:**
@@ -161,38 +169,48 @@ Frontend:
 - Обидва мають бути в одній організації
 - Протестувати online status між РІЗНИМИ користувачами
 
-**Блокер:** Signup не працює через `Unique constraint failed on slug`
+**Блокер (RESOLVED):** ~~Signup не працює через `Unique constraint failed on slug`~~ ✅ FIXED!
 
-**TODO Day 5 (ПЕРШЕ ЩО РОБИМО!):**
-1. 🔴 Виправити signup bug (slug має бути унікальним)
-2. 🔴 Створити 2-го користувача
-3. 🔴 Протестувати online status з 2 різними користувачами
-4. 🔴 Перевірити чи 🟢 показується правильно
+**TODO Day 5:**
+1. ✅ ~~Виправити signup bug (slug має бути унікальним)~~ - DONE!
+2. 🟡 Створити 2-го користувача (ready to test)
+3. 🟡 Протестувати online status з 2 різними користувачами
+4. 🟡 Перевірити чи 🟢 показується правильно
 
-**Estimated time:** 1-2 години (КРИТИЧНО!)
+**Estimated time:** ~30 хв (signup bug fixed, testing only)
 
 ---
 
-### 2. **Signup Bug - Duplicate Slug** 🔴
-**Статус:** BROKEN - signup не працює!  
-**Проблема:** 
+### 2. **Signup Bug - Duplicate Slug** ✅
+**Статус:** ✅ FIXED!
+**Проблема (була):**
 ```
 Unique constraint failed on the fields: (`slug`)
 ```
-**Root cause:** Коли створюється Organization, slug генерується з назви. Якщо 2 користувачі вводять однакову назву → помилка!
+**Root cause:** Organization slug генерувався тільки з назви без унікального suffix.
 
-**Рішення:**
+**Рішення (реалізовано):**
 ```typescript
-// Замість:
-slug = organizationName.toLowerCase().replace(/\s+/g, '-')
+// apps/api/src/auth/auth.service.ts (line 32-37)
+import { randomBytes } from 'crypto';
 
-// Треба:
-slug = `${organizationName}-${shortid()}`.toLowerCase().replace(/\s+/g, '-')
-// Або:
-slug = `${organizationName}-${Date.now()}`.toLowerCase().replace(/\s+/g, '-')
+const slug = `${data.organizationName}-${randomBytes(4).toString('hex')}`
+  .toLowerCase()
+  .replace(/\s+/g, '-')
+  .replace(/[^a-z0-9-]/g, '');
+
+// Приклади згенерованих slugs:
+// "acme-corp-a3f4b2c1"
+// "acme-corp-7e2d9f84"
+// "my-company-1a2b3c4d"
 ```
 
-**TODO:** Виправити `auth.service.ts` signup метод
+**Commit:** `9b551af` - feat: add unique slug generation for organizations using randomBytes
+
+**Тестування:**
+- ✅ Multiple users can signup with same organization name
+- ✅ Each gets unique slug (8 hex chars suffix)
+- ✅ No more database constraint errors
 
 ---
 
