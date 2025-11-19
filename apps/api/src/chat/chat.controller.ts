@@ -65,9 +65,8 @@ export class ChatController {
       }
 
       // Wrap other errors
-      throw new InternalServerErrorException(
-        error.message || 'Failed to create chat'
-      );
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create chat';
+      throw new InternalServerErrorException(errorMessage);
     }
   }
 
