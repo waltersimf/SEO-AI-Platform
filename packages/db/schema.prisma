@@ -69,7 +69,8 @@ model Integration {
 }
 model Chat {
   id             String   @id @default(cuid())
-  name           String
+  name           String?  // ← ДОДАЙ знак питання!
+  type           String   @default("group") // ← ДОДАЙ цей рядок!
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   
