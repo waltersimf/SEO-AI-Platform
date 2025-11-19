@@ -27,6 +27,7 @@ export default function DashboardPage() {
       setUser({
         id: payload.sub,
         email: payload.email,
+        name: payload.name,
         organizationId: payload.organizationId,
       });
     } catch (error) {
@@ -250,7 +251,7 @@ export default function DashboardPage() {
                 <ChatBox
                   chatId={activeChatId}
                   userId={user.id}
-                  userName={user.email}
+                  userName={user.name}
                   organizationId={user.organizationId}
                 />
               </div>
