@@ -80,4 +80,38 @@ export class ChatController {
   async getChatMessages(@Param('id') chatId: string) {
     return this.chatService.getChatMessages(chatId);
   }
+
+  @Post('direct/:userId')
+  async createDirectChat(
+    @Req() req,
+    @Param('userId') targetUserId: string,
+  ) {
+    try {
+      if (!req.user || !req.user.id) {
+        throw new BadRequestException('User not authenticated');
+      }
+
+      const currentUserId = req.user.id;
+      const organizationId = req.user.organizationId;
+
+      if (currentUserId === targetUserId) {
+        throw new BadRequestException('Cannot create direct chat with yourself');
+      }
+
+      return this.chatService.createOrGetDirectChat(
+        organizationId,
+        currentUserId,
+        targetUserId,
+      );
+    } catch (error) {
+      console.error('Error in createDirectChat controller:', error);
+
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create direct chat';
+      throw new InternalServerErrorException(errorMessage);
+    }
+  }
 }
