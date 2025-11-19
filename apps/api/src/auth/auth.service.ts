@@ -59,6 +59,7 @@ export class AuthService {
     const token = this.jwtService.sign({
       sub: user.id,
       email: user.email,
+      name: user.name,
       organizationId: user.organizationId,
       role: user.role,
     });
@@ -101,6 +102,7 @@ export class AuthService {
     const token = this.jwtService.sign({
       sub: user.id,
       email: user.email,
+      name: user.name,
       organizationId: user.organizationId,
       role: user.role,
     });
