@@ -1,8 +1,38 @@
 # 📦 CHANGELOG
 
-**Версія документа:** 3.0  
-**Останнє оновлення:** 19.11.2025  
-**Поточна версія:** v0.3 🔄 **IN PROGRESS (50%)**
+**Версія документа:** 3.1
+**Останнє оновлення:** 19.11.2025
+**Поточна версія:** v0.3 🔄 **IN PROGRESS (85%)**
+
+---
+
+## [v0.3] - 2025-11-19
+
+### ✅ Completed Features
+
+**Unread Message Counters (Partial)**
+- Added `ChatMember.lastReadAt` database field for tracking read status
+- Backend: POST /api/chat/:chatId/read endpoint to mark chats as read
+- Backend: GET /api/chat/list now calculates and returns unread count per chat
+- Frontend: Red badge displays unread count next to chat names
+- Frontend: Chat names appear bold when unread messages exist
+- Frontend: Badge clears when user opens chat (mark as read)
+- Database: Uses upsert to handle missing ChatMember records
+
+**Known Limitations:**
+- Real-time badge updates require manual page refresh
+- Badge appears after refresh, not instantly when new message arrives
+- Planned fix: WebSocket broadcast implementation in v0.4
+
+**Technical Implementation:**
+- Database migration: Added lastReadAt (DateTime?, nullable)
+- Unread logic: Counts messages from other users after lastReadAt timestamp
+- Mark as read: Updates lastReadAt to current timestamp on chat open
+- UI: Badge with count, bold text for unread chats
+
+### 🔧 Bug Fixes
+- Fixed upsert in markChatAsRead to handle non-existent ChatMember records
+- Fixed TypeScript errors in error handling blocks
 
 ---
 
