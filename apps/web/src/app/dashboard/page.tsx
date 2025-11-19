@@ -37,12 +37,52 @@ export default function DashboardPage() {
     }
   }, [router]);
 
-  const handleChatSelect = (chatId: string) => {
+  const handleChatSelect = async (chatId: string) => {
     setActiveChatId(chatId);
+
+    // Mark chat as read
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      await fetch(`http://localhost:4000/api/chat/${chatId}/read`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // Refresh chat list to update unread counts
+      if ((window as any).refreshChatList) {
+        (window as any).refreshChatList();
+      }
+    } catch (error) {
+      console.error("Error marking chat as read:", error);
+    }
   };
 
-  const handleChatCreated = (chatId: string) => {
+  const handleChatCreated = async (chatId: string) => {
     setActiveChatId(chatId);
+
+    // Mark newly created chat as read
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      await fetch(`http://localhost:4000/api/chat/${chatId}/read`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // Refresh chat list to update unread counts
+      if ((window as any).refreshChatList) {
+        (window as any).refreshChatList();
+      }
+    } catch (error) {
+      console.error("Error marking chat as read:", error);
+    }
   };
 
   const handleUserClick = async (userId: string) => {
@@ -60,6 +100,19 @@ export default function DashboardPage() {
       if (response.ok) {
         const chat = await response.json();
         setActiveChatId(chat.id);
+
+        // Mark direct chat as read
+        await fetch(`http://localhost:4000/api/chat/${chat.id}/read`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        // Refresh chat list to update unread counts
+        if ((window as any).refreshChatList) {
+          (window as any).refreshChatList();
+        }
       } else {
         console.error("Failed to create direct chat");
       }

@@ -134,7 +134,7 @@ export class ChatService {
     }
   }
 
-  async getOrganizationChats(organizationId: string) {
+  async getOrganizationChats(organizationId: string, currentUserId?: string) {
     try {
       const chats = await this.prisma.chat.findMany({
         where: { organizationId },
@@ -157,10 +157,68 @@ export class ChatService {
         orderBy: { updatedAt: 'desc' },
       });
 
-      return chats;
+      // Calculate unread count for each chat
+      if (currentUserId) {
+        const chatsWithUnread = await Promise.all(
+          chats.map(async (chat) => {
+            // Find current user's membership
+            const membership = await this.prisma.chatMember.findUnique({
+              where: {
+                userId_chatId: {
+                  userId: currentUserId,
+                  chatId: chat.id,
+                },
+              },
+            });
+
+            // Count unread messages
+            const unreadCount = await this.prisma.message.count({
+              where: {
+                chatId: chat.id,
+                authorId: { not: currentUserId }, // Don't count own messages
+                createdAt: membership?.lastReadAt
+                  ? { gt: membership.lastReadAt }
+                  : undefined, // All messages if never read
+              },
+            });
+
+            return {
+              ...chat,
+              unreadCount,
+            };
+          }),
+        );
+
+        return chatsWithUnread;
+      }
+
+      return chats.map((chat) => ({ ...chat, unreadCount: 0 }));
     } catch (error) {
       console.error('Error fetching chats:', error);
       throw new WsException('Failed to fetch chats');
+    }
+  }
+
+  async markChatAsRead(chatId: string, userId: string) {
+    try {
+      // Update lastReadAt to current time
+      await this.prisma.chatMember.update({
+        where: {
+          userId_chatId: {
+            userId,
+            chatId,
+          },
+        },
+        data: {
+          lastReadAt: new Date(),
+        },
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error marking chat as read:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new WsException(`Failed to mark chat as read: ${errorMessage}`);
     }
   }
 
