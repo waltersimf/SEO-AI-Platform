@@ -16,7 +16,7 @@ export function CreateChatDialog({ isOpen, onClose, onChatCreated }: CreateChatD
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!chatName.trim()) {
       setError("Chat name is required");
       return;
@@ -27,7 +27,12 @@ export function CreateChatDialog({ isOpen, onClose, onChatCreated }: CreateChatD
 
     try {
       const token = localStorage.getItem("token");
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+      if (!token) {
+        setError("You must be logged in to create a chat");
+        setLoading(false);
+        return;
+      }
 
       const response = await fetch("http://localhost:4000/api/chat/create", {
         method: "POST",
@@ -36,8 +41,8 @@ export function CreateChatDialog({ isOpen, onClose, onChatCreated }: CreateChatD
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          name: chatName,
-          memberIds: [user.id], // Add current user as member
+          name: chatName.trim(),
+          // memberIds is optional - backend will automatically add current user
         }),
       });
 
@@ -49,8 +54,10 @@ export function CreateChatDialog({ isOpen, onClose, onChatCreated }: CreateChatD
       } else {
         const data = await response.json();
         setError(data.message || "Failed to create chat");
+        console.error("Failed to create chat:", data);
       }
     } catch (err) {
+      console.error("Error creating chat:", err);
       setError("Failed to create chat. Please try again.");
     } finally {
       setLoading(false);
