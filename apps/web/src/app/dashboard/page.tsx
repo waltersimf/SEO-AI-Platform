@@ -5,6 +5,7 @@ import { GscMetricsCard } from "@/components/gsc-metrics-card";
 import { ChatBox } from "@/components/chat/chat-box";
 import { ChatList } from "@/components/chat/chat-list";
 import { CreateChatDialog } from "@/components/chat/create-chat-dialog";
+import { UserList } from "@/components/users/user-list";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -42,6 +43,29 @@ export default function DashboardPage() {
 
   const handleChatCreated = (chatId: string) => {
     setActiveChatId(chatId);
+  };
+
+  const handleUserClick = async (userId: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await fetch(`http://localhost:4000/api/chat/direct/${userId}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const chat = await response.json();
+        setActiveChatId(chat.id);
+      } else {
+        console.error("Failed to create direct chat");
+      }
+    } catch (error) {
+      console.error("Error creating direct chat:", error);
+    }
   };
 
   if (!user) {
@@ -243,6 +267,12 @@ export default function DashboardPage() {
 
             {/* GSC Metrics */}
             <GscMetricsCard />
+
+            {/* User List */}
+            <div>
+              <h2 className="text-2xl font-bold mb-4">Direct Messages</h2>
+              <UserList onUserClick={handleUserClick} currentUserId={user.id} />
+            </div>
 
             {/* Chat Area */}
             {activeChatId && (

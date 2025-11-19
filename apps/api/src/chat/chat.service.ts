@@ -163,4 +163,86 @@ export class ChatService {
       throw new WsException('Failed to fetch chats');
     }
   }
+
+  async createOrGetDirectChat(organizationId: string, user1Id: string, user2Id: string) {
+    try {
+      // Validate that both users belong to the same organization
+      const users = await this.prisma.user.findMany({
+        where: {
+          id: { in: [user1Id, user2Id] },
+          organizationId: organizationId,
+        },
+      });
+
+      if (users.length !== 2) {
+        throw new WsException('Both users must exist and belong to the same organization');
+      }
+
+      // Check if direct chat already exists between these two users
+      const existingChat = await this.prisma.chat.findFirst({
+        where: {
+          organizationId,
+          type: 'direct',
+          AND: [
+            { members: { some: { userId: user1Id } } },
+            { members: { some: { userId: user2Id } } },
+          ],
+        },
+        include: {
+          members: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (existingChat) {
+        return existingChat;
+      }
+
+      // Create new direct chat
+      const chat = await this.prisma.chat.create({
+        data: {
+          organizationId,
+          type: 'direct',
+          name: null,
+          members: {
+            create: [
+              { userId: user1Id },
+              { userId: user2Id },
+            ],
+          },
+        },
+        include: {
+          members: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return chat;
+    } catch (error) {
+      console.error('Error creating/getting direct chat:', error);
+
+      if (error instanceof WsException) {
+        throw error;
+      }
+
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new WsException(`Failed to create direct chat: ${errorMessage}`);
+    }
+  }
 }
