@@ -235,6 +235,12 @@ export class ChatGateway
       // Broadcast to all in room
       this.server.to(payload.chatId).emit('receive_message', message);
 
+      // Broadcast to all clients to refresh their chat lists for unread counts
+      this.server.emit('refresh_chat_list', {
+        chatId: message.chatId,
+        timestamp: new Date(),
+      });
+
       // Send acknowledgment to sender
       client.emit('message_sent', {
         success: true,
