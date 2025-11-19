@@ -42,6 +42,7 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh }
     const socket = io("http://localhost:4000");
 
     socket.on("refresh_chat_list", () => {
+      console.log('🔔 Received refresh_chat_list event');
       loadChats(); // Refresh to update unread counts
     });
 

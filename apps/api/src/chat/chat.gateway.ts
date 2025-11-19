@@ -236,6 +236,7 @@ export class ChatGateway
       this.server.to(payload.chatId).emit('receive_message', message);
 
       // Broadcast to all clients to refresh their chat lists for unread counts
+      this.logger.log('🔔 Broadcasting refresh_chat_list to all clients');
       this.server.emit('refresh_chat_list', {
         chatId: message.chatId,
         timestamp: new Date(),
