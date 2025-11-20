@@ -43,24 +43,45 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
 
     const socket = io("http://localhost:4000");
 
+    // Debug: Log when socket connects
+    socket.on('connect', () => {
+      console.log('🔌 ChatList: Socket connected, ID:', socket.id);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('🔌 ChatList: Socket disconnected');
+    });
+
     // Listen for new messages to update unread counts in real-time
     socket.on("new_message", (message: any) => {
-      console.log('🔔 Received new_message event', message);
+      console.log('📨 ChatList: New message received:', {
+        messageId: message.id,
+        chatId: message.chatId,
+        content: message.content?.substring(0, 50),
+        activeChatId: activeChatId,
+      });
 
       // If message is for a different chat than the active one, increment unread count locally
       if (message.chatId !== activeChatId) {
-        setChats(prevChats =>
-          prevChats.map(chat =>
-            chat.id === message.chatId
-              ? { ...chat, unreadCount: (chat.unreadCount ?? 0) + 1 }
-              : chat
-          )
-        );
+        console.log('➕ ChatList: Incrementing unread count for chatId:', message.chatId);
+        setChats(prevChats => {
+          const updatedChats = prevChats.map(chat => {
+            if (chat.id === message.chatId) {
+              const newUnreadCount = (chat.unreadCount ?? 0) + 1;
+              console.log(`📊 ChatList: Chat "${chat.name}" unread count: ${chat.unreadCount ?? 0} → ${newUnreadCount}`);
+              return { ...chat, unreadCount: newUnreadCount };
+            }
+            return chat;
+          });
+          return updatedChats;
+        });
+      } else {
+        console.log('⏭️ ChatList: Message is for active chat, skipping unread increment');
       }
     });
 
     socket.on("refresh_chat_list", () => {
-      console.log('🔔 Received refresh_chat_list event');
+      console.log('🔔 ChatList: Received refresh_chat_list event');
       loadChats(); // Refresh to update unread counts
     });
 
@@ -72,6 +93,7 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
     window.addEventListener('online_users_changed', handleOnlineUsersChanged);
 
     return () => {
+      console.log('🧹 ChatList: Cleaning up socket connection');
       socket.disconnect();
       window.removeEventListener('online_users_changed', handleOnlineUsersChanged);
     };
@@ -88,12 +110,15 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
   // Reset unread count locally when a chat becomes active
   useEffect(() => {
     if (activeChatId) {
+      console.log('🎯 ChatList: Active chat changed to:', activeChatId);
       setChats(prevChats =>
-        prevChats.map(chat =>
-          chat.id === activeChatId
-            ? { ...chat, unreadCount: 0 }
-            : chat
-        )
+        prevChats.map(chat => {
+          if (chat.id === activeChatId && (chat.unreadCount ?? 0) > 0) {
+            console.log(`🔄 ChatList: Resetting unread count for chat "${chat.name}" from ${chat.unreadCount} to 0`);
+            return { ...chat, unreadCount: 0 };
+          }
+          return chat;
+        })
       );
     }
   }, [activeChatId]);
