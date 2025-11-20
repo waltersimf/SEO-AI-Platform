@@ -41,8 +41,23 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
   useEffect(() => {
     loadChats();
 
-    // Listen for new messages to update unread counts
     const socket = io("http://localhost:4000");
+
+    // Listen for new messages to update unread counts in real-time
+    socket.on("new_message", (message: any) => {
+      console.log('🔔 Received new_message event', message);
+
+      // If message is for a different chat than the active one, increment unread count locally
+      if (message.chatId !== activeChatId) {
+        setChats(prevChats =>
+          prevChats.map(chat =>
+            chat.id === message.chatId
+              ? { ...chat, unreadCount: (chat.unreadCount ?? 0) + 1 }
+              : chat
+          )
+        );
+      }
+    });
 
     socket.on("refresh_chat_list", () => {
       console.log('🔔 Received refresh_chat_list event');
@@ -60,7 +75,7 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
       socket.disconnect();
       window.removeEventListener('online_users_changed', handleOnlineUsersChanged);
     };
-  }, []);
+  }, [activeChatId]); // Add activeChatId as dependency to get latest value in event handler
 
   // Expose loadChats to parent via onRefresh callback
   useEffect(() => {
@@ -69,6 +84,19 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
       (window as any).refreshChatList = loadChats;
     }
   }, [onRefresh]);
+
+  // Reset unread count locally when a chat becomes active
+  useEffect(() => {
+    if (activeChatId) {
+      setChats(prevChats =>
+        prevChats.map(chat =>
+          chat.id === activeChatId
+            ? { ...chat, unreadCount: 0 }
+            : chat
+        )
+      );
+    }
+  }, [activeChatId]);
 
   const loadChats = async () => {
     try {
