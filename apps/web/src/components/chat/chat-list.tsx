@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Plus, MessageCircle, User, Users } from "lucide-react";
 import { io } from "socket.io-client";
 
@@ -38,6 +38,15 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
   const [loading, setLoading] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
 
+  // Use ref to track current activeChatId to avoid stale closure in socket listener
+  const activeChatIdRef = useRef(activeChatId);
+
+  // Update ref whenever activeChatId changes
+  useEffect(() => {
+    activeChatIdRef.current = activeChatId;
+    console.log('🔄 ChatList: activeChatIdRef updated to:', activeChatId);
+  }, [activeChatId]);
+
   useEffect(() => {
     loadChats();
 
@@ -58,11 +67,11 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
         messageId: message.id,
         chatId: message.chatId,
         content: message.content?.substring(0, 50),
-        activeChatId: activeChatId,
+        activeChatId: activeChatIdRef.current,
       });
 
       // If message is for a different chat than the active one, increment unread count locally
-      if (message.chatId !== activeChatId) {
+      if (message.chatId !== activeChatIdRef.current) {
         console.log('➕ ChatList: Incrementing unread count for chatId:', message.chatId);
         setChats(prevChats => {
           const updatedChats = prevChats.map(chat => {
@@ -97,7 +106,7 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
       socket.disconnect();
       window.removeEventListener('online_users_changed', handleOnlineUsersChanged);
     };
-  }, [activeChatId]); // Add activeChatId as dependency to get latest value in event handler
+  }, []); // Remove activeChatId from dependencies - use ref instead!
 
   // Expose loadChats to parent via onRefresh callback
   useEffect(() => {
