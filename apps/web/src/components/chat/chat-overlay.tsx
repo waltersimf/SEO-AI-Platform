@@ -28,57 +28,45 @@ export function ChatOverlay({
   organizationId,
   onChatDeleted,
 }: ChatOverlayProps) {
-  // Handle Escape key to close overlay
+  // Close on Escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
         onClose();
       }
     };
-
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
   }, [isOpen, onClose]);
 
-  // Prevent body scroll when overlay is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
-
-    return () => {
-      document.body.style.overflow = "unset";
-    };
-  }, [isOpen]);
-
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop - dims Dashboard but NOT input bar */}
       <div
-        className={`fixed bg-black/40 backdrop-blur-sm transition-opacity duration-300 z-40 ${
+        className={`fixed bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
         style={{
           left: "256px",
           right: 0,
           top: 0,
-          bottom: 0
+          bottom: "100px",
+          zIndex: 30
         }}
         onClick={onClose}
       />
 
-      {/* Overlay - Starts from bottom 0, translates up to 80px when open */}
+      {/* Overlay - floating panel with gap above input bar */}
       <div
-        className={`fixed right-0 z-50 bg-background rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out ${
-          isOpen ? "translate-y-[-80px]" : "translate-y-full"
+        className={`fixed right-0 bg-background rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out ${
+          isOpen ? "translate-y-0" : "translate-y-full"
         }`}
         style={{
           left: "256px",
-          bottom: "0",
-          height: "calc(100vh - 80px)",
-          maxHeight: "700px"
+          bottom: "100px",
+          height: "60vh",
+          maxHeight: "600px",
+          zIndex: 50
         }}
       >
         {/* Header */}
@@ -96,7 +84,7 @@ export function ChatOverlay({
         {/* Content - Split Layout */}
         <div className="flex h-[calc(100%-64px)]">
           {/* Chat List - Left Side (300px) */}
-          <div className="w-[300px] border-r">
+          <div className="w-[300px] border-r overflow-y-auto">
             <ChatList
               activeChatId={activeChatId || undefined}
               onChatSelect={onChatSelect}
@@ -108,7 +96,7 @@ export function ChatOverlay({
           </div>
 
           {/* Active Chat - Right Side */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col overflow-hidden">
             {activeChatId && currentUserId && currentUserName && organizationId ? (
               <ChatBox
                 chatId={activeChatId}
