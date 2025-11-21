@@ -72,7 +72,7 @@ export function ChatOverlay({
 
       {/* Overlay */}
       <div
-        className={`fixed bg-background rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out ${
+        className={`fixed bg-background rounded-2xl shadow-2xl transition-transform duration-300 ease-out ${
           isOpen ? "translate-y-0" : "translate-y-[calc(100%+120px)]"
         }`}
         style={{
@@ -97,7 +97,7 @@ export function ChatOverlay({
 
         {/* Content */}
         <div className="flex h-[calc(100%-64px)]">
-          <div className="w-[300px] border-r overflow-y-auto">
+          <div className="w-[300px] border-r overflow-y-auto overflow-x-hidden">
             <ChatList
               activeChatId={activeChatId || undefined}
               onChatSelect={onChatSelect}
