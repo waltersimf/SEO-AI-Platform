@@ -55,6 +55,18 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
     // Debug: Log when socket connects
     socket.on('connect', () => {
       console.log('🔌 ChatList: Socket connected, ID:', socket.id);
+
+      // Join organization room to receive new_message events
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          console.log('🏢 ChatList: Joining organization room:', payload.organizationId);
+          socket.emit('join_organization', payload.organizationId);
+        } catch (error) {
+          console.error('❌ ChatList: Failed to parse token for organization join:', error);
+        }
+      }
     });
 
     socket.on('disconnect', () => {
