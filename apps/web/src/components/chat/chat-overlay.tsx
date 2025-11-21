@@ -7,8 +7,8 @@ import { ChatBox } from "./chat-box";
 import { cn } from "@/lib/utils";
 
 const SIDEBAR_WIDTH = 256;
-const OVERLAY_BOTTOM_OFFSET = 100; // висота input bar
-const OVERLAY_HEIGHT = 350;
+const OVERLAY_BOTTOM_OFFSET = 60; // висота input bar
+const OVERLAY_HEIGHT = 500;
 
 interface ChatOverlayProps {
   isOpen: boolean;
