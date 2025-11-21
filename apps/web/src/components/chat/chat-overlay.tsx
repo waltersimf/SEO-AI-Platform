@@ -63,14 +63,14 @@ export function ChatOverlay({
         onClick={onClose}
       />
 
-      {/* Overlay - Positioned above input bar */}
+      {/* Overlay - Starts from bottom 0, translates up to 80px when open */}
       <div
         className={`fixed left-0 right-0 z-50 bg-background rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out ${
-          isOpen ? "translate-y-0" : "translate-y-full"
+          isOpen ? "translate-y-[-80px]" : "translate-y-full"
         }`}
         style={{
-          bottom: "80px", // Leave space for input bar
-          height: "calc(100vh - 160px)", // Account for input bar height
+          bottom: "0",
+          height: "calc(100vh - 80px)",
           maxHeight: "700px"
         }}
       >
