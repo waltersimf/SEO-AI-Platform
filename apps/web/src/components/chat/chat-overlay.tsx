@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { ChatList } from "./chat-list";
 import { ChatBox } from "./chat-box";
 import { cn } from "@/lib/utils";
 
 const SIDEBAR_WIDTH = 256;
+const OVERLAY_BOTTOM_OFFSET = 100; // висота input bar
+const OVERLAY_HEIGHT = 500;
 
 interface ChatOverlayProps {
   isOpen: boolean;
@@ -20,6 +22,11 @@ interface ChatOverlayProps {
   onChatDeleted?: (chatId: string) => void;
 }
 
+type Bounds = {
+  left: number;
+  width: number;
+};
+
 export function ChatOverlay({
   isOpen,
   onClose,
@@ -31,59 +38,81 @@ export function ChatOverlay({
   organizationId,
   onChatDeleted,
 }: ChatOverlayProps) {
-  // Handle Escape key to close overlay
+  const [bounds, setBounds] = useState<Bounds | null>(null);
+
+  // Зчитуємо розміри input bar
+  useEffect(() => {
+    function updateBounds() {
+      const el = document.getElementById("chat-input-bar");
+      if (!el) return;
+
+      const rect = el.getBoundingClientRect();
+      setBounds({
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+
+    updateBounds();
+    window.addEventListener("resize", updateBounds);
+    return () => window.removeEventListener("resize", updateBounds);
+  }, []);
+
+  // Закриття по Escape
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
-        onClose();
-      }
+      if (e.key === "Escape" && isOpen) onClose();
     };
 
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
   }, [isOpen, onClose]);
 
-  // Prevent body scroll when overlay is open
+  // Лочимо скрол тіла, коли overlay відкритий
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
+    if (!isOpen) return;
 
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = prev || "unset";
     };
   }, [isOpen]);
 
+  // Фолбек, якщо bounds ще не встигли порахуватися
+  const left = bounds?.left ?? SIDEBAR_WIDTH;
+  const width = bounds?.width ?? window.innerWidth - SIDEBAR_WIDTH;
+
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop тільки над контентом справа від sidebar */}
       <div
-        className={`fixed bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${
-          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
+        className={cn(
+          "fixed bg-black/40 backdrop-blur-sm transition-opacity duration-300",
+          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
         style={{
-          left: "256px",
-          right: 0,
+          left,
+          width,
           top: 0,
-          bottom: "100px",
-          zIndex: 30
+          bottom: OVERLAY_BOTTOM_OFFSET,
+          zIndex: 40,
         }}
         onClick={onClose}
       />
 
-      {/* Overlay */}
+      {/* Саме вікно чату */}
       <div
-        className={`fixed bg-background rounded-2xl shadow-2xl transition-transform duration-300 ease-out ${
+        className={cn(
+          "fixed bg-background rounded-2xl shadow-2xl transition-transform duration-300 ease-out overflow-hidden flex flex-col",
           isOpen ? "translate-y-0" : "translate-y-[calc(100%+120px)]"
-        }`}
+        )}
         style={{
-          left: "256px",
-          right: 0,
-          bottom: "100px",
-          height: "500px",
-          zIndex: 50
+          left,
+          width,
+          bottom: OVERLAY_BOTTOM_OFFSET,
+          height: OVERLAY_HEIGHT,
+          zIndex: 50,
         }}
       >
         {/* Header */}
@@ -91,7 +120,7 @@ export function ChatOverlay({
           <h2 className="text-xl font-semibold">Messages</h2>
           <button
             onClick={onClose}
-            className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-muted transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-muted transition-colors"
             title="Close"
           >
             <X className="h-5 w-5" />
@@ -99,7 +128,8 @@ export function ChatOverlay({
         </div>
 
         {/* Content */}
-        <div className="flex h-[calc(100%-64px)]">
+        <div className="flex flex-1">
+          {/* Список чатів */}
           <div className="w-[300px] border-r overflow-y-auto overflow-x-hidden">
             <ChatList
               activeChatId={activeChatId || undefined}
@@ -110,7 +140,9 @@ export function ChatOverlay({
               compact
             />
           </div>
-          <div className="flex-1 flex flex-col overflow-hidden">
+
+          {/* Вміст чату */}
+          <div className="flex flex-1 flex-col overflow-hidden">
             {activeChatId && currentUserId && currentUserName && organizationId ? (
               <ChatBox
                 chatId={activeChatId}
@@ -119,9 +151,9 @@ export function ChatOverlay({
                 organizationId={organizationId}
               />
             ) : (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground">
+              <div className="flex flex-1 items-center justify-center text-muted-foreground">
                 <div className="text-center">
-                  <p className="text-lg mb-2">No chat selected</p>
+                  <p className="mb-2 text-lg">No chat selected</p>
                   <p className="text-sm">Select a chat from the list</p>
                 </div>
               </div>
