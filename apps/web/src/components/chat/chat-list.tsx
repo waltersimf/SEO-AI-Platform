@@ -33,9 +33,10 @@ interface ChatListProps {
   onRefresh?: () => void;
   currentUserId?: string;
   onChatDeleted?: (chatId: string) => void;
+  compact?: boolean; // For smaller padding in overlay mode
 }
 
-export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, currentUserId, onChatDeleted }: ChatListProps) {
+export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, currentUserId, onChatDeleted, compact = false }: ChatListProps) {
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
@@ -232,9 +233,17 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
     return onlineUsers.includes(userId);
   };
 
-  // Separate chats into direct and group
-  const directChats = chats.filter(chat => chat.type === 'direct');
-  const groupChats = chats.filter(chat => chat.type !== 'direct');
+  // Sort all chats by last message timestamp (newest first)
+  const sortedChats = [...chats].sort((a, b) => {
+    const aLastMessage = a.messages[0];
+    const bLastMessage = b.messages[0];
+
+    if (!aLastMessage && !bLastMessage) return 0;
+    if (!aLastMessage) return 1;
+    if (!bLastMessage) return -1;
+
+    return new Date(bLastMessage.createdAt).getTime() - new Date(aLastMessage.createdAt).getTime();
+  });
 
   if (loading) {
     return (
@@ -262,7 +271,9 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
       >
         <button
           onClick={() => onChatSelect(chat.id)}
-          className="w-full p-4 text-left hover:bg-muted/50 transition-colors"
+          className={`w-full text-left hover:bg-muted/50 transition-colors ${
+            compact ? "p-3" : "p-4"
+          }`}
         >
           <div className="flex items-start gap-3">
             {/* Avatar */}
@@ -347,54 +358,30 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
   };
 
   return (
-    <div className="w-80 border-r bg-muted/10 flex flex-col">
+    <div className="w-80 border-r bg-muted/10 flex flex-col h-full">
       {/* Header with Create Button */}
-      <div className="p-4 border-b">
+      <div className={`border-b ${compact ? "p-3" : "p-4"}`}>
         <button
           onClick={onCreateChat}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+          className={`w-full flex items-center justify-center gap-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors ${
+            compact ? "py-2 text-sm" : "py-2"
+          }`}
         >
           <Plus className="h-4 w-4" />
           <span className="font-medium">New Group Chat</span>
         </button>
       </div>
 
-      {/* Chat List */}
+      {/* Chat List - All chats mixed, sorted by timestamp */}
       <div className="flex-1 overflow-y-auto">
-        {chats.length === 0 ? (
-          <div className="p-4 text-center text-muted-foreground text-sm">
+        {sortedChats.length === 0 ? (
+          <div className={`text-center text-muted-foreground text-sm ${compact ? "p-3" : "p-4"}`}>
             No chats yet. Start a conversation!
           </div>
         ) : (
-          <>
-            {/* Direct Messages Section */}
-            {directChats.length > 0 && (
-              <div>
-                <div className="px-4 py-2 bg-muted/30">
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    Direct Messages
-                  </h3>
-                </div>
-                <div className="divide-y">
-                  {directChats.map(renderChatItem)}
-                </div>
-              </div>
-            )}
-
-            {/* Group Chats Section */}
-            {groupChats.length > 0 && (
-              <div>
-                <div className="px-4 py-2 bg-muted/30">
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    Group Chats
-                  </h3>
-                </div>
-                <div className="divide-y">
-                  {groupChats.map(renderChatItem)}
-                </div>
-              </div>
-            )}
-          </>
+          <div className="divide-y">
+            {sortedChats.map(renderChatItem)}
+          </div>
         )}
       </div>
 

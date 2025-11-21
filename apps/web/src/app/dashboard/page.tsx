@@ -2,17 +2,21 @@
 
 import { GoogleConnectButton } from "@/components/integrations/google-connect-button";
 import { GscMetricsCard } from "@/components/gsc-metrics-card";
-import { ChatBox } from "@/components/chat/chat-box";
-import { ChatList } from "@/components/chat/chat-list";
 import { CreateChatDialog } from "@/components/chat/create-chat-dialog";
 import { UserList } from "@/components/users/user-list";
+import { ChatInputBar } from "@/components/chat/chat-input-bar";
+import { ChatOverlay } from "@/components/chat/chat-overlay";
+import { ToastManager } from "@/components/chat/notifications/toast-manager";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { io } from "socket.io-client";
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [totalUnreadCount, setTotalUnreadCount] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -37,8 +41,82 @@ export default function DashboardPage() {
     }
   }, [router]);
 
+  // Socket listener for new messages (show toast if overlay closed)
+  useEffect(() => {
+    if (!user?.organizationId) return;
+
+    const socket = io("http://localhost:4000");
+
+    socket.on("connect", () => {
+      console.log("🔌 Dashboard: Socket connected");
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          socket.emit("join_organization", payload.organizationId);
+        } catch (error) {
+          console.error("Failed to join organization:", error);
+        }
+      }
+    });
+
+    socket.on("new_message", (message: any) => {
+      console.log("📨 Dashboard: New message received", message);
+
+      // Show toast only if overlay is closed and message is not from current user
+      if (!isChatOpen && message.authorId !== user.id) {
+        const addToast = (window as any).addChatToast;
+        if (addToast) {
+          addToast({
+            id: message.id,
+            chatId: message.chatId,
+            chatName: message.chat?.name || "Direct Message",
+            message: message.content,
+            authorName: message.author?.name || "Unknown",
+          });
+        }
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [user, isChatOpen]);
+
+  // Fetch total unread count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const response = await fetch("http://localhost:4000/api/chat/list", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const chats = await response.json();
+          const total = chats.reduce((sum: number, chat: any) => sum + (chat.unreadCount || 0), 0);
+          setTotalUnreadCount(total);
+        }
+      } catch (error) {
+        console.error("Failed to fetch unread count:", error);
+      }
+    };
+
+    if (user) {
+      fetchUnreadCount();
+      // Refresh every 30 seconds
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
   const handleChatSelect = async (chatId: string) => {
     setActiveChatId(chatId);
+    setIsChatOpen(true); // Open overlay when chat selected
 
     // Mark chat as read on the backend
     try {
@@ -52,6 +130,9 @@ export default function DashboardPage() {
         },
       });
 
+      // Update local unread count
+      setTotalUnreadCount((prev) => Math.max(0, prev - 1));
+
       // No need to refresh - ChatList handles unread count reset locally
 
     } catch (error) {
@@ -60,27 +141,7 @@ export default function DashboardPage() {
   };
 
   const handleChatCreated = async (chatId: string) => {
-    setActiveChatId(chatId);
-
-    // Mark newly created chat as read
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      await fetch(`http://localhost:4000/api/chat/${chatId}/read`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      // Refresh chat list to update unread counts
-      if ((window as any).refreshChatList) {
-        (window as any).refreshChatList();
-      }
-    } catch (error) {
-      console.error("Error marking chat as read:", error);
-    }
+    handleChatSelect(chatId); // This will open overlay and select chat
   };
 
   const handleUserClick = async (userId: string) => {
@@ -97,20 +158,7 @@ export default function DashboardPage() {
 
       if (response.ok) {
         const chat = await response.json();
-        setActiveChatId(chat.id);
-
-        // Mark direct chat as read
-        await fetch(`http://localhost:4000/api/chat/${chat.id}/read`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        // Refresh chat list to update unread counts
-        if ((window as any).refreshChatList) {
-          (window as any).refreshChatList();
-        }
+        handleChatSelect(chat.id); // This will open overlay and select chat
       } else {
         console.error("Failed to create direct chat");
       }
@@ -127,6 +175,12 @@ export default function DashboardPage() {
     }
   };
 
+  const handleToastClick = (chatId: string) => {
+    // Open overlay and select chat
+    setActiveChatId(chatId);
+    setIsChatOpen(true);
+  };
+
   if (!user) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -136,18 +190,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Sidebar - Chat List */}
-      <ChatList
-        activeChatId={activeChatId || undefined}
-        onChatSelect={handleChatSelect}
-        onCreateChat={() => setIsCreateDialogOpen(true)}
-        currentUserId={user?.id}
-        onChatDeleted={handleChatDeleted}
-      />
-
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
+    <div className="h-screen bg-background flex flex-col">
+      {/* Main Content - Add padding bottom for input bar */}
+      <div className="flex-1 overflow-auto pb-20">
         <div className="p-8">
           <div className="max-w-6xl mx-auto space-y-8">
             {/* Welcome Section */}
@@ -334,22 +379,32 @@ export default function DashboardPage() {
               <h2 className="text-2xl font-bold mb-4">Direct Messages</h2>
               <UserList onUserClick={handleUserClick} currentUserId={user.id} />
             </div>
-
-            {/* Chat Area */}
-            {activeChatId && (
-              <div className="mt-8">
-                <h2 className="text-2xl font-bold mb-4">Active Chat</h2>
-                <ChatBox
-                  chatId={activeChatId}
-                  userId={user.id}
-                  userName={user.name}
-                  organizationId={user.organizationId}
-                />
-              </div>
-            )}
           </div>
         </div>
       </div>
+
+      {/* Chat Input Bar - Fixed Bottom */}
+      <ChatInputBar
+        isOpen={isChatOpen}
+        onToggle={() => setIsChatOpen(!isChatOpen)}
+        unreadCount={totalUnreadCount}
+      />
+
+      {/* Chat Overlay - Slide Up/Down */}
+      <ChatOverlay
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        activeChatId={activeChatId}
+        onChatSelect={handleChatSelect}
+        onCreateChat={() => setIsCreateDialogOpen(true)}
+        currentUserId={user.id}
+        currentUserName={user.name}
+        organizationId={user.organizationId}
+        onChatDeleted={handleChatDeleted}
+      />
+
+      {/* Toast Notifications - Top Right */}
+      <ToastManager onToastClick={handleToastClick} />
 
       {/* Create Chat Dialog */}
       <CreateChatDialog
