@@ -4,6 +4,9 @@ import { useEffect } from "react";
 import { X } from "lucide-react";
 import { ChatList } from "./chat-list";
 import { ChatBox } from "./chat-box";
+import { cn } from "@/lib/utils";
+
+const SIDEBAR_WIDTH = 256;
 
 interface ChatOverlayProps {
   isOpen: boolean;
@@ -57,18 +60,31 @@ export function ChatOverlay({
     <>
       {/* Backdrop */}
       <div
-        className={`fixed top-0 bottom-[100px] right-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 z-30 ${
+        className={`fixed bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
-        style={{ left: "256px" }}
+        style={{
+          left: "256px",
+          right: 0,
+          top: 0,
+          bottom: "100px",
+          zIndex: 30
+        }}
         onClick={onClose}
       />
 
       {/* Overlay */}
-     <div
-  className={`fixed left-[256px] right-0 bottom-[100px] h-[500px] bg-background rounded-2xl shadow-2xl transition-transform duration-300 ease-out z-50 ${
-    isOpen ? "translate-y-0" : "translate-y-[calc(100%+120px)]"
-  }`}
+      <div
+        className={`fixed bg-background rounded-2xl shadow-2xl transition-transform duration-300 ease-out ${
+          isOpen ? "translate-y-0" : "translate-y-[calc(100%+120px)]"
+        }`}
+        style={{
+          left: "256px",
+          right: 0,
+          bottom: "100px",
+          height: "500px",
+          zIndex: 50
+        }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
@@ -84,7 +100,7 @@ export function ChatOverlay({
 
         {/* Content */}
         <div className="flex h-[calc(100%-64px)]">
-          <div className="w-[300px] border-r overflow-y-auto">
+          <div className="w-[300px] border-r overflow-y-auto overflow-x-hidden">
             <ChatList
               activeChatId={activeChatId || undefined}
               onChatSelect={onChatSelect}
