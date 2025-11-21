@@ -21,6 +21,11 @@ export class ChatService {
               name: true,
             },
           },
+          chat: {
+            select: {
+              organizationId: true,
+            },
+          },
         },
       });
 
