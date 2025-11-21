@@ -66,13 +66,12 @@ export function ChatOverlay({
           bottom: OVERLAY_BOTTOM_OFFSET,
         }}
       >
-        {/* ТАКИЙ САМИЙ контейнер, як у Dashboard: спочатку px-8, потім max-w-6xl mx-auto */}
-        <div className="px-8">
-          <div className="max-w-6xl mx-auto">
-            <div
-              className="bg-background rounded-2xl border border-border flex flex-col overflow-hidden"
-              style={{ height: OVERLAY_HEIGHT }}
-            >
+        {/* Контейнер з max-w і padding всередині */}
+        <div className="max-w-6xl mx-auto px-8">
+          <div
+            className="bg-background rounded-2xl border border-border flex flex-col overflow-hidden"
+            style={{ height: OVERLAY_HEIGHT }}
+          >
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b">
                 <h2 className="text-xl font-semibold">Messages</h2>
@@ -122,7 +121,6 @@ export function ChatOverlay({
                 </div>
               </div>
             </div>
-          </div>
         </div>
       </div>
     </>
