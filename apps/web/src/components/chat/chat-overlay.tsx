@@ -55,22 +55,6 @@ export function ChatOverlay({
 
   return (
     <>
-      {/* Backdrop тільки над контентом, не над sidebar і не над input bar */}
-      <div
-        className={cn(
-          "fixed bg-black/40 backdrop-blur-sm transition-opacity duration-300",
-          isOpen ? "opacity-0 pointer-events-auto" : "opacity-0 pointer-events-none"
-        )}
-        style={{
-          left: SIDEBAR_WIDTH,
-          right: 0,
-          top: 0,
-          bottom: OVERLAY_BOTTOM_OFFSET,
-          zIndex: 40,
-        }}
-        onClick={onClose}
-      />
-
       {/* ROOT overlay — така ж область, як у ChatInputBar */}
       <div
         className={cn(
@@ -84,7 +68,7 @@ export function ChatOverlay({
         {/* 🔥 ТА САМА ОБГОРТКА, ЩО В ChatInputBar */}
         <div className="max-w-[1600px] mx-auto px-8">
           {/* Біла панель чату */}
-          <div className="bg-background rounded-2xl shadow-2xl flex flex-col overflow-hidden" style={{ height: OVERLAY_HEIGHT }}>
+          <div className="bg-background rounded-2xl border border-border flex flex-col overflow-hidden" style={{ height: OVERLAY_HEIGHT }}>
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b">
               <h2 className="text-xl font-semibold">Messages</h2>
