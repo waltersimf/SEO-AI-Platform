@@ -11,11 +11,12 @@ interface ChatInputBarProps {
 export function ChatInputBar({ isOpen, onToggle, unreadCount = 0 }: ChatInputBarProps) {
   return (
     <div
-      id="chat-input-bar"
-      className="fixed bottom-0 right-0 z-40"
+            className="fixed bottom-0 right-0 z-40"
       style={{ left: "256px" }}
     >
-      <div className="max-w-[1600px] mx-auto px-8 py-4">
+      <div 
+      id="chat-input-bar"
+      className="max-w-[1600px] mx-auto px-8 py-4">
         {/* Single container with button inside */}
         <div
           className="relative flex items-center gap-3 px-4 py-2.5 bg-muted hover:bg-muted/90 rounded-lg cursor-pointer transition-colors"
