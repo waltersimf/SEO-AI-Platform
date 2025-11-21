@@ -20,22 +20,15 @@ export function ChatInputBar({
       className="fixed bottom-0 right-0 z-40"
       style={{ left: SIDEBAR_WIDTH }}
     >
-      <div
-      id="chat-input-bar"
-      className="max-w-6xl mx-auto px-8 py-4">
-        {/* Single container with button inside */}
-        <div
-          className="relative flex items-center gap-3 px-4 py-2.5 bg-muted hover:bg-muted/90 rounded-lg cursor-pointer transition-colors"
-          onClick={() => !isOpen && onToggle()}
-        >
-          <MessageCircle className="h-5 w-5 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Type message..."
-            className="flex-1 bg-transparent outline-none text-sm pointer-events-none"
-            readOnly
-          />
-
+      {/* ТАКИЙ САМИЙ контейнер, як у Dashboard: спочатку px-8, потім max-w-6xl mx-auto */}
+      <div className="px-8 py-4">
+        <div className="max-w-6xl mx-auto">
+          <div
+            id="chat-input-bar"
+            className="relative flex items-center gap-3 px-4 py-2.5 bg-muted hover:bg-muted/90 rounded-lg cursor-pointer transition-colors"
+            onClick={() => !isOpen && onToggle()}
+          >
+            <MessageCircle className="h-5 w-5 text-muted-foreground" />
             <input
               type="text"
               placeholder="Type message..."
