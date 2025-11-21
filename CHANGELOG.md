@@ -1,8 +1,8 @@
 # 📦 CHANGELOG
 
-**Версія документу:** 4.0  
+**Версія документу:** 4.1  
 **Останнє оновлення:** 21.11.2025  
-**Поточна версія:** v0.3 🔄 **90% COMPLETE**
+**Поточна версія:** v0.3 🔄 **95% COMPLETE**
 
 ---
 
@@ -19,7 +19,7 @@
 ## v0.3 - Chat Infrastructure
 
 **Період:** 16.11.2025 → 21.11.2025 (5 днів)  
-**Статус:** 🔄 90% Complete  
+**Статус:** 🔄 95% Complete  
 **Мета:** Production-ready real-time командний чат
 
 ### 🎯 Acceptance Criteria
@@ -38,11 +38,12 @@
 - ✅ Real-time unread counters
 - ✅ Chat types (Direct vs Group)
 
-**Nice-to-have:** 🔴 0/2
-- ❌ Delete chat функціонал
-- ❌ Окрема `/chat` сторінка
+**Nice-to-have:** 🔴 0/3
+- ❌ UI/UX redesign (Telegram-style overlay)
+- ⚪ Browser notifications (optional)
+- ⚪ Sound notifications (optional)
 
-**Загальний прогрес:** 10/12 критеріїв = **83%** ✅
+**Загальний прогрес:** 10/13 критеріїв = **77%** ✅
 
 ---
 
@@ -204,6 +205,31 @@ socket.on('new_message', (message) => {
 // Backend
 this.server.to(`org:${organizationId}`).emit('new_message', message);
 ```
+
+---
+
+#### Delete Chat ⭐ NEW! (21.11.2025)
+
+**Features:**
+- ✅ Delete button (trash icon, visible on hover)
+- ✅ Confirmation dialog with warning
+- ✅ Backend verification (only members can delete)
+- ✅ Cascade delete (messages + members)
+- ✅ Local state update (no page refresh)
+- ✅ Clears activeChatId if deleted
+
+**Backend:**
+- `DELETE /api/chat/:id` endpoint
+- Member verification (403 Forbidden if not member)
+- Prisma cascade automatically deletes related data
+- Error handling: 404 Not Found, 403 Forbidden, 500 Server Error
+
+**Frontend:**
+- Hover over chat → trash icon appears
+- Click → confirmation dialog opens
+- Warning: "This will permanently delete all messages"
+- On confirm → DELETE request → remove from UI
+- If active chat deleted → selection clears
 
 ---
 
@@ -387,94 +413,363 @@ socket.on('new_message', (message) => {
 
 ---
 
-## 🔴 Що залишилось (10%)
+## 🔴 Що залишилось (5%)
 
-### 1. Delete Chat Functionality (30 хв) 🔴
+### 1. ✅ Delete Chat Functionality - DONE! (21.11.2025)
 
 **Backend:**
-```typescript
-// apps/api/src/chat/chat.controller.ts
-@Delete(':id')
-async deleteChat(@Param('id') chatId: string, @Req() req) {
-  // 1. Verify user has permission
-  // 2. Cascade delete messages and members
-  // 3. Return success
-}
-```
+- ✅ `DELETE /api/chat/:id` endpoint
+- ✅ Member verification (403 if not member)
+- ✅ Cascade delete (messages + members)
+- ✅ Error handling (404, 403, 500)
 
 **Frontend:**
-```tsx
-// apps/web/src/components/chat/chat-list.tsx
-<Button onClick={() => handleDelete(chat.id)}>
-  <Trash2 className="h-4 w-4" />
-</Button>
+- ✅ Delete button (trash icon, shows on hover)
+- ✅ Confirmation dialog component with warning
+- ✅ Remove from local state without API call
+- ✅ Clear activeChatId if deleted chat was active
 
-// Confirmation dialog
-"Are you sure you want to delete this chat?"
-[Cancel] [Delete]
-```
-
-**Файли для зміни:**
+**Files Changed:**
 - `apps/api/src/chat/chat.controller.ts` - DELETE endpoint
 - `apps/api/src/chat/chat.service.ts` - deleteChat method
-- `apps/web/src/components/chat/chat-list.tsx` - Delete button + dialog
-
-**Час:** ~30 хвилин
+- `apps/web/src/components/chat/delete-chat-dialog.tsx` - NEW component
+- `apps/web/src/components/chat/chat-list.tsx` - Delete button + handler
+- `apps/web/src/app/dashboard/page.tsx` - onChatDeleted callback
 
 ---
 
-### 2. UI/UX Redesign - `/chat` Page (2-3 год) 🟡
+### 2. UI/UX Redesign - Telegram-Style Chat Overlay (2.5 год) 🔴
 
 **Поточна проблема:**
 - ❌ Chat змішаний з dashboard metrics
 - ❌ User List в main content (дивно виглядає)
 - ❌ Затіснений layout
+- ❌ ChatBox відкривається внизу (не видно)
 - ❌ Важко focus на розмовах
 
-**Рішення: Окрема `/chat` сторінка**
+**Рішення: Telegram-Style Floating Overlay**
 
-```
-┌──────────────────────────────────────────────────┐
-│  Forgeline              [Search]      [Profile]  │
-├───────────┬──────────────┬──────────────────────┤
-│  Users    │  Chats       │  Active Chat         │
-│  200px    │  320px       │  flex-1              │
-│           │              │                      │
-│  Boba 🟢  │  Biba 🔴3    │  ┌─────────────────┐ │
-│  Biba     │  Team Chat   │  │ Messages...     │ │
-│  John     │  Project A   │  │                 │ │
-│  Mike     │  Design      │  │ Boba: Hi!       │ │
-│  Sarah    │              │  │ You: Hello      │ │
-│           │              │  └─────────────────┘ │
-│ [+ DM]    │ [+ Group]    │  [Type message...]  │
-└───────────┴──────────────┴──────────────────────┘
-```
+#### Концепція (як у Telegram Desktop):
 
-**Переваги:**
-- ✅ Dedicated простір для розмов
-- ✅ Чистий, без distraction інтерфейс
-- ✅ Більше місця для messages
-- ✅ Better UX (як Slack/Discord)
-- ✅ Responsive (mobile → tabs)
-
-**Файли для створення:**
+**State 1: Dashboard (закритий чат)**
 ```
-apps/web/src/app/chat/
-├── page.tsx          # Main chat page
-├── layout.tsx        # 3-column layout wrapper
-└── components/
-    ├── user-sidebar.tsx    # Left column
-    ├── chat-sidebar.tsx    # Middle column
-    └── active-chat.tsx     # Right column
+═══════════════════════════════════════
+│ Dashboard Content (metrics, GSC...)  │
+│                                      │
+│                                      │
+│                                      │
+│                                      │
+├──────────────────────────────────────┤
+│ [💬] Type message...        [↑]      │ ← Input bar
+└──────────────────────────────────────┘
+    Fixed bottom, завжди видимий
 ```
 
-**Міграція з dashboard:**
-- Move `<UserList />` → user-sidebar.tsx
-- Move `<ChatList />` → chat-sidebar.tsx
-- Move `<ChatBox />` → active-chat.tsx
-- Update navigation (додати Chat link)
+**State 2: Chat Overlay Opened (перекриває Dashboard)**
+```
+═══════════════════════════════════════
+┌────────────┬─────────────────────────┐
+│ Chat List  │ Active Chat             │
+│ (300px)    │ (flex-1)                │
+│            │                         │
+│ 🔴 Biba 3  │ ┌─────────────────────┐ │
+│ Team Chat  │ │ Messages scroll...  │ │
+│ Project A  │ │                     │ │
+│ 🟢 John    │ │ Boba: Hi!           │ │
+│ Sarah      │ │ You: Hello          │ │
+│            │ └─────────────────────┘ │
+│            │                         │
+└────────────┴─────────────────────────┘
+│ [💬] Type message...        [↓]      │ ← Стрілочка вниз
+└──────────────────────────────────────┘
+    Click ↓ → закриває overlay
+```
 
-**Час:** 2-3 години
+**Ключові особливості:**
+- ✅ Overlay з `z-index: 50` (перекриває Dashboard)
+- ✅ Fixed input bar внизу (завжди видимий)
+- ✅ Toggle кнопка: ↑ (open) / ↓ (close)
+- ✅ ChatList БЕЗ розділення Direct/Group (як Telegram - mixed)
+- ✅ Split screen: ChatList | ActiveChat
+- ✅ Click поза overlay → НЕ закривається (тільки кнопка ↓)
+
+---
+
+#### Детальний Implementation Plan:
+
+**1. Chat Overlay Component (1 год)**
+
+**Створити:** `apps/web/src/components/chat/chat-overlay.tsx`
+
+**Структура:**
+```tsx
+export function ChatOverlay({ 
+  isOpen, 
+  onClose,
+  activeChatId,
+  onChatSelect 
+}) {
+  return (
+    <div className={`
+      fixed inset-0 z-50 bg-background
+      transition-transform duration-300
+      ${isOpen ? 'translate-y-0' : 'translate-y-full'}
+    `}>
+      <div className="h-full flex">
+        {/* Left: ChatList */}
+        <div className="w-[300px] border-r">
+          <ChatList 
+            activeChatId={activeChatId}
+            onChatSelect={onChatSelect}
+            compact={true} // No sections, all mixed
+          />
+        </div>
+        
+        {/* Right: ActiveChat */}
+        <div className="flex-1">
+          {activeChatId ? (
+            <ChatBox chatId={activeChatId} />
+          ) : (
+            <EmptyState />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+**Features:**
+- Fixed position overlay
+- Slide-up/down animation (300ms)
+- Split layout: 300px sidebar + flex-1 chat
+- Responsive: mobile → full width ChatList, swipe to ActiveChat
+
+---
+
+**2. Fixed Input Bar (30 хв)**
+
+**Оновити:** `apps/web/src/app/dashboard/page.tsx`
+
+**Додати компонент:**
+```tsx
+// apps/web/src/components/chat/chat-input-bar.tsx
+export function ChatInputBar({ 
+  onToggle, 
+  isOpen 
+}) {
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-40 
+                    bg-background border-t p-4">
+      <div className="flex items-center gap-2 max-w-7xl mx-auto">
+        <Input 
+          placeholder="Type message..."
+          className="flex-1"
+          onClick={!isOpen ? onToggle : undefined}
+        />
+        <Button 
+          onClick={onToggle}
+          variant="ghost"
+        >
+          {isOpen ? <ChevronDown /> : <ChevronUp />}
+        </Button>
+      </div>
+    </div>
+  );
+}
+```
+
+**Features:**
+- Fixed bottom position
+- z-index: 40 (під overlay але над Dashboard)
+- Click input → opens overlay (якщо закрито)
+- Toggle button: ↑/↓
+
+**Dashboard зміни:**
+- Додати padding-bottom: 80px (щоб контент не перекривався)
+- State: `const [chatOpen, setChatOpen] = useState(false)`
+- Render ChatInputBar + ChatOverlay
+
+---
+
+**3. ChatList Update - Remove Sections (30 хв)**
+
+**Оновити:** `apps/web/src/components/chat/chat-list.tsx`
+
+**Зміни:**
+```tsx
+// BEFORE (з секціями):
+<>
+  <div>DIRECT MESSAGES</div>
+  {directChats.map(...)}
+  
+  <div>GROUP CHATS</div>
+  {groupChats.map(...)}
+</>
+
+// AFTER (як Telegram - все mixed):
+<>
+  {chats
+    .sort((a, b) => {
+      // Sort by lastMessage timestamp
+      return b.lastMessage?.createdAt - a.lastMessage?.createdAt;
+    })
+    .map(chat => renderChatItem(chat))
+  }
+</>
+```
+
+**Features:**
+- Всі чати в одному списку (no sections)
+- Sort by last message timestamp (newest first)
+- Unread chats можуть бути pinned зверху (optional)
+- Компактний вигляд (менші відступи для overlay)
+
+---
+
+**4. Toast Notifications (30 хв)**
+
+**Створити:** `apps/web/src/components/notifications/toast-notification.tsx`
+
+**Компонент:**
+```tsx
+export function ToastNotification({ 
+  chatName, 
+  message, 
+  onClose,
+  onClick 
+}) {
+  return (
+    <div 
+      className="fixed top-4 right-4 z-[100] 
+                 bg-card border rounded-lg p-4 
+                 shadow-lg cursor-pointer
+                 animate-slide-in"
+      onClick={onClick}
+    >
+      <div className="flex items-start gap-3">
+        <Avatar />
+        <div>
+          <p className="font-semibold">{chatName}</p>
+          <p className="text-sm text-muted-foreground">
+            {message.substring(0, 50)}...
+          </p>
+        </div>
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+```
+
+**Features:**
+- Position: top-right (над overlay)
+- Click → opens overlay + selects chat
+- Close button (X)
+- **NO auto-hide** (користувач закриває вручну)
+- Slide-in animation
+- Multiple toasts → stack vertically
+
+**Integration:**
+- ChatList socket listener → trigger toast
+- Toast manager (queue, max 3 visible)
+
+---
+
+**5. Additional Polish (30 хв)**
+
+**Escape key to close overlay:**
+```tsx
+useEffect(() => {
+  const handleEscape = (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && chatOpen) {
+      setChatOpen(false);
+    }
+  };
+  window.addEventListener('keydown', handleEscape);
+  return () => window.removeEventListener('keydown', handleEscape);
+}, [chatOpen]);
+```
+
+**Loading states:**
+- Skeleton loader in ChatList
+- Spinner in ChatBox while loading messages
+
+**Empty states:**
+- No chats yet → "Start a conversation"
+- No chat selected → "Select a chat to start messaging"
+
+---
+
+#### Files to Create/Modify:
+
+**New Files:**
+```
+apps/web/src/components/chat/
+├── chat-overlay.tsx           # NEW - Main overlay component
+├── chat-input-bar.tsx         # NEW - Fixed bottom input
+└── notifications/
+    └── toast-notification.tsx # NEW - Toast component
+```
+
+**Modified Files:**
+```
+apps/web/src/app/dashboard/page.tsx
+  - Add ChatOverlay
+  - Add ChatInputBar
+  - Add state management
+  - Add padding-bottom for input bar
+
+apps/web/src/components/chat/chat-list.tsx
+  - Remove Direct/Group sections
+  - Add compact mode prop
+  - Sort by timestamp (newest first)
+  - Smaller padding for overlay mode
+
+apps/web/src/components/chat/chat-box.tsx
+  - Adjust for overlay layout
+  - Remove header (optional, або minimal)
+```
+
+---
+
+#### Testing Checklist:
+
+- [ ] Click ↑ → overlay slides up
+- [ ] Click ↓ → overlay slides down
+- [ ] Click input (closed) → opens overlay
+- [ ] Select chat → shows messages
+- [ ] New message → toast appears
+- [ ] Click toast → opens overlay + selects chat
+- [ ] Close toast manually (X button)
+- [ ] Escape key closes overlay
+- [ ] Multiple toasts stack correctly
+- [ ] Responsive on mobile
+- [ ] Overlay doesn't close on outside click
+- [ ] ChatList shows all chats mixed (no sections)
+- [ ] Unread badges work
+- [ ] Typing indicators work
+- [ ] Online status works
+
+---
+
+**Час виконання:**
+- Chat Overlay Component: 1 год
+- Fixed Input Bar: 30 хв
+- ChatList Update: 30 хв
+- Toast Notifications: 30 хв
+- Polish + Testing: 30 хв
+
+**Total: ~2.5 години**
 
 ---
 
@@ -649,8 +944,8 @@ socket.on('new_message', () => audio.play());
 
 ---
 
-**Останнє оновлення:** 21.11.2025, 21:30  
+**Останнє оновлення:** 21.11.2025, 22:15  
 **Автор:** Claude + Володимир  
-**Версія:** 4.0
+**Версія:** 4.1
 
-**v0.3 майже готово! Ще трохи і запускаємо! 🚀**
+**v0.3 95% готово! Delete ✅ Залишився тільки UI redesign! 🚀**
