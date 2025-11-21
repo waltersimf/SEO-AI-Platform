@@ -43,7 +43,7 @@ export function ChatOverlay({
     <>
       {/* Backdrop - dims Dashboard but NOT input bar */}
       <div
-        className={`fixed bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed bg-black/40 transition-opacity duration-300 ${
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
         style={{
@@ -51,7 +51,7 @@ export function ChatOverlay({
           right: 0,
           top: 0,
           bottom: "100px",
-          zIndex: 30
+          zIndex: 40
         }}
         onClick={onClose}
       />
@@ -64,8 +64,7 @@ export function ChatOverlay({
         style={{
           left: "256px",
           bottom: "100px",
-          height: "60vh",
-          maxHeight: "600px",
+          height: "480px",
           zIndex: 50
         }}
       >
