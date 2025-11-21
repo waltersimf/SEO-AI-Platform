@@ -272,7 +272,7 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
         <button
           onClick={() => onChatSelect(chat.id)}
           className={`w-full text-left hover:bg-muted/50 transition-colors ${
-            compact ? "p-3 pr-12" : "p-4 pr-14"
+            compact ? "p-3 pr-16" : "p-4 pr-18"
           }`}
         >
           <div className="flex items-start gap-3">
