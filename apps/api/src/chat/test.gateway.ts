@@ -78,6 +78,17 @@ export class TestGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return { event: 'joined_room', data: chatId };
   }
 
+  @SubscribeMessage('join_organization')
+  handleJoinOrganization(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() organizationId: string,
+  ) {
+    const roomName = `org:${organizationId}`;
+    client.join(roomName);
+    this.logger.log(`Client ${client.id} joined organization room ${roomName}`);
+    return { event: 'joined_organization', data: organizationId };
+  }
+
   @SubscribeMessage('send_message')
   async handleMessage(
     @ConnectedSocket() client: Socket,
@@ -86,16 +97,23 @@ export class TestGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       this.logger.log(`Message from ${client.id}: ${payload.content}`);
 
-      // Save to database using ChatService
+      // Save to database using ChatService (includes chat.organizationId)
       const message = await this.chatService.createMessage(
         payload.chatId,
         payload.authorId,
         payload.content,
       );
 
-      // Broadcast to room with REAL author name from DB
+      // Broadcast to chat room with REAL author name from DB
       this.server.to(payload.chatId).emit('receive_message', message);
-      
+
+      // Also broadcast to organization room for unread counter updates
+      if (message.chat?.organizationId) {
+        const orgRoom = `org:${message.chat.organizationId}`;
+        this.logger.log(`Broadcasting new_message to org room: ${orgRoom}`);
+        this.server.to(orgRoom).emit('new_message', message);
+      }
+
       return message;
     } catch (error) {
       this.logger.error('Error handling message:', error);
