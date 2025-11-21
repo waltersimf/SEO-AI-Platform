@@ -65,17 +65,10 @@ export function ChatOverlay({
       />
 
       {/* Overlay */}
-      <div
-        className={`fixed bg-background rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out ${
-          isOpen ? "translate-y-0" : "translate-y-[calc(100%+120px)]"
-        }`}
-        style={{
-          left: "256px",
-          right: 0,
-          bottom: "100px",
-          height: "500px",
-          zIndex: 50
-        }}
+     <div
+  className={`fixed left-[256px] right-0 bottom-[100px] h-[500px] bg-background rounded-2xl shadow-2xl transition-transform duration-300 ease-out z-50 ${
+    isOpen ? "translate-y-0" : "translate-y-[calc(100%+120px)]"
+  }`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
