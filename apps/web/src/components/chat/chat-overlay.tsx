@@ -55,24 +55,31 @@ export function ChatOverlay({
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop - dims Dashboard but stops above input bar */}
       <div
-        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300 ${
+        className={`fixed bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
-        onClick={onClose}
-      />
-
-      {/* Overlay - Starts from bottom 0, translates up to 80px when open */}
-      <div
-        className={`fixed right-0 z-50 bg-background rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out ${
-          isOpen ? "translate-y-[-80px]" : "translate-y-full"
         }`}
         style={{
           left: "256px",
-          bottom: "0",
-          height: "calc(100vh - 80px)",
-          maxHeight: "700px"
+          right: 0,
+          top: 0,
+          bottom: "100px",
+          zIndex: 30
+        }}
+        onClick={onClose}
+      />
+
+      {/* Overlay - floating panel */}
+      <div
+        className={`fixed right-0 bg-background rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out ${
+          isOpen ? "translate-y-0" : "translate-y-full"
+        }`}
+        style={{
+          left: "256px",
+          bottom: "100px",
+          height: "500px",
+          zIndex: 50
         }}
       >
         {/* Header */}
@@ -89,8 +96,8 @@ export function ChatOverlay({
 
         {/* Content - Split Layout */}
         <div className="flex h-[calc(100%-64px)]">
-          {/* Chat List - Left Side (300px) */}
-          <div className="w-[300px] border-r">
+          {/* Chat List - Left (300px) */}
+          <div className="w-[300px] border-r overflow-y-auto">
             <ChatList
               activeChatId={activeChatId || undefined}
               onChatSelect={onChatSelect}
@@ -101,8 +108,8 @@ export function ChatOverlay({
             />
           </div>
 
-          {/* Active Chat - Right Side */}
-          <div className="flex-1 flex flex-col">
+          {/* Active Chat - Right */}
+          <div className="flex-1 flex flex-col overflow-hidden">
             {activeChatId && currentUserId && currentUserName && organizationId ? (
               <ChatBox
                 chatId={activeChatId}
