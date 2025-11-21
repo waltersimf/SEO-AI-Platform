@@ -282,9 +282,8 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
             <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2 min-w-0">
-                <h3 className={`text-sm truncate ${
-                  (chat.unreadCount ?? 0) > 0 ? "font-bold" : "font-semibold"
-                }`}>
+                <h3 className={`text-sm truncate ${(chat.unreadCount ?? 0) > 0 ? "font-bold" : "font-semibold"
+                  }`}>
                   {displayName}
                 </h3>
                 {(chat.unreadCount ?? 0) > 0 && (
