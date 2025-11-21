@@ -59,7 +59,7 @@ export function ChatOverlay({
       <div
         className={cn(
           "fixed bg-black/40 backdrop-blur-sm transition-opacity duration-300",
-          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          isOpen ? "opacity-0 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
         style={{
           left: SIDEBAR_WIDTH,
@@ -74,7 +74,7 @@ export function ChatOverlay({
       {/* ROOT overlay — така ж область, як у ChatInputBar */}
       <div
         className={cn(
-          "fixed bottom-[100px] right-0 z-50 transition-transform duration-300 ease-out",
+          "fixed bg-background rounded-2xl shadow-2xl transition-transform duration-300 ease-out overflow-hidden flex flex-col",
           isOpen ? "translate-y-0" : "translate-y-[calc(100%+120px)]"
         )}
         style={{
