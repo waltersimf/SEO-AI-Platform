@@ -72,11 +72,12 @@ export function ChatOverlay({
 
       {/* Overlay */}
       <div
-        className={`fixed right-0 bg-background rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out ${
+        className={`fixed bg-background rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out ${
           isOpen ? "translate-y-0" : "translate-y-[calc(100%+120px)]"
         }`}
         style={{
           left: "256px",
+          right: 0,
           bottom: "100px",
           height: "500px",
           zIndex: 50
