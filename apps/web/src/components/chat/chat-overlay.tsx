@@ -57,9 +57,15 @@ export function ChatOverlay({
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300 ${
+        className={`fixed bg-black/40 backdrop-blur-sm transition-opacity duration-300 z-40 ${
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
+        style={{
+          left: "256px",
+          right: 0,
+          top: 0,
+          bottom: 0
+        }}
         onClick={onClose}
       />
 
