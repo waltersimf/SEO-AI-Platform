@@ -20,16 +20,21 @@ export function ChatInputBar({
       className="fixed bottom-0 right-0 z-40"
       style={{ left: SIDEBAR_WIDTH }}
     >
-      {/* така ж горизонтальна обгортка, як p-8 у Dashboard */}
-      <div className="px-8 pb-4 pt-3">
-        {/* та сама ширина, що й у контенту: max-w-6xl mx-auto */}
-        <div className="max-w-6xl mx-auto">
-          {/* сам бар */}
-          <div
-            className="relative flex items-center gap-3 px-4 py-2.5 bg-muted rounded-lg cursor-pointer hover:bg-muted/90 transition-colors"
-            onClick={() => !isOpen && onToggle()}
-          >
-            <MessageCircle className="h-5 w-5 text-muted-foreground" />
+      <div
+      id="chat-input-bar"
+      className="max-w-6xl mx-auto px-8 py-4">
+        {/* Single container with button inside */}
+        <div
+          className="relative flex items-center gap-3 px-4 py-2.5 bg-muted hover:bg-muted/90 rounded-lg cursor-pointer transition-colors"
+          onClick={() => !isOpen && onToggle()}
+        >
+          <MessageCircle className="h-5 w-5 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Type message..."
+            className="flex-1 bg-transparent outline-none text-sm pointer-events-none"
+            readOnly
+          />
 
             <input
               type="text"
