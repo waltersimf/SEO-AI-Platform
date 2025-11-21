@@ -36,37 +36,29 @@ export function ChatInputBar({
             readOnly
           />
 
-            <input
-              type="text"
-              placeholder="Type message..."
-              className="flex-1 bg-transparent outline-none text-sm pointer-events-none text-muted-foreground"
-              readOnly
-            />
+          {/* бейдж непрочитаних (якщо є) */}
+          {unreadCount > 0 && (
+            <span className="inline-flex items-center justify-center min-w-[1.5rem] px-1.5 h-6 rounded-full bg-primary text-xs font-medium text-primary-foreground">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
 
-            {/* бейдж непрочитаних (якщо є) */}
-            {unreadCount > 0 && (
-              <span className="inline-flex items-center justify-center min-w-[1.5rem] px-1.5 h-6 rounded-full bg-primary text-xs font-medium text-primary-foreground">
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
+          {/* кнопка згортання/розгортання */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle();
+            }}
+            className="flex items-center justify-center w-9 h-9 rounded-md text-primary bg-background hover:bg-muted transition-colors"
+            title={isOpen ? "Close chat" : "Open chat"}
+          >
+            {isOpen ? (
+              <ChevronDown className="h-5 w-5" />
+            ) : (
+              <ChevronUp className="h-5 w-5" />
             )}
-
-            {/* кнопка згортання/розгортання */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggle();
-              }}
-              className="flex items-center justify-center w-9 h-9 rounded-md text-primary bg-background hover:bg-muted transition-colors"
-              title={isOpen ? "Close chat" : "Open chat"}
-            >
-              {isOpen ? (
-                <ChevronDown className="h-5 w-5" />
-              ) : (
-                <ChevronUp className="h-5 w-5" />
-              )}
-            </button>
-          </div>
+          </button>
         </div>
       </div>
     </div>
