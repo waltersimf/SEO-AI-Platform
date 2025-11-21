@@ -203,9 +203,8 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
       <button
         key={chat.id}
         onClick={() => onChatSelect(chat.id)}
-        className={`w-full p-4 text-left hover:bg-muted/50 transition-colors ${
-          isActive ? "bg-muted border-l-4 border-primary" : ""
-        }`}
+        className={`w-full p-4 text-left hover:bg-muted/50 transition-colors ${isActive ? "bg-muted border-l-4 border-primary" : ""
+          }`}
       >
         <div className="flex items-start gap-3">
           {/* Avatar */}
@@ -225,9 +224,8 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2 min-w-0">
-                <h3 className={`text-sm truncate ${
-                  (chat.unreadCount ?? 0) > 0 ? "font-bold" : "font-semibold"
-                }`}>
+                <h3 className={`text-sm truncate ${(chat.unreadCount ?? 0) > 0 ? "font-bold" : "font-semibold"
+                  }`}>
                   {displayName}
                 </h3>
                 {(chat.unreadCount ?? 0) > 0 && (
