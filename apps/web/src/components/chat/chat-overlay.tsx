@@ -64,56 +64,59 @@ export function ChatOverlay({
         onClick={onClose}
       />
 
-      {/* Overlay Wrapper */}
-      <div className="fixed inset-x-0 bottom-[100px] z-50 pointer-events-none">
-        {/* Overlay Panel */}
-        <div
-          className={`pointer-events-auto h-[500px] bg-background rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out ml-64 ${
-            isOpen ? "translate-y-0" : "translate-y-[calc(100%+120px)]"
-          }`}
-          style={{ width: "calc(100% - 256px)" }}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b">
-            <h2 className="text-xl font-semibold">Messages</h2>
-            <button
-              onClick={onClose}
-              className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-muted transition-colors"
-              title="Close"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
+      {/* Overlay */}
+      <div
+        className={`fixed bg-background rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out ${
+          isOpen ? "translate-y-0" : "translate-y-[calc(100%+120px)]"
+        }`}
+        style={{
+          left: "256px",
+          right: 0,
+          bottom: "100px",
+          height: "500px",
+          zIndex: 50
+        }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <h2 className="text-xl font-semibold">Messages</h2>
+          <button
+            onClick={onClose}
+            className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-muted transition-colors"
+            title="Close"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
 
-          {/* Content */}
-          <div className="flex h-[calc(100%-64px)]">
-            <div className="w-[300px] border-r overflow-y-auto">
-              <ChatList
-                activeChatId={activeChatId || undefined}
-                onChatSelect={onChatSelect}
-                onCreateChat={onCreateChat}
-                currentUserId={currentUserId}
-                onChatDeleted={onChatDeleted}
-                compact
+        {/* Content */}
+        <div className="flex h-[calc(100%-64px)]">
+          <div className="w-[300px] border-r overflow-y-auto">
+            <ChatList
+              activeChatId={activeChatId || undefined}
+              onChatSelect={onChatSelect}
+              onCreateChat={onCreateChat}
+              currentUserId={currentUserId}
+              onChatDeleted={onChatDeleted}
+              compact
+            />
+          </div>
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {activeChatId && currentUserId && currentUserName && organizationId ? (
+              <ChatBox
+                chatId={activeChatId}
+                userId={currentUserId}
+                userName={currentUserName}
+                organizationId={organizationId}
               />
-            </div>
-            <div className="flex-1 flex flex-col overflow-hidden">
-              {activeChatId && currentUserId && currentUserName && organizationId ? (
-                <ChatBox
-                  chatId={activeChatId}
-                  userId={currentUserId}
-                  userName={currentUserName}
-                  organizationId={organizationId}
-                />
-              ) : (
-                <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                  <div className="text-center">
-                    <p className="text-lg mb-2">No chat selected</p>
-                    <p className="text-sm">Select a chat from the list</p>
-                  </div>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <p className="text-lg mb-2">No chat selected</p>
+                  <p className="text-sm">Select a chat from the list</p>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
