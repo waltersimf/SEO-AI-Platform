@@ -2,12 +2,15 @@ import {
   Controller,
   Post,
   Get,
+  Delete,
   Param,
   Body,
   UseGuards,
   Req,
   BadRequestException,
   InternalServerErrorException,
+  NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ChatService } from './chat.service';
@@ -132,6 +135,30 @@ export class ChatController {
       }
 
       const errorMessage = error instanceof Error ? error.message : 'Failed to create direct chat';
+      throw new InternalServerErrorException(errorMessage);
+    }
+  }
+
+  @Delete(':id')
+  async deleteChat(@Req() req, @Param('id') chatId: string) {
+    try {
+      if (!req.user || !req.user.id) {
+        throw new BadRequestException('User not authenticated');
+      }
+
+      const userId = req.user.id;
+
+      return this.chatService.deleteChat(chatId, userId);
+    } catch (error) {
+      console.error('Error in deleteChat controller:', error);
+
+      if (error instanceof BadRequestException ||
+          error instanceof NotFoundException ||
+          error instanceof ForbiddenException) {
+        throw error;
+      }
+
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete chat';
       throw new InternalServerErrorException(errorMessage);
     }
   }

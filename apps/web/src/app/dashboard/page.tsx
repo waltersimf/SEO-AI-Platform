@@ -119,6 +119,14 @@ export default function DashboardPage() {
     }
   };
 
+  const handleChatDeleted = (deletedChatId: string) => {
+    // If the deleted chat was active, clear the active chat
+    if (deletedChatId === activeChatId) {
+      setActiveChatId(null);
+      console.log('🗑️ Active chat deleted, clearing selection');
+    }
+  };
+
   if (!user) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -135,6 +143,7 @@ export default function DashboardPage() {
         onChatSelect={handleChatSelect}
         onCreateChat={() => setIsCreateDialogOpen(true)}
         currentUserId={user?.id}
+        onChatDeleted={handleChatDeleted}
       />
 
       {/* Main Content */}

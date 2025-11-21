@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Plus, MessageCircle, User, Users } from "lucide-react";
+import { Plus, MessageCircle, User, Users, Trash2 } from "lucide-react";
 import { io } from "socket.io-client";
+import { DeleteChatDialog } from "./delete-chat-dialog";
 
 interface Chat {
   id: string;
@@ -31,12 +32,15 @@ interface ChatListProps {
   onCreateChat: () => void;
   onRefresh?: () => void;
   currentUserId?: string;
+  onChatDeleted?: (chatId: string) => void;
 }
 
-export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, currentUserId }: ChatListProps) {
+export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, currentUserId, onChatDeleted }: ChatListProps) {
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [chatToDelete, setChatToDelete] = useState<Chat | null>(null);
 
   // Use ref to track current activeChatId to avoid stale closure in socket listener
   const activeChatIdRef = useRef(activeChatId);
@@ -164,6 +168,44 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
     }
   };
 
+  const handleDeleteClick = (chat: Chat, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent chat selection
+    setChatToDelete(chat);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!chatToDelete) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`http://localhost:4000/api/chat/${chatToDelete.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        // Remove chat from local state
+        setChats(prevChats => prevChats.filter(chat => chat.id !== chatToDelete.id));
+
+        // Notify parent if this was the active chat
+        if (onChatDeleted && chatToDelete.id === activeChatId) {
+          onChatDeleted(chatToDelete.id);
+        }
+
+        console.log('✅ Chat deleted successfully:', chatToDelete.id);
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete chat');
+      }
+    } catch (error) {
+      console.error("Failed to delete chat:", error);
+      throw error; // Re-throw to let dialog handle error display
+    }
+  };
+
   // Helper: Get chat display name
   const getChatDisplayName = (chat: Chat): string => {
     if (chat.type === 'direct') {
@@ -212,28 +254,32 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
     const online = isUserOnline(otherUserId);
 
     return (
-      <button
+      <div
         key={chat.id}
-        onClick={() => onChatSelect(chat.id)}
-        className={`w-full p-4 text-left hover:bg-muted/50 transition-colors ${isActive ? "bg-muted border-l-4 border-primary" : ""
-          }`}
+        className={`relative group w-full ${
+          isActive ? "bg-muted border-l-4 border-primary" : ""
+        }`}
       >
-        <div className="flex items-start gap-3">
-          {/* Avatar */}
-          <div className="relative flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-            {isDirect ? (
-              <User className="h-5 w-5 text-primary" />
-            ) : (
-              <Users className="h-5 w-5 text-primary" />
-            )}
-            {/* Online status indicator for direct chats */}
-            {isDirect && online && (
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
-            )}
-          </div>
+        <button
+          onClick={() => onChatSelect(chat.id)}
+          className="w-full p-4 text-left hover:bg-muted/50 transition-colors"
+        >
+          <div className="flex items-start gap-3">
+            {/* Avatar */}
+            <div className="relative flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+              {isDirect ? (
+                <User className="h-5 w-5 text-primary" />
+              ) : (
+                <Users className="h-5 w-5 text-primary" />
+              )}
+              {/* Online status indicator for direct chats */}
+              {isDirect && online && (
+                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+              )}
+            </div>
 
-          {/* Chat Info */}
-          <div className="flex-1 min-w-0">
+            {/* Chat Info */}
+            <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2 min-w-0">
                 <h3 className={`text-sm truncate ${(chat.unreadCount ?? 0) > 0 ? "font-bold" : "font-semibold"
@@ -287,6 +333,16 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
           </div>
         </div>
       </button>
+
+      {/* Delete Button - Shows on hover */}
+      <button
+        onClick={(e) => handleDeleteClick(chat, e)}
+        className="absolute top-4 right-4 p-2 rounded-md bg-red-500/10 text-red-500 hover:bg-red-500/20 opacity-0 group-hover:opacity-100 transition-opacity"
+        title="Delete chat"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </div>
     );
   };
 
@@ -341,6 +397,17 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
           </>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteChatDialog
+        isOpen={deleteDialogOpen}
+        onClose={() => {
+          setDeleteDialogOpen(false);
+          setChatToDelete(null);
+        }}
+        onDelete={handleDeleteConfirm}
+        chatName={chatToDelete ? getChatDisplayName(chatToDelete) : null}
+      />
     </div>
   );
 }

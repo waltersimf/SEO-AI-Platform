@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WsException } from '@nestjs/websockets';
 
@@ -311,6 +311,52 @@ export class ChatService {
 
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new WsException(`Failed to create direct chat: ${errorMessage}`);
+    }
+  }
+
+  async deleteChat(chatId: string, userId: string) {
+    try {
+      // First, check if the chat exists
+      const chat = await this.prisma.chat.findUnique({
+        where: { id: chatId },
+        include: {
+          members: {
+            select: {
+              userId: true,
+            },
+          },
+        },
+      });
+
+      if (!chat) {
+        throw new NotFoundException('Chat not found');
+      }
+
+      // Check if the user is a member of the chat
+      const isMember = chat.members.some(member => member.userId === userId);
+      if (!isMember) {
+        throw new ForbiddenException('You are not a member of this chat');
+      }
+
+      // Delete the chat (cascade will delete messages and members)
+      await this.prisma.chat.delete({
+        where: { id: chatId },
+      });
+
+      return {
+        success: true,
+        message: 'Chat deleted successfully',
+        chatId,
+      };
+    } catch (error) {
+      console.error('Error deleting chat:', error);
+
+      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
+        throw error;
+      }
+
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new WsException(`Failed to delete chat: ${errorMessage}`);
     }
   }
 }
