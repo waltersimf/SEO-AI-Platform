@@ -63,12 +63,16 @@ export function ChatOverlay({
         onClick={onClose}
       />
 
-      {/* Overlay */}
+      {/* Overlay - Positioned above input bar */}
       <div
-        className={`fixed inset-x-0 bottom-0 z-50 bg-background rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out ${
+        className={`fixed left-0 right-0 z-50 bg-background rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out ${
           isOpen ? "translate-y-0" : "translate-y-full"
         }`}
-        style={{ height: "70vh", maxHeight: "800px" }}
+        style={{
+          bottom: "80px", // Leave space for input bar
+          height: "calc(100vh - 160px)", // Account for input bar height
+          maxHeight: "700px"
+        }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
@@ -84,8 +88,8 @@ export function ChatOverlay({
 
         {/* Content - Split Layout */}
         <div className="flex h-[calc(100%-64px)]">
-          {/* Chat List - Left Side */}
-          <div className="w-80 border-r">
+          {/* Chat List - Left Side (300px) */}
+          <div className="w-[300px] border-r">
             <ChatList
               activeChatId={activeChatId || undefined}
               onChatSelect={onChatSelect}

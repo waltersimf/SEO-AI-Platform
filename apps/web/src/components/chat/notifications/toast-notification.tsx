@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { X, MessageCircle } from "lucide-react";
 
 export interface ToastNotificationProps {
@@ -11,7 +10,6 @@ export interface ToastNotificationProps {
   authorName: string;
   onClose: () => void;
   onClick: () => void;
-  autoCloseDelay?: number;
 }
 
 export function ToastNotification({
@@ -22,17 +20,7 @@ export function ToastNotification({
   authorName,
   onClose,
   onClick,
-  autoCloseDelay = 5000,
 }: ToastNotificationProps) {
-  // Auto-dismiss after delay
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose();
-    }, autoCloseDelay);
-
-    return () => clearTimeout(timer);
-  }, [autoCloseDelay, onClose]);
-
   return (
     <div
       className="flex items-start gap-3 p-4 bg-background border rounded-lg shadow-lg max-w-sm cursor-pointer hover:bg-muted/50 transition-colors animate-in slide-in-from-right duration-300"
