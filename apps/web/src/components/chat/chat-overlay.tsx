@@ -55,7 +55,7 @@ export function ChatOverlay({
 
   return (
     <>
-      {/* Backdrop - dims Dashboard but stops above input bar */}
+      {/* Backdrop */}
       <div
         className={`fixed bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -70,10 +70,10 @@ export function ChatOverlay({
         onClick={onClose}
       />
 
-      {/* Overlay - floating panel */}
+      {/* Overlay */}
       <div
         className={`fixed right-0 bg-background rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out ${
-          isOpen ? "translate-y-0" : "translate-y-full"
+          isOpen ? "translate-y-0" : "translate-y-[calc(100%+120px)]"
         }`}
         style={{
           left: "256px",
@@ -94,9 +94,8 @@ export function ChatOverlay({
           </button>
         </div>
 
-        {/* Content - Split Layout */}
+        {/* Content */}
         <div className="flex h-[calc(100%-64px)]">
-          {/* Chat List - Left (300px) */}
           <div className="w-[300px] border-r overflow-y-auto">
             <ChatList
               activeChatId={activeChatId || undefined}
@@ -107,8 +106,6 @@ export function ChatOverlay({
               compact
             />
           </div>
-
-          {/* Active Chat - Right */}
           <div className="flex-1 flex flex-col overflow-hidden">
             {activeChatId && currentUserId && currentUserName && organizationId ? (
               <ChatBox
@@ -121,7 +118,7 @@ export function ChatOverlay({
               <div className="flex-1 flex items-center justify-center text-muted-foreground">
                 <div className="text-center">
                   <p className="text-lg mb-2">No chat selected</p>
-                  <p className="text-sm">Select a chat from the list to start messaging</p>
+                  <p className="text-sm">Select a chat from the list</p>
                 </div>
               </div>
             )}
