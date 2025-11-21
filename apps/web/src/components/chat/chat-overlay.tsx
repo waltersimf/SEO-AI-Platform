@@ -120,7 +120,6 @@ export function ChatOverlay({
                 )}
               </div>
             </div>
-          </div>
         </div>
       </div>
     </div>
