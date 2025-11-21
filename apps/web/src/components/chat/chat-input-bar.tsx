@@ -36,6 +36,13 @@ export function ChatInputBar({
             readOnly
           />
 
+            <input
+              type="text"
+              placeholder="Type message..."
+              className="flex-1 bg-transparent outline-none text-sm pointer-events-none text-muted-foreground"
+              readOnly
+            />
+
           {/* бейдж непрочитаних (якщо є) */}
           {unreadCount > 0 && (
             <span className="inline-flex items-center justify-center min-w-[1.5rem] px-1.5 h-6 rounded-full bg-primary text-xs font-medium text-primary-foreground">
