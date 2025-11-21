@@ -3,7 +3,6 @@
 import { GoogleConnectButton } from "@/components/integrations/google-connect-button";
 import { GscMetricsCard } from "@/components/gsc-metrics-card";
 import { CreateChatDialog } from "@/components/chat/create-chat-dialog";
-import { UserList } from "@/components/users/user-list";
 import { ChatInputBar } from "@/components/chat/chat-input-bar";
 import { ChatOverlay } from "@/components/chat/chat-overlay";
 import { ToastManager } from "@/components/chat/notifications/toast-manager";
@@ -142,29 +141,6 @@ export default function DashboardPage() {
 
   const handleChatCreated = async (chatId: string) => {
     handleChatSelect(chatId); // This will open overlay and select chat
-  };
-
-  const handleUserClick = async (userId: string) => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      const response = await fetch(`http://localhost:4000/api/chat/direct/${userId}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const chat = await response.json();
-        handleChatSelect(chat.id); // This will open overlay and select chat
-      } else {
-        console.error("Failed to create direct chat");
-      }
-    } catch (error) {
-      console.error("Error creating direct chat:", error);
-    }
   };
 
   const handleChatDeleted = (deletedChatId: string) => {
@@ -373,12 +349,6 @@ export default function DashboardPage() {
 
             {/* GSC Metrics */}
             <GscMetricsCard />
-
-            {/* User List */}
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Direct Messages</h2>
-              <UserList onUserClick={handleUserClick} currentUserId={user.id} />
-            </div>
           </div>
         </div>
       </div>

@@ -11,12 +11,12 @@ interface ChatInputBarProps {
 export function ChatInputBar({ isOpen, onToggle, unreadCount = 0 }: ChatInputBarProps) {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 bg-background border-t shadow-lg">
-      <div className="max-w-7xl mx-auto px-4 py-3">
+      <div className="max-w-[1400px] mx-auto px-8 py-4">
         <div className="flex items-center gap-3">
           {/* Input Area */}
           <div
             onClick={() => !isOpen && onToggle()}
-            className="flex-1 flex items-center gap-3 px-4 py-2 bg-muted/50 hover:bg-muted/70 rounded-lg cursor-pointer transition-colors"
+            className="flex-1 flex items-center gap-3 px-4 py-2.5 bg-muted/50 hover:bg-muted/70 rounded-lg cursor-pointer transition-colors"
           >
             <MessageCircle className="h-5 w-5 text-muted-foreground" />
             <input
@@ -35,7 +35,7 @@ export function ChatInputBar({ isOpen, onToggle, unreadCount = 0 }: ChatInputBar
           {/* Toggle Button */}
           <button
             onClick={onToggle}
-            className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="flex items-center justify-center w-11 h-11 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             title={isOpen ? "Close chat" : "Open chat"}
           >
             {isOpen ? (
