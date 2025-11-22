@@ -38,11 +38,12 @@ export function ChatNotificationBubble({
 
   return (
     <div
-      className={`fixed left-1/2 -translate-x-1/2 z-40 transition-all duration-300 ease-out ${
+      className={`fixed z-40 transition-all duration-300 ease-out ${
         isVisible
-          ? "bottom-24 opacity-100"
+          ? "bottom-20 opacity-100"
           : "bottom-16 opacity-0 pointer-events-none"
       }`}
+      style={{ left: '280px' }}
     >
       <div
         onClick={handleClick}
