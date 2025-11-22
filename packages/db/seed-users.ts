@@ -1,0 +1,43 @@
+import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  // ID твоєї TestOrg організації
+  const orgId = 'cmi5xqiy2000d8wcask8qb9i2';
+
+  const users = [
+    { email: 'alice@test.com', name: 'Alice Johnson', password: 'password123' },
+    { email: 'charlie@test.com', name: 'Charlie Brown', password: 'password123' },
+    { email: 'diana@test.com', name: 'Diana Smith', password: 'password123' },
+    { email: 'eve@test.com', name: 'Eve Davis', password: 'password123' },
+  ];
+
+  for (const userData of users) {
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    
+    const user = await prisma.user.create({
+      data: {
+        email: userData.email,
+        name: userData.name,
+        passwordHash: hashedPassword,
+        organizationId: orgId,
+        role: 'admin',
+      },
+    });
+    
+    console.log(`✅ Created user: ${user.name} (${user.email})`);
+  }
+
+  console.log('\n🎉 Done! Created 4 users in TestOrg');
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
