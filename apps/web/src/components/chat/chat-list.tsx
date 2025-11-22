@@ -301,8 +301,10 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
     return chat?.unreadCount ?? 0;
   };
 
-  // Sort group chats by last message timestamp (newest first)
-  const sortedGroupChats = [...groupChats].sort((a, b) => {
+  // Create unified list: chats with messages first (by time), then users without chats (alphabetically)
+
+  // 1. Get all chats (direct + group) sorted by last message time
+  const chatsWithMessages = [...chats].sort((a, b) => {
     const aLastMessage = a.messages[0];
     const bLastMessage = b.messages[0];
 
@@ -312,6 +314,21 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
 
     return new Date(bLastMessage.createdAt).getTime() - new Date(aLastMessage.createdAt).getTime();
   });
+
+  // 2. Get users who don't have existing direct chats, sorted alphabetically
+  const usersWithoutChats = organizationUsers
+    .filter(user => !getDirectChatForUser(user.id))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  // 3. Create unified list items
+  type ListItem =
+    | { type: 'chat'; data: Chat }
+    | { type: 'user'; data: OrganizationUser };
+
+  const unifiedList: ListItem[] = [
+    ...chatsWithMessages.map(chat => ({ type: 'chat' as const, data: chat })),
+    ...usersWithoutChats.map(user => ({ type: 'user' as const, data: user })),
+  ];
 
   if (loading) {
     return (
@@ -490,41 +507,23 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
         </button>
       </div>
 
-      {/* Chat List - Split into Direct Messages and Group Chats */}
+      {/* Unified Chat List - No section headers */}
       <div className="flex-1 overflow-y-auto">
-        {/* Direct Messages Section */}
-        <div>
-          <div className={`flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide ${compact ? "px-3 py-2" : "px-4 py-3"}`}>
-            <User className="h-4 w-4" />
-            <span>Direct Messages ({organizationUsers.length})</span>
+        {unifiedList.length === 0 ? (
+          <div className={`text-center text-muted-foreground text-sm ${compact ? "p-3" : "p-4"}`}>
+            No chats or users yet
           </div>
+        ) : (
           <div className="divide-y">
-            {organizationUsers.length === 0 ? (
-              <div className={`text-center text-muted-foreground text-sm ${compact ? "p-3" : "p-4"}`}>
-                No users in your organization
-              </div>
-            ) : (
-              organizationUsers.map(renderUserItem)
-            )}
+            {unifiedList.map((item, index) => {
+              if (item.type === 'chat') {
+                return renderChatItem(item.data);
+              } else {
+                return renderUserItem(item.data);
+              }
+            })}
           </div>
-        </div>
-
-        {/* Group Chats Section */}
-        <div className="mt-4">
-          <div className={`flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide ${compact ? "px-3 py-2" : "px-4 py-3"}`}>
-            <Users className="h-4 w-4" />
-            <span>Group Chats ({sortedGroupChats.length})</span>
-          </div>
-          <div className="divide-y">
-            {sortedGroupChats.length === 0 ? (
-              <div className={`text-center text-muted-foreground text-sm ${compact ? "p-3" : "p-4"}`}>
-                No group chats yet
-              </div>
-            ) : (
-              sortedGroupChats.map(renderChatItem)
-            )}
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Delete Confirmation Dialog */}
