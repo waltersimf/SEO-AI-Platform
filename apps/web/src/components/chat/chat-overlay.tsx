@@ -20,6 +20,7 @@ interface ChatOverlayProps {
   currentUserName?: string;
   organizationId?: string;
   onChatDeleted?: (chatId: string) => void;
+  refreshTrigger?: number;
 }
 
 export function ChatOverlay({
@@ -32,6 +33,7 @@ export function ChatOverlay({
   currentUserName,
   organizationId,
   onChatDeleted,
+  refreshTrigger,
 }: ChatOverlayProps) {
   // ESC для закриття
   useEffect(() => {
@@ -97,6 +99,7 @@ export function ChatOverlay({
                   currentUserId={currentUserId}
                   onChatDeleted={onChatDeleted}
                   compact
+                  refreshTrigger={refreshTrigger}
                 />
               </div>
 
