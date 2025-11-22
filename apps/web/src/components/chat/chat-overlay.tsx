@@ -73,13 +73,12 @@ export function ChatOverlay({
           left: SIDEBAR_WIDTH,
           bottom: OVERLAY_BOTTOM_OFFSET,
         }}
-        onClick={(e) => e.stopPropagation()} // Don't close when clicking panel area
       >
-      {/* 
+      {/*
          pl-8 (32px) зліва, pr-12 (48px) справа.
          Різниця 16px компенсує ширину скролбара сторінки.
       */}
-      <div className="w-full pl-8 pr-12 pointer-events-auto">
+      <div className="w-full pl-8 pr-12">
         
         <div className="max-w-6xl mx-auto">
           <div
