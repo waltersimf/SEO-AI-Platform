@@ -63,6 +63,7 @@ export function ChatOverlay({
         left: SIDEBAR_WIDTH,
         bottom: OVERLAY_BOTTOM_OFFSET,
       }}
+      onClick={onClose} // Click backdrop to close
     >
       {/* 
          pl-8 (32px) зліва, pr-12 (48px) справа.
@@ -74,6 +75,7 @@ export function ChatOverlay({
           <div
             className="bg-background rounded-2xl border border-border flex flex-col overflow-hidden shadow-xl"
             style={{ height: OVERLAY_HEIGHT }}
+            onClick={(e) => e.stopPropagation()} // Don't close when clicking inside panel
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b bg-muted/30">
