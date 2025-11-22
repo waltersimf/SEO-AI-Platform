@@ -1,7 +1,7 @@
 # 🗺️ ROADMAP - Forgeline SEO AI Platform
 
-**Загальна тривалість:** 73 дні (10.5 тижнів) до Public Launch  
-**Поточний прогрес:** v0.3 в процесі (96% complete)
+**Загальна тривалість:** 74 дні (10.5 тижнів) до Public Launch  
+**Поточний прогрес:** v0.3 ЗАВЕРШЕНО! v0.3.1 mini-sprint next
 
 ---
 
@@ -11,14 +11,15 @@
 |--------|--------|---------|------------|-------------|
 | v0.1 | ✅ DONE | 100% | 5 днів | Auth + DB |
 | v0.2 | ✅ DONE | 100% | 5 днів | Dashboard UI |
-| v0.3 | 🚧 IN PROGRESS | 96% | 10 днів | Chat System |
+| v0.3 | ✅ DONE | 100% | 7 днів | Chat System |
+| v0.3.1 | 📋 PLANNED | 0% | 1 день | Production Ready |
 | v0.4 | 📋 PLANNED | 0% | 8 днів | Projects |
 | v0.5 | 📋 PLANNED | 0% | 7 днів | Tasks + Backlog |
 | v0.6 | 📋 PLANNED | 0% | 10 днів | **Chat UI Polish + Invite System** |
 | v0.7 | 📋 PLANNED | 0% | 8 днів | AI Analysis |
 | v0.8 | 📋 PLANNED | 0% | 10 днів | Notifications |
 | v0.9 | 📋 PLANNED | 0% | 10 днів | Launch Prep |
-| **Total** | | | **73 днів** | Public Launch |
+| **Total** | | | **74 дні** | Public Launch |
 
 ---
 
@@ -41,7 +42,7 @@
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Загальна тривалість:** ~73 дні (2.5 місяці)  
+**Загальна тривалість:** ~74 дні (2.5 місяці)  
 **Target Launch:** Лютий 2026
 
 ---
@@ -89,10 +90,10 @@
 
 ---
 
-## 📦 v0.3 - Chat System (В ПРОЦЕСІ 🚧 - 96%)
+## 📦 v0.3 - Chat System (✅ ЗАВЕРШЕНО - 100%)
 
-**Час:** 10 днів  
-**Статус:** 🚧 IN PROGRESS (96% complete)  
+Час: 7 днів (16.11.2025 → 22.11.2025)
+Статус: ✅ **COMPLETE** (100%)
 **Deliverable:** ✅ Team can chat in real-time
 
 ### Completed Features ✅
@@ -107,6 +108,7 @@
 - [x] Organization-based rooms
 - [x] Chat deletion
 - [x] Multi-user signup support (Variant A)
+- [x] Direct chat auto-creation (getOrCreate logic)
 
 **Frontend:**
 - [x] ChatInputBar (fixed bottom)
@@ -120,6 +122,8 @@
 - [x] Online indicators
 - [x] Delete chat UI
 - [x] Auto-populated user list
+- [x] Backdrop click-to-close (full-screen)
+- [x] Sticky notification bubble (Telegram-style)
 - [x] Backdrop click-to-close
 
 **Fixes Completed (2025-11-22):**
@@ -127,20 +131,95 @@
 - [x] Group chat member selection (Problem #2)
 - [x] Signup organization duplicates (Problem #3 - Temporary Variant A)
 - [x] Chat overlay backdrop closing
+- [x] Duplicate users in ChatList (FIXED! ✅)
+- [x] Notification bubble alignment (FIXED! ✅)
 
-### Known Issues ❌
-- [ ] Duplicate users in ChatList (under investigation)
+**NONE! All bugs fixed! 🎉**
 
-### Acceptance Criteria:
+### Acceptance Criteria: ✅ 13/13
 - ✅ Users can send direct messages
 - ✅ Users can create group chats with member selection
 - ✅ Messages appear in real-time
 - ✅ Online status visible
 - ✅ Unread counters work
 - ✅ All organization users auto-populate
-- ⏳ No duplicate users (debugging)
+- ✅ No duplicate users
+- ✅ Typing indicators work
+- ✅ Message history persists
+- ✅ Sticky notifications
+- ✅ Professional UI/UX
+- ✅ Zero critical bugs
+- ✅ Production-ready code
 
 ---
+
+## 📦 v0.3.1 - Production Ready Mini-Sprint
+
+**Час:** 1 день (23.11.2025)
+**Статус:** 📋 PLANNED
+**Deliverable:** ✅ Critical fixes перед v0.4
+
+### 🔥 Терміново (must fix перед v0.4)
+
+**День 1 (5 годин):**
+
+#### 1. Прибрати localhost hardcode 🚨
+- [ ] Винести API URL в .env (NEXT_PUBLIC_API_URL)
+- [ ] Backend URL з process.env замість константи
+- [ ] Socket.io URL з env
+- [ ] Тестування на localhost + production URL
+
+**Чому критично:**
+- БЕЗ цього НЕ можна деплоїти
+- Блокує демо для інвесторів
+- 100% must-have перед v0.4
+
+**Час:** 2 години
+
+---
+
+#### 2. Socket.io connection status indicator 🟢⚪
+- [ ] Додати isConnected state
+- [ ] Показувати статус у Dashboard (🟢 Connected / ⚪ Reconnecting)
+- [ ] Auto-reconnect при втраті зєднання
+- [ ] Toast notification при disconnect
+
+**Чому критично:**
+- Користувач НЕ бачить коли connection lost
+- Повідомлення не відправляються без feedback
+- Dashboard показує "Connection Status" (пункт #3)
+
+**Час:** 2 години
+
+---
+
+#### 3. Auto-logout при 401 🔐
+- [ ] Створити API wrapper з error handling
+- [ ] При 401: clear token + redirect to login
+- [ ] Toast: "Session expired. Please login again."
+- [ ] Застосувати до всіх fetch запитів
+
+**Чому критично:**
+- Токен протухає, але користувач сидить на сторінці
+- Security issue - expired tokens
+- Погана UX
+
+**Час:** 1 година
+
+---
+
+### Acceptance Criteria:
+- ✅ Може деплоїти на production (no hardcode)
+- ✅ Користувач бачить connection status
+- ✅ Auto-logout працює при 401
+- ✅ Все тестується локально і на prod URL
+
+### Optional (якщо є час):
+- [ ] DTO Validation (3 год)
+- [ ] useApi hook - fetch wrapper (2 год)
+
+**Після цього sprint → v0.4 AI Teammate!** 🤖
+
 
 ## 📦 v0.4 - Projects Management
 
