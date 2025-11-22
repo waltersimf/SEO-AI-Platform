@@ -63,6 +63,7 @@ export function ChatOverlay({
         left: SIDEBAR_WIDTH,      // так само як input bar
         bottom: OVERLAY_BOTTOM_OFFSET,
       }}
+      onClick={onClose} // Click backdrop to close
     >
       {/* ТА САМА сітка, що й у ChatInputBar / Dashboard:
           спочатку горизонтальний padding, потім max-w-6xl mx-auto */}
@@ -71,6 +72,7 @@ export function ChatOverlay({
           <div
             className="bg-background rounded-2xl border border-border flex flex-col overflow-hidden"
             style={{ height: OVERLAY_HEIGHT }}
+            onClick={(e) => e.stopPropagation()} // Don't close when clicking inside panel
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b">
