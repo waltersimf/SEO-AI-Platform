@@ -26,6 +26,12 @@ interface Chat {
   }[];
 }
 
+interface OrganizationUser {
+  id: string;
+  name: string;
+  email: string;
+}
+
 interface ChatListProps {
   activeChatId?: string;
   onChatSelect: (chatId: string) => void;
@@ -38,6 +44,7 @@ interface ChatListProps {
 
 export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, currentUserId, onChatDeleted, compact = false }: ChatListProps) {
   const [chats, setChats] = useState<Chat[]>([]);
+  const [organizationUsers, setOrganizationUsers] = useState<OrganizationUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -54,6 +61,7 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
 
   useEffect(() => {
     loadChats();
+    loadOrganizationUsers();
 
     const socket = io("http://localhost:4000");
 
@@ -169,6 +177,48 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
     }
   };
 
+  const loadOrganizationUsers = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:4000/api/users/organization", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Filter out current user
+        const otherUsers = data.filter((user: OrganizationUser) => user.id !== currentUserId);
+        setOrganizationUsers(otherUsers);
+      }
+    } catch (error) {
+      console.error("Failed to load organization users:", error);
+    }
+  };
+
+  const createOrGetDirectChat = async (userId: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`http://localhost:4000/api/chat/direct/${userId}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Refresh chat list to include the new/existing chat
+        await loadChats();
+        // Select the chat
+        onChatSelect(data.chatId);
+      }
+    } catch (error) {
+      console.error("Failed to create/get direct chat:", error);
+    }
+  };
+
   const handleDeleteClick = (chat: Chat, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent chat selection
     setChatToDelete(chat);
@@ -233,8 +283,26 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
     return onlineUsers.includes(userId);
   };
 
-  // Sort all chats by last message timestamp (newest first)
-  const sortedChats = [...chats].sort((a, b) => {
+  // Separate direct and group chats
+  const directChats = chats.filter(chat => chat.type === 'direct');
+  const groupChats = chats.filter(chat => chat.type !== 'direct');
+
+  // Helper: Get direct chat for a specific user
+  const getDirectChatForUser = (userId: string): Chat | undefined => {
+    return directChats.find(chat => {
+      const otherUser = chat.members.find(m => m.user.id !== currentUserId);
+      return otherUser?.user.id === userId;
+    });
+  };
+
+  // Helper: Get unread count for a user's direct chat
+  const getUnreadCountForUser = (userId: string): number => {
+    const chat = getDirectChatForUser(userId);
+    return chat?.unreadCount ?? 0;
+  };
+
+  // Sort group chats by last message timestamp (newest first)
+  const sortedGroupChats = [...groupChats].sort((a, b) => {
     const aLastMessage = a.messages[0];
     const bLastMessage = b.messages[0];
 
@@ -252,6 +320,56 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
       </div>
     );
   }
+
+  // Render individual user item for Direct Messages section
+  const renderUserItem = (user: OrganizationUser) => {
+    const online = onlineUsers.includes(user.id);
+    const unreadCount = getUnreadCountForUser(user.id);
+    const existingChat = getDirectChatForUser(user.id);
+    const isActive = existingChat?.id === activeChatId;
+
+    return (
+      <button
+        key={user.id}
+        onClick={() => createOrGetDirectChat(user.id)}
+        className={`w-full text-left hover:bg-muted/50 transition-colors ${
+          compact ? "p-3" : "p-4"
+        } ${isActive ? "bg-muted border-l-4 border-primary" : ""}`}
+      >
+        <div className="flex items-start gap-3">
+          {/* Avatar */}
+          <div className="relative flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+            <User className="h-5 w-5 text-primary" />
+            {/* Online status indicator */}
+            {online && (
+              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+            )}
+          </div>
+
+          {/* User Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className={`text-sm truncate ${unreadCount > 0 ? "font-bold" : "font-semibold"}`}>
+                {user.name}
+              </h3>
+              {unreadCount > 0 && (
+                <span className="flex-shrink-0 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full">
+                  {unreadCount}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {online ? (
+                <span className="text-green-600 font-medium">🟢 Online</span>
+              ) : (
+                <span>Offline</span>
+              )}
+            </p>
+          </div>
+        </div>
+      </button>
+    );
+  };
 
   // Render individual chat item
   const renderChatItem = (chat: Chat) => {
@@ -372,17 +490,41 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
         </button>
       </div>
 
-      {/* Chat List - All chats mixed, sorted by timestamp */}
+      {/* Chat List - Split into Direct Messages and Group Chats */}
       <div className="flex-1 overflow-y-auto">
-        {sortedChats.length === 0 ? (
-          <div className={`text-center text-muted-foreground text-sm ${compact ? "p-3" : "p-4"}`}>
-            No chats yet. Start a conversation!
+        {/* Direct Messages Section */}
+        <div>
+          <div className={`flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide ${compact ? "px-3 py-2" : "px-4 py-3"}`}>
+            <User className="h-4 w-4" />
+            <span>Direct Messages ({organizationUsers.length})</span>
           </div>
-        ) : (
           <div className="divide-y">
-            {sortedChats.map(renderChatItem)}
+            {organizationUsers.length === 0 ? (
+              <div className={`text-center text-muted-foreground text-sm ${compact ? "p-3" : "p-4"}`}>
+                No users in your organization
+              </div>
+            ) : (
+              organizationUsers.map(renderUserItem)
+            )}
           </div>
-        )}
+        </div>
+
+        {/* Group Chats Section */}
+        <div className="mt-4">
+          <div className={`flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide ${compact ? "px-3 py-2" : "px-4 py-3"}`}>
+            <Users className="h-4 w-4" />
+            <span>Group Chats ({sortedGroupChats.length})</span>
+          </div>
+          <div className="divide-y">
+            {sortedGroupChats.length === 0 ? (
+              <div className={`text-center text-muted-foreground text-sm ${compact ? "p-3" : "p-4"}`}>
+                No group chats yet
+              </div>
+            ) : (
+              sortedGroupChats.map(renderChatItem)
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Delete Confirmation Dialog */}
