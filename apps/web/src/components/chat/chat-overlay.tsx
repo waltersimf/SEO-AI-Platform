@@ -58,15 +58,23 @@ export function ChatOverlay({
   return (
     <div
       className={cn(
-        "fixed right-0 z-50 transition-transform duration-300 ease-out pointer-events-none",
-        isOpen ? "translate-y-0" : "translate-y-[calc(100%+120px)]"
+        "fixed inset-0 z-50 transition-opacity duration-300",
+        isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       )}
-      style={{
-        left: SIDEBAR_WIDTH,
-        bottom: OVERLAY_BOTTOM_OFFSET,
-      }}
       onClick={onClose} // Click backdrop to close
     >
+      {/* Chat panel positioning wrapper */}
+      <div
+        className={cn(
+          "fixed right-0 transition-transform duration-300 ease-out",
+          isOpen ? "translate-y-0" : "translate-y-[calc(100%+120px)]"
+        )}
+        style={{
+          left: SIDEBAR_WIDTH,
+          bottom: OVERLAY_BOTTOM_OFFSET,
+        }}
+        onClick={(e) => e.stopPropagation()} // Don't close when clicking panel area
+      >
       {/* 
          pl-8 (32px) зліва, pr-12 (48px) справа.
          Різниця 16px компенсує ширину скролбара сторінки.
@@ -132,7 +140,7 @@ export function ChatOverlay({
           </div>
         </div>
       </div>
+      </div>
     </div>
-    </>
   );
 }
