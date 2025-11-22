@@ -8,11 +8,8 @@ async function main() {
   const orgId = 'cmi5xqiy2000d8wcask8qb9i2';
 
   const users = [
-    { email: 'alice@test.com', name: 'Alice Johnson', password: 'password123' },
-    { email: 'charlie@test.com', name: 'Charlie Brown', password: 'password123' },
-    { email: 'diana@test.com', name: 'Diana Smith', password: 'password123' },
-    { email: 'eve@test.com', name: 'Eve Davis', password: 'password123' },
-  ];
+    { email: 'frank@test.com', name: 'Frank Wilson', password: 'password123' }, // ← ДОДАТИ ЦЕЙ РЯДОК
+ ];
 
   for (const userData of users) {
     const hashedPassword = await bcrypt.hash(userData.password, 10);
