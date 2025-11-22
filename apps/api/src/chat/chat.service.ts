@@ -141,8 +141,17 @@ export class ChatService {
 
   async getOrganizationChats(organizationId: string, currentUserId?: string) {
     try {
+      // Build where clause - only return chats the user is a member of
+      const where: any = { organizationId };
+
+      if (currentUserId) {
+        where.members = {
+          some: { userId: currentUserId }
+        };
+      }
+
       const chats = await this.prisma.chat.findMany({
-        where: { organizationId },
+        where,
         include: {
           members: {
             include: {
@@ -150,6 +159,7 @@ export class ChatService {
                 select: {
                   id: true,
                   name: true,
+                  email: true,
                 },
               },
             },
@@ -157,6 +167,14 @@ export class ChatService {
           messages: {
             take: 1,
             orderBy: { createdAt: 'desc' },
+            include: {
+              author: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
           },
         },
         orderBy: { updatedAt: 'desc' },
