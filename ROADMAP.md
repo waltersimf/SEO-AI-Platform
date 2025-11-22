@@ -1,358 +1,328 @@
-# Forgeline - Development Roadmap
+# 🗺️ ROADMAP - Forgeline SEO AI Platform
 
-**Версія:** 2.6  
-**Дата:** 17.11.2025  
-**Формат:** Версійна розробка + Покращення з improvement_plan
+**Загальна тривалість:** 73 дні (10.5 тижнів) до Public Launch  
+**Поточний прогрес:** v0.3 в процесі (96% complete)
 
 ---
 
-## 🎯 Загальна стратегія
+## 📊 Версії та прогрес
 
-### Milestone до v1.0:
+| Версія | Статус | Прогрес | Тривалість | Deliverable |
+|--------|--------|---------|------------|-------------|
+| v0.1 | ✅ DONE | 100% | 5 днів | Auth + DB |
+| v0.2 | ✅ DONE | 100% | 5 днів | Dashboard UI |
+| v0.3 | 🚧 IN PROGRESS | 96% | 10 днів | Chat System |
+| v0.4 | 📋 PLANNED | 0% | 8 днів | Projects |
+| v0.5 | 📋 PLANNED | 0% | 7 днів | Tasks + Backlog |
+| v0.6 | 📋 PLANNED | 0% | 10 днів | **Chat UI Polish + Invite System** |
+| v0.7 | 📋 PLANNED | 0% | 8 днів | AI Analysis |
+| v0.8 | 📋 PLANNED | 0% | 10 днів | Notifications |
+| v0.9 | 📋 PLANNED | 0% | 10 днів | Launch Prep |
+| **Total** | | | **73 днів** | Public Launch |
+
+---
+
+## 🎯 Milestone Timeline
 
 ```
-📍 v0.1 → v0.5  (33 дні) = Investor Demo (повний!)
-📍 v0.6 → v0.8  (30 днів) = Beta Version  
-📍 v0.9 → v1.0  (20 днів) = Public Launch
-
-РАЗОМ: 83 робочих днів ≈ 16-17 тижнів (4 місяці)
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  ✅ v0.1-0.2 (10d)   🚧 v0.3 (10d)   📋 v0.4-0.5 (15d)                 │
+│  Auth + Dashboard     Chat System     Projects + Tasks                  │
+│  ─────────────────────────────────────────────────────────              │
+│                                                                          │
+│  📋 v0.6 (10d)       📋 v0.7 (8d)    📋 v0.8 (10d)    📋 v0.9 (10d)    │
+│  Chat Polish +       AI Analysis +   Notifications +   Launch Prep +    │
+│  Invite System       Morning Brief   Full Polish       Security         │
+│  ──────────────────────────────────────────────────────────────────     │
+│                                                                          │
+│                           🎉 PUBLIC LAUNCH 🎉                           │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
-**v1.0 = повна Phase 1** з техдоку
+**Загальна тривалість:** ~73 дні (2.5 місяці)  
+**Target Launch:** Лютий 2026
 
 ---
 
-## 📊 Progress Tracker
-
-```
-v0.1 ████████████████████ 100% ✅
-v0.2 ████████████████████ 100% ✅
-v0.3 ██████████░░░░░░░░░░  50% 🔄
-v0.4 ░░░░░░░░░░░░░░░░░░░░   0%
-v0.5 ░░░░░░░░░░░░░░░░░░░░   0%
-     └─ INVESTOR DEMO: 50% 🔄
-
-v0.6 ░░░░░░░░░░░░░░░░░░░░   0%
-v0.7 ░░░░░░░░░░░░░░░░░░░░   0%
-v0.8 ░░░░░░░░░░░░░░░░░░░░   0%
-     └─ BETA VERSION: 0%
-
-v0.9 ░░░░░░░░░░░░░░░░░░░░   0%
-v1.0 ░░░░░░░░░░░░░░░░░░░░   0%
-     └─ PUBLIC LAUNCH: 0%
-
-═══════════════════════════════════════
-MILESTONE 1 (Investor Demo): 50% (2.5/5) 🔄
-MILESTONE 2 (Beta):           0% (0/3)
-MILESTONE 3 (Launch):         0% (0/2)
-═══════════════════════════════════════
-TOTAL PROGRESS: 25% (2.5/10 versions) 🔄
-```
-
-**До наступних milestones:**
-- 🔥 Investor Demo (v0.5): ~26 днів
-- 🧪 Beta (v0.8): ~56 днів
-- 🚀 Launch (v1.0): ~76 днів
-
----
-
-## 🔥 MILESTONE 1: Investor Demo (v0.1 → v0.5)
-
-**Загальний час:** 33 дні  
-**Прогрес:** 2.5/5 версій (50%) 🔄  
-**Ціль:** Показати інвесторам killer combo:
-- ✅ AI Teammate (в чаті з командою)
-- ✅ Повний Task Manager (Schedule/Backlog/Done + AI planning)
-- ✅ Site Audit (AI аналіз проблем)
-- ✅ Real data з Google APIs
-
----
-
-### 📦 v0.1 - Foundation & Auth ✅
-
-**Час:** 5 днів → **Фактично: 1 день**  
-**Статус:** ✅ **ЗАВЕРШЕНО** (15.11.2025)  
-**Deliverable:** ✅ Можна створити акаунт та залогінитись
-
-**Що зроблено:**
-- ✅ Next.js 14 + NestJS + PostgreSQL
-- ✅ JWT Authentication
-- ✅ Basic UI (Login, Signup, Dashboard)
-- ✅ Docker infrastructure
-
-**Acceptance Criteria:** ✅ ВСІ ПРОЙДЕНІ
-
----
-
-### 📦 v0.2 - Google Integration & Dashboard ✅
-
-**Час:** 6 днів → **Фактично: 2 дні**  
-**Статус:** ✅ **ЗАВЕРШЕНО** (16.11.2025)  
-**Deliverable:** ✅ Google OAuth + зашифровані токени
-
-**Що зроблено:**
-- ✅ Google OAuth flow
-- ✅ Token encryption (AES-256-GCM)
-- ✅ Dashboard UI з connection status
-- ✅ GSC integration готова
-
-**Acceptance Criteria:** ✅ ВСІ ПРОЙДЕНІ
-
----
-
-### 📦 v0.3 - Chat Infrastructure 🔄
+## 📦 v0.1 - Auth & Database (ЗАВЕРШЕНО ✅)
 
 **Час:** 5 днів  
-**Статус:** 🔄 **IN PROGRESS (50%)**  
-**Deliverable:** ✅ Real-time командний чат працює
+**Статус:** ✅ DONE  
+**Deliverable:** ✅ Users can signup/login
 
-**КРИТИЧНІ ЗАВДАННЯ (must complete):**
-
-**День 1-2: Fix ChatGateway + Database Persistence** 🔴
-- [ ] 🔴 **Виправити TypeError у ChatGateway**
-  - [ ] web_search: "nestjs socket.io prisma best practices"
-  - [ ] Знайти working example з GitHub
-  - [ ] Скопіювати pattern
-  - [ ] Протестувати з Prisma
-- [ ] 🔴 **ChatService зберігає messages в БД**
-  - [ ] createMessage() → Prisma insert
-  - [ ] getChatMessages() → Prisma fetch
-  - [ ] Error handling (try/catch)
-- [ ] 🔴 **Message history з БД**
-  - [ ] GET /chat/:id/messages endpoint
-  - [ ] Frontend завантажує історію при mount
-  - [ ] Показує старі повідомлення
-
-**День 3: Прибрати хардкод** 🟡
-- [ ] 🟡 **Dynamic chatId замість "test-room"**
-  - [ ] Default chat для organization
-  - [ ] Endpoint: POST /chat/create
-  - [ ] Frontend отримує chatId з API
-- [ ] 🟡 **organizationId з JWT токена**
-  - [ ] JwtAuthGuard в ChatController
-  - [ ] req.user.organizationId
-- [ ] 🟡 **userId з токена (не hardcode)**
-
-**День 4-5: UX покращення** 🟢
-- [ ] 🟢 **Socket.io connection status**
-  - [ ] Green indicator: Connected
-  - [ ] Red indicator: Disconnected
-  - [ ] Toast: "Connection lost, reconnecting..."
-- [ ] 🟢 **Auto-reconnect logic**
-  - [ ] Socket.io reconnection
-  - [ ] Reload messages після reconnect
-- [ ] 🟢 **Loading states**
-  - [ ] Skeleton для messages
-  - [ ] Spinner при відправці
+- [x] Prisma schema (User, Organization, Project)
+- [x] JWT authentication
+- [x] Signup/Login API endpoints
+- [x] Password hashing (bcrypt)
+- [x] Protected routes middleware
+- [x] Multi-tenancy (organization-based)
+- [x] Docker Compose (PostgreSQL, Redis)
 
 **Acceptance Criteria:**
-- ✅ Socket.io підключення (DONE)
-- ✅ Real-time messaging (DONE)
-- ✅ ChatBox UI (DONE)
-- ✅ Room-based chat (DONE)
-- [ ] **Messages зберігаються в БД** ← КРИТИЧНО!
-- [ ] **Message history завантажується** ← КРИТИЧНО!
-- [ ] **chatId динамічний** ← КРИТИЧНО!
-- [ ] Connection status показується
-- [ ] Typing indicators працюють
-
-**Поточний статус:** 5/9 критеріїв (55%) 🔄
+- ✅ Users can create account
+- ✅ Users can login
+- ✅ JWT tokens work
+- ✅ Database seeding works
 
 ---
 
-### 📦 v0.4 - AI Teammate + Task Manager (Full) 🔥
+## 📦 v0.2 - Dashboard UI (ЗАВЕРШЕНО ✅)
 
-**Час:** 10 днів → **Додано +2 дні = 12 днів**  
-**Статус:** 📋 PLANNED  
-**Deliverable:** ✅ AI teammate + повний Task Manager + Security improvements
+**Час:** 5 днів  
+**Статус:** ✅ DONE  
+**Deliverable:** ✅ Basic dashboard layout
 
-**День 1-4: AI Teammate**
-- [ ] AI User створюється в БД (auto)
-- [ ] Claude API integration (@anthropic-ai/sdk)
-- [ ] @AI mention detection
-- [ ] Context builder:
-  - [ ] Project info
-  - [ ] Last 10 messages
-  - [ ] GSC data
-- [ ] Token usage tracking
-- [ ] Cost calculator
-
-**День 5-8: Task Manager (Full)**
-- [ ] Task model extended (schedule, acceptance, group)
-- [ ] Schedule view (calendar-like)
-- [ ] Backlog view (list)
-- [ ] Done view (archive)
-- [ ] Estimated time field (mandatory)
-- [ ] Acceptance workflow:
-  - [ ] Task → "Needs Review"
-  - [ ] Popup for acceptor
-  - [ ] Accept / Reject
-- [ ] Group tasks (assign to all team)
-- [ ] Drag & drop (react-beautiful-dnd)
-
-**День 9-10: AI Integration**
-- [ ] AI створює tasks з чату
-- [ ] AI може розподілити backlog на schedule
-- [ ] AI має доступ до GSC metrics
-
-**ДОДАНО: День 11-12: Security & Code Quality** 🔐
-> Покращення з improvement_plan (high/medium priority)
-
-**Security Improvements:**
-- [ ] 🔐 **DTO Validation (class-validator)**
-  - [ ] `@IsEmail`, `@IsNotEmpty` у SignupDto/LoginDto
-  - [ ] `@Length`, `@MinLength` для паролів
-  - [ ] ValidationPipe глобально
-  - [ ] Proper error messages
-  
-- [ ] 🔐 **OAuth Google покращення**
-  - [ ] Обробка протухлих токенів
-  - [ ] Refresh token flow
-  - [ ] Error states: "Reconnect Google" button
-  - [ ] Token expiry warnings
-
-**Code Quality:**
-- [ ] 🧹 **Централізувати OAuth константи**
-  - [ ] `shared/constants/google.ts`
-  - [ ] GOOGLE_SCOPES експортується
-  - [ ] Імпорт в Strategy + Controller
-  
-- [ ] 🧹 **API fetch обгортка (useApi hook)**
-  - [ ] `lib/api.ts` з fetch wrapper
-  - [ ] Централізований error handling
-  - [ ] Auto-logout по 401
-  - [ ] Toast notifications
-
-**UX Improvements:**
-- [ ] 🎨 **Повідомлення після дій**
-  - [ ] Toast після signup: "Account created!"
-  - [ ] Toast після login: "Welcome back!"
-  - [ ] Toast після підключення Google: "Google Connected!"
-  - [ ] Toast при помилках (friendly messages)
-
-- [ ] 🎨 **Інформативні error messages**
-  - [ ] Замість "Invalid credentials" → "Email or password is incorrect"
-  - [ ] Замість "Error" → конкретна причина
-  - [ ] Clear password field після помилки логіну
+- [x] Sidebar navigation
+- [x] Dashboard layout
+- [x] shadcn/ui components
+- [x] Responsive design
+- [x] Auth pages (login/signup UI)
+- [x] Protected dashboard route
 
 **Acceptance Criteria:**
-- ✅ "@AI що з трафіком?" → AI відповідає з даних GSC
-- ✅ AI створює task коли попросять
-- ✅ Task Manager повністю працює (3 views)
-- ✅ Acceptance workflow smooth
-- ✅ Group tasks working
-- ✅ **DTO validation працює** ← НОВИЙ
-- ✅ **OAuth error handling** ← НОВИЙ
-- ✅ **useApi hook used everywhere** ← НОВИЙ
-- ✅ **Toast notifications** ← НОВИЙ
+- ✅ Dashboard accessible after login
+- ✅ Sidebar with menu items
+- ✅ Responsive on mobile
+- ✅ Logout works
 
 ---
 
-### 📦 v0.5 - Site Audit + AI Analysis 🔍
+## 📦 v0.3 - Chat System (В ПРОЦЕСІ 🚧 - 96%)
 
-**Час:** 12 днів  
-**Статус:** 📋 PLANNED  
-**Deliverable:** ✅ **INVESTOR DEMO READY!** 🎯
+**Час:** 10 днів  
+**Статус:** 🚧 IN PROGRESS (96% complete)  
+**Deliverable:** ✅ Team can chat in real-time
 
-**День 1-6: Crawler (Crawlee + Playwright)**
-- [ ] Crawl до 500 pages
-- [ ] JS rendering
-- [ ] Audit checks (23 types):
-  - [ ] Metadata (title, description)
-  - [ ] Headings (H1, H2-H6)
-  - [ ] Images (alt, size)
-  - [ ] Links (broken, redirects)
-  - [ ] Performance (load time)
-- [ ] Background jobs (BullMQ)
+### Completed Features ✅
 
-**День 7-9: AI Audit Analysis**
-- [ ] AI аналізує результати
-- [ ] Критичність issues (High/Medium/Low)
-- [ ] Actionable recommendations
-- [ ] Automated task creation
+**Backend:**
+- [x] WebSocket server (Socket.io)
+- [x] Chat creation (direct + group)
+- [x] Message sending/receiving
+- [x] Real-time broadcasting
+- [x] Online status tracking
+- [x] Unread counters
+- [x] Organization-based rooms
+- [x] Chat deletion
+- [x] Multi-user signup support (Variant A)
 
-**День 10-12: Investor Demo Prep**
-- [ ] Demo script (7-10 хв)
-- [ ] Test data setup
-- [ ] Performance optimization
-- [ ] Bug fixes
-- [ ] Presentation deck
+**Frontend:**
+- [x] ChatInputBar (fixed bottom)
+- [x] ChatOverlay (slide-up)
+- [x] ChatList component
+- [x] ChatBox component
+- [x] Direct chat creation
+- [x] Group chat creation with member selection
+- [x] Real-time message updates
+- [x] Unread badges
+- [x] Online indicators
+- [x] Delete chat UI
+- [x] Auto-populated user list
+- [x] Backdrop click-to-close
 
-**Acceptance Criteria:**
-- ✅ Audit працює до 500 pages
-- ✅ AI аналізує і дає рекомендації
-- ✅ Demo runs smoothly 7-10 хв
-- ✅ Zero critical bugs
-- ✅ **ГОТОВО ДЛЯ ІНВЕСТОРІВ!** 💰
+**Fixes Completed (2025-11-22):**
+- [x] Auto-populated direct chats (Problem #1)
+- [x] Group chat member selection (Problem #2)
+- [x] Signup organization duplicates (Problem #3 - Temporary Variant A)
+- [x] Chat overlay backdrop closing
 
----
+### Known Issues ❌
+- [ ] Duplicate users in ChatList (under investigation)
 
-## 🧪 MILESTONE 2: Beta Version (v0.6 → v0.8)
-
-### 📦 v0.6 - Google APIs (Full) + Testing Infrastructure
-
-**Час:** 8 днів → **Додано +2 дні = 10 днів**  
-**Статус:** 📋 PLANNED  
-**Deliverable:** ✅ Всі Google APIs + щоденний збір + тести
-
-**День 1-3: Google APIs**
-- [ ] Google Analytics GA4
-- [ ] Google Drive API
-- [ ] Google Docs API
-- [ ] Google Sheets API
-
-**День 4-6: Data Collection**
-- [ ] Cron jobs (daily at 6 AM)
-- [ ] DataSnapshot model
-- [ ] Parallel collection
-- [ ] Error handling + retry
-
-**День 7-8: Dashboard Updates**
-- [ ] GA4 widgets
-- [ ] Historical charts
-- [ ] Data export
-
-**ДОДАНО: День 9-10: Testing Infrastructure** 🧪
-> Покращення з improvement_plan (high priority - delayed)
-
-**Backend Tests:**
-- [ ] 🧪 **Unit tests (Jest)**
-  - [ ] AuthService tests (signup, login, JWT)
-  - [ ] EncryptionService tests (encrypt/decrypt)
-  - [ ] GscService tests (mock API responses)
-  - [ ] ChatService tests (messages persistence)
-
-**Frontend Tests:**
-- [ ] 🧪 **Component tests (React Testing Library)**
-  - [ ] GoogleConnectButton (connected/disconnected states)
-  - [ ] ChatBox (message sending, receiving)
-  - [ ] Auth forms (validation, errors)
-
-**Integration Tests:**
-- [ ] 🧪 **E2E critical flows**
-  - [ ] Signup → Login → Dashboard
-  - [ ] Google OAuth flow
-  - [ ] Chat messaging real-time
-
-**Test Coverage Target:** 
-- [ ] Backend: >70%
-- [ ] Frontend: >60%
-- [ ] Critical paths: 100%
-
-**Acceptance Criteria:**
-- ✅ Всі Google APIs працюють
-- ✅ Щоденний збір без помилок
-- ✅ Dashboard з повними даними
-- ✅ **Tests pass** ← НОВИЙ
-- ✅ **Coverage targets met** ← НОВИЙ
+### Acceptance Criteria:
+- ✅ Users can send direct messages
+- ✅ Users can create group chats with member selection
+- ✅ Messages appear in real-time
+- ✅ Online status visible
+- ✅ Unread counters work
+- ✅ All organization users auto-populate
+- ⏳ No duplicate users (debugging)
 
 ---
 
-### 📦 v0.7 - AI Analysis + Morning Brief + Advanced Features
+## 📦 v0.4 - Projects Management
 
-**Час:** 6 днів → **Додано +2 дні = 8 днів**  
+**Час:** 8 днів  
 **Статус:** 📋 PLANNED  
-**Deliverable:** ✅ AI аналізує зміни + morning brief + масштабованість
+**Deliverable:** ✅ Teams can manage client websites
+
+**День 1-3: Projects CRUD**
+- [ ] Create project
+- [ ] Edit project
+- [ ] Delete project
+- [ ] Project list view
+- [ ] Project details page
+
+**День 4-5: Project Settings**
+- [ ] Domain/URL input
+- [ ] Target keywords
+- [ ] Competitors
+- [ ] Google credentials link
+
+**День 6-8: API Integrations Setup**
+- [ ] Google Search Console auth
+- [ ] Google Analytics auth
+- [ ] Ahrefs API key input
+- [ ] Connection testing
+
+**Acceptance Criteria:**
+- ✅ Can create projects
+- ✅ Can connect Google accounts
+- ✅ Can add Ahrefs key
+- ✅ Data fetching works
+
+---
+
+## 📦 v0.5 - Tasks & Backlog
+
+**Час:** 7 днів  
+**Статус:** 📋 PLANNED  
+**Deliverable:** ✅ Task management like Linear
+
+**День 1-3: Tasks CRUD**
+- [ ] Create task
+- [ ] Edit task
+- [ ] Delete task
+- [ ] Task statuses (Todo, In Progress, Done, Blocked)
+- [ ] Assignee selection
+- [ ] Priority levels
+
+**День 4-5: Backlog View**
+- [ ] Drag & drop reordering
+- [ ] Filters (status, assignee, priority)
+- [ ] Search tasks
+- [ ] Bulk actions
+
+**День 6-7: Task Details**
+- [ ] Task description (rich text)
+- [ ] Comments
+- [ ] Activity log
+- [ ] Related tasks
+
+**Acceptance Criteria:**
+- ✅ Can create/edit/delete tasks
+- ✅ Drag & drop works
+- ✅ Filters work
+- ✅ Comments work
+
+---
+
+## 📦 v0.6 - Chat UI Polish + Invite System 🆕
+
+**Час:** 10 днів  
+**Статус:** 📋 PLANNED  
+**Deliverable:** ✅ Professional chat UX + Secure multi-tenancy
+
+### Chat UI Improvements (День 1-6)
+
+**Day 1-2: Search & Avatars**
+- [ ] 🔍 **Search functionality**
+  - [ ] Search bar at top of ChatList
+  - [ ] Search by user name, chat name, message content
+  - [ ] Real-time filtering
+  - [ ] Clear search button
+  - [ ] Keyboard shortcuts (Cmd/Ctrl+K)
+
+- [ ] 👤 **Avatar initials**
+  - [ ] Generate initials from names (e.g., "John Doe" → "JD")
+  - [ ] Unique colors per user (hash-based)
+  - [ ] Replace generic User/Users icons
+  - [ ] Consistent across all components
+
+**Day 3-4: Enhanced Indicators & Visuals**
+- [ ] ⌨️ **Typing indicators**
+  - [ ] "User is typing..." animation
+  - [ ] Show in ChatBox below messages
+  - [ ] WebSocket events: typing_start, typing_stop
+  - [ ] Debounce (stop after 3s of no typing)
+
+- [ ] 🔴 **Better unread badges**
+  - [ ] Larger, more prominent badges
+  - [ ] Bold chat name when unread
+  - [ ] Different color for mentions (@username)
+  - [ ] Badge animation on new message
+
+**Day 5-6: Smart Features & Polish**
+- [ ] 👥 **Visual distinction direct vs group**
+  - [ ] Different icons or colors
+  - [ ] Stacked avatars for group chats (show first 3 members)
+  - [ ] Group icon with member count overlay
+
+- [ ] ⏰ **Smart timestamps**
+  - [ ] Today → show time only ("3:45 PM")
+  - [ ] Yesterday → show "Yesterday"
+  - [ ] Older → show date ("Nov 20")
+  - [ ] Relative time in tooltips ("2 hours ago")
+
+- [ ] 💬 **Improved empty state**
+  - [ ] "No chat selected" with onboarding tips
+  - [ ] Quick actions: "Create group chat", "Start direct message"
+  - [ ] Recent activity preview
+  - [ ] Illustration or animation
+
+### Invite System (День 7-10) - Production Security 🔒
+
+**Day 7-8: Backend Implementation**
+- [ ] 📧 **Invite model & API**
+  - [ ] Invite table: token, email, organizationId, role, expiresAt, createdBy
+  - [ ] POST /api/organization/invite - Create invite
+  - [ ] GET /api/organization/invites - List pending invites
+  - [ ] DELETE /api/organization/invite/:id - Cancel invite
+  - [ ] POST /api/auth/signup-with-invite - Signup via invite
+
+- [ ] 🔐 **Invite logic**
+  - [ ] Generate secure random tokens (32 bytes)
+  - [ ] Email validation
+  - [ ] Expiry (7 days default)
+  - [ ] One-time use tokens
+  - [ ] Role assignment (admin/member)
+
+**Day 9: Frontend UI**
+- [ ] 👥 **Organization settings page**
+  - [ ] Team members list
+  - [ ] "Invite member" button
+  - [ ] Invite dialog: email input, role selector
+  - [ ] Pending invites list
+  - [ ] Cancel/resend actions
+
+- [ ] 📬 **Signup flow update**
+  - [ ] Detect invite token in URL (/auth/signup?invite=xxx)
+  - [ ] Show organization name in signup form
+  - [ ] Auto-fill organization on token validation
+  - [ ] Join existing org instead of creating new
+
+**Day 10: Email Integration (Optional)**
+- [ ] 📧 **Invite emails** (can be added later)
+  - [ ] Email template with invite link
+  - [ ] SendGrid/Mailgun integration
+  - [ ] For now: just copy link and share manually
+
+**Remove Variant A:**
+- [ ] ❌ Remove case-insensitive organization matching
+- [ ] ❌ Signup always creates new org (unless invite token)
+- [ ] ✅ Secure multi-tenancy
+
+**Acceptance Criteria:**
+- ✅ Search works and is fast (<500ms)
+- ✅ Avatars with initials everywhere
+- ✅ Typing indicators show in real-time
+- ✅ Timestamps are smart and readable
+- ✅ Unread badges are prominent
+- ✅ Empty state is helpful
+- ✅ Invite system working end-to-end
+- ✅ Admins can invite team members
+- ✅ Invited users join correct organization
+- ✅ Variant A removed (secure multi-tenancy)
+
+---
+
+## 📦 v0.7 - AI Analysis + Morning Brief + Scalability
+
+**Час:** 8 днів  
+**Статус:** 📋 PLANNED  
+**Deliverable:** ✅ AI analyzes changes + morning brief + scale-ready
 
 **День 1-3: Analysis Engine**
 - [ ] Snapshot comparison
@@ -366,329 +336,207 @@ TOTAL PROGRESS: 25% (2.5/10 versions) 🔄
 - [ ] Actionable recommendations
 - [ ] Email delivery (SendGrid)
 
-**ДОДАНО: День 7-8: Scalability & Logging** 🚀
-> Покращення з improvement_plan (medium/low priority)
-
-**Scalability:**
-- [ ] 📊 **Пагінація**
+**День 7-8: Scalability & Logging**
+- [ ] 📊 **Pagination**
   - [ ] Chat messages pagination (load more)
   - [ ] Projects list pagination
   - [ ] Tasks pagination (Backlog)
   - [ ] Audit results pagination
 
-- [ ] 📊 **Оптимізація запитів**
-  - [ ] `lastMessage` field у Chat model
-  - [ ] Indexes на frequently queried fields
-  - [ ] N+1 queries optimization
+- [ ] 📊 **Query optimization**
+  - [ ] `lastMessage` field in Chat model
+  - [ ] Database indexes on frequent queries
+  - [ ] N+1 query fixes
 
-**Logging & Monitoring:**
 - [ ] 📝 **Production logging (Winston)**
   - [ ] Replace console.log
   - [ ] Log levels (error, warn, info, debug)
   - [ ] Log rotation
-  - [ ] Don't log sensitive data (tokens, passwords)
-
-- [ ] 📝 **Error tracking готовність**
-  - [ ] Структуровані логи (JSON)
-  - [ ] Request IDs
-  - [ ] User context in logs
+  - [ ] No sensitive data in logs
+  - [ ] Request IDs for tracing
 
 **Acceptance Criteria:**
-- ✅ AI аналізує зміни щодня
-- ✅ Morning brief генерується о 7:00
-- ✅ Email надходить користувачам
-- ✅ **Pagination працює** ← НОВИЙ
-- ✅ **Winston logging** ← НОВИЙ
+- ✅ AI analyzes changes daily
+- ✅ Morning brief generated at 7:00 AM
+- ✅ Emails delivered to users
+- ✅ Pagination works everywhere
+- ✅ Winston logging in production
 
 ---
 
-### 📦 v0.8 - Notifications (Full) + Polish + Security Hardening
-
-**Час:** 16 днів  
-**Статус:** 📋 PLANNED  
-**Deliverable:** ✅ Розумні notifications + повний polish + security
-
-**День 1-5: Notification System**
-- [ ] Notification Stack UI (floating)
-- [ ] Auto-collapse + grouping
-- [ ] Interactive actions
-- [ ] Sound effects (optional)
-- [ ] Notification center
-
-**День 6-8: Recurring Tasks**
-- [ ] Recurring task model
-- [ ] Cron scheduler
-- [ ] Task instances
-
-**День 9-12: Advanced Crawler**
-- [ ] Crawl до 5K pages
-- [ ] JS rendering optimization
-- [ ] Incremental crawling
-
-**День 13-16: UI/UX Polish + Security**
-> Покращення з improvement_plan (low priority + security)
-
-**UI/UX Polish:**
-- [ ] 🎨 **UI покращення**
-  - [ ] Socket.io status indicator (green/grey dot)
-  - [ ] Message animations (slide in)
-  - [ ] Skeleton loaders для metrics
-  - [ ] Smooth transitions
-  - [ ] Loading states everywhere
-
-**Security Hardening:**
-- [ ] 🔐 **JWT у HttpOnly cookies (optional)**
-  - [ ] Migrate from localStorage
-  - [ ] HttpOnly + Secure + SameSite
-  - [ ] CSRF protection
-  - [ ] Alternative: NextAuth.js evaluation
-
-**Performance:**
-- [ ] ⚡ **Performance optimization**
-  - [ ] Code splitting
-  - [ ] Image optimization
-  - [ ] Lazy loading
-  - [ ] Bundle size reduction
-  - [ ] API response time <200ms
-
-**Accessibility:**
-- [ ] ♿ **A11y improvements**
-  - [ ] Keyboard navigation
-  - [ ] ARIA labels
-  - [ ] Focus management
-  - [ ] Color contrast
-  - [ ] Screen reader testing
-
-**Acceptance Criteria:**
-- ✅ Notifications працюють smooth
-- ✅ Recurring tasks виконуються
-- ✅ Crawler обробляє 5K pages
-- ✅ Lighthouse score >85
-- ✅ **Security hardening complete** ← НОВИЙ
-- ✅ **A11y passed** ← НОВИЙ
-- ✅ **BETA READY!** 🧪
-
----
-
-## 🚀 MILESTONE 3: Public Launch (v0.9 → v1.0)
-
-### 📦 v0.9 - Reports & Team Management + CI/CD
-
-**Час:** 10 днів → **Додано +2 дні = 12 днів**  
-**Статус:** 📋 PLANNED  
-**Deliverable:** ✅ Reports + повне team management + CI/CD
-
-**День 1-5: Reports System**
-- [ ] Report templates
-- [ ] Custom reports
-- [ ] Scheduled reports
-- [ ] Export formats (PDF, Docs, Sheets)
-
-**День 6-8: Team Management**
-- [ ] Invite users
-- [ ] Role permissions
-- [ ] User activity log
-- [ ] Usage tracking per user
-
-**ДОДАНО: День 9-12: CI/CD & Dev Workflow** 🔧
-> Покращення з improvement_plan (low priority - delayed to pre-launch)
-
-**CI/CD Pipeline:**
-- [ ] 🔧 **GitHub Actions**
-  - [ ] Lint (ESLint + Prettier)
-  - [ ] Type check (tsc)
-  - [ ] Tests (Jest + E2E)
-  - [ ] Build verification
-  - [ ] Deploy preview (Vercel)
-
-**Docker Production:**
-- [ ] 🐳 **Production Docker setup**
-  - [ ] Multi-stage builds
-  - [ ] Environment variables handling
-  - [ ] Health checks
-  - [ ] Docker Compose production
-
-**Acceptance Criteria:**
-- ✅ Reports генеруються
-- ✅ Team management працює
-- ✅ Permissions enforcement
-- ✅ **CI/CD pipeline working** ← НОВИЙ
-- ✅ **Docker production-ready** ← НОВИЙ
-
----
-
-### 📦 v1.0 - Production Launch! 🎉
+## 📦 v0.8 - Notifications + Full Polish + Security Hardening
 
 **Час:** 10 днів  
 **Статус:** 📋 PLANNED  
-**Deliverable:** ✅ PUBLIC LAUNCH!
+**Deliverable:** ✅ Complete notification system + production-ready security
 
-**День 1-3: Security**
-- [ ] Security audit (OWASP)
-- [ ] Penetration testing
-- [ ] Rate limiting
+**День 1-3: Notifications Backend**
+- [ ] Notification model
+- [ ] Notification types (chat, task, mention, system)
+- [ ] Read/unread status
+- [ ] Notification preferences
+- [ ] Email notifications (SendGrid)
+- [ ] Push notifications (optional)
+
+**День 4-6: Notifications UI**
+- [ ] Notification bell icon
+- [ ] Notification dropdown
+- [ ] Mark as read
+- [ ] Notification settings page
+- [ ] Toast notifications for real-time events
+
+**День 7-8: UI Polish**
+- [ ] Loading states everywhere
+- [ ] Error messages user-friendly
+- [ ] Empty states with illustrations
+- [ ] Smooth transitions
+- [ ] Mobile responsiveness final check
+- [ ] Dark mode (optional)
+
+**День 9-10: Security Hardening**
+- [ ] Rate limiting (100 req/min per user)
 - [ ] CSRF protection
-
-**День 4-6: Performance**
-- [ ] Performance audit
-- [ ] API optimization (<200ms)
-- [ ] Frontend optimization
-- [ ] Caching strategy
-
-**День 7-10: Launch Prep**
-- [ ] Monitoring (Sentry)
-- [ ] Logging infrastructure
-- [ ] Production deployment
-- [ ] Landing page
-- [ ] Documentation
-- [ ] Product Hunt submission
+- [ ] XSS prevention
+- [ ] SQL injection prevention (Prisma handles, but audit)
+- [ ] Secure headers (helmet.js)
+- [ ] Content Security Policy
 
 **Acceptance Criteria:**
+- ✅ Notifications work for all event types
+- ✅ Email notifications sent
+- ✅ UI polish complete
 - ✅ Security audit passed
-- ✅ Lighthouse >90
+- ✅ No major bugs
+
+---
+
+## 📦 v0.9 - Launch Preparation
+
+**Час:** 10 днів  
+**Статус:** 📋 PLANNED  
+**Deliverable:** 🎉 PUBLIC LAUNCH!
+
+**День 1-3: Performance & Monitoring**
+- [ ] Performance audit
+- [ ] API optimization (<200ms average)
+- [ ] Frontend optimization (Lighthouse >90)
+- [ ] Caching strategy (Redis)
+- [ ] Monitoring setup (Sentry)
+- [ ] Logging infrastructure
+
+**День 4-6: Documentation & Testing**
+- [ ] User documentation
+- [ ] API documentation (Swagger)
+- [ ] Admin guide
+- [ ] Bug bash (team testing)
+- [ ] Fix critical bugs
+
+**День 7-10: Launch**
+- [ ] Production deployment (Vercel + Railway)
+- [ ] Domain setup
+- [ ] SSL certificates
+- [ ] Landing page live
+- [ ] Product Hunt submission
+- [ ] Social media announcement
+- [ ] Blog post
+
+**Acceptance Criteria:**
+- ✅ Lighthouse score >90
 - ✅ API <200ms average
 - ✅ Zero critical bugs
 - ✅ 99.9% uptime
-- ✅ **PRODUCTION LIVE!** 🚀
+- ✅ **PRODUCTION LIVE!** 🎉
 
 ---
 
-## 📋 Improvement Plan Integration Summary
+## 🔮 Post-Launch (v1.0+)
 
-**Всі покращення з improvement_plan.md розподілені:**
+### Phase 1: Feedback & Iteration (1 month)
+- [ ] User feedback collection
+- [ ] Bug fixes
+- [ ] UX improvements
+- [ ] Performance optimization
 
-### 🔴 High Priority (Must Fix):
-- ✅ v0.3: Chat database persistence + прибрати хардкод + UX errors
-- ✅ v0.6: Базові тести (delayed після core features)
-- ✅ v0.4: OAuth покращення
+### Phase 2: Advanced Features (2-3 months)
+- [ ] @mentions in chat
+- [ ] File attachments
+- [ ] Message reactions
+- [ ] Voice messages (optional)
+- [ ] Video calls (optional)
+- [ ] Advanced SEO features:
+  - [ ] Technical SEO audit
+  - [ ] Content optimization AI
+  - [ ] Backlink monitoring
+  - [ ] Rank tracking
 
-### 🟡 Medium Priority (Next 1-2 Sprints):
-- ✅ v0.8: JWT у cookies (optional security hardening)
-- ✅ v0.4: OAuth константи централізувати
-- ✅ v0.4: DTO validation
-- ✅ v0.4: UX покращення (toast, messages)
-- ✅ v0.4: API fetch обгортка
-
-### 🟢 Low Priority (Nice to Have):
-- ✅ v0.7: Пагінація + масштабованість
-- ✅ v0.7: Winston logging
-- ✅ v0.8: UI полірування
-- ✅ v0.9: CI/CD
-- ❌ OpenAI integration → ВІДКЛАДЕНО на Phase 2
-
-**Не включено (future phases):**
-- AI context endpoint (`/chat/:id/context`) - буде в Phase 2
-- OpenAI integration - Phase 2 (multi-LLM support)
-
----
-
-## ✅ Definition of Done
-
-### v0.5 (Investor Demo)
-- [ ] Working demo 7-10 хвилин
-- [ ] AI teammate в group чаті
-- [ ] Повний Task Manager (Schedule/Backlog/Done)
-- [ ] AI planning працює
-- [ ] Site Audit до 500 pages
-- [ ] AI аналіз audit results
-- [ ] Google OAuth + реальні GSC дані
-- [ ] Zero critical bugs під час demo
-
-### v0.8 (Beta)
-- [ ] 15+ beta users активні
-- [ ] Всі Google APIs (GSC, GA4, Docs, Sheets)
-- [ ] Щоденний збір даних працює
-- [ ] Morning brief генерується
-- [ ] Notifications system (floating stack)
-- [ ] Recurring tasks
-- [ ] Crawler до 5K pages
-- [ ] Mobile responsive
-- [ ] <10 non-critical bugs
-- [ ] Lighthouse >85
-- [ ] Tests coverage >60%
-- [ ] Security hardening complete
-
-### v1.0 (Launch)
-- [ ] Production deployment stable
-- [ ] Security audit passed
-- [ ] Performance: Lighthouse >90, API <200ms
-- [ ] Reports generation + export
-- [ ] Team management
-- [ ] Documentation complete
-- [ ] Zero critical bugs
-- [ ] 99.9% uptime
-- [ ] Product Hunt ready
-- [ ] CI/CD pipeline working
-- [ ] Monitoring + logging active
+### Phase 3: Scaling (6+ months)
+- [ ] Team plans & pricing tiers
+- [ ] API for third-party integrations
+- [ ] White-label options
+- [ ] Enterprise features
+- [ ] Multi-language support
 
 ---
 
-## 🔄 Development Process
+## 📊 Risk Mitigation
 
-### Weekly Sprints
+**Technical Risks:**
+- WebSocket scaling → Use Redis adapter for Socket.io
+- Database performance → Add indexes, query optimization
+- API rate limits → Caching, batching requests
 
-**Monday:**
-- Sprint planning (2 год)
-- Version goals review
+**Business Risks:**
+- Slow adoption → Free tier, Product Hunt launch
+- Competitor moves → Focus on AI teammate USP
+- Budget constraints → Prioritize core features, delay nice-to-haves
 
-**Tuesday-Friday:**
-- Deep work (development)
-- Daily log (15 хв): progress + blockers
-
-**Friday:**
-- Sprint review (що зроблено)
-- Self-demo (record video)
-- Retro (що покращити next week)
-
-### Git Workflow
-
-```
-main (production)
-  ↑
-develop (staging)
-  ↑
-feature/v0.x-feature-name
-```
-
-**Commits:**
-```
-feat(v0.1): Complete Foundation & Auth ✅
-feat(v0.2): Add Google OAuth integration ✅
-feat(v0.2): Add Token Encryption (AES-256) ✅
-feat(v0.3): Add Socket.io chat infrastructure
-feat(v0.3): Fix ChatGateway TypeError + database persistence
-feat(v0.4): Add DTO validation with class-validator
-feat(v0.4): Add AI teammate in group chats
-fix(v0.5): Crawler timeout on large sites
-refactor(v0.2): Optimize GSC API calls
-docs(v1.0): Add API documentation
-```
+**Mitigation Strategy:**
+- Start with free tier
+- Focus on killer feature (AI teammate)
+- Ship fast, iterate based on feedback
+- Pivot if needed
 
 ---
 
-## 📝 Living Document
+## 💡 Key Decisions
 
-**Цей roadmap оновлюється після кожної версії!**
-
-**Tracking:**
-- ✅ Completed
-- 🔄 In progress
-- ⏸️ Blocked/Paused
-- 📊 Metrics update
-
-**Version Log:**
-- v2.0 - Initial version-based roadmap
-- v2.1 - Moved Investor Demo to v0.5 (full Task Manager + Audit)
-- v2.2 - v0.1 COMPLETED! 🎉 (15.11.2025)
-- v2.3 - v0.2 IN PROGRESS! Backend infrastructure ready (15.11.2025)
-- v2.4 - v0.2 OAuth COMPLETE! Dashboard UI pending (15.11.2025, evening)
-- v2.5 - v0.2 ЗАВЕРШЕНО! OAuth + Encryption + UI статус (16.11.2025, evening) 🎉
-- v2.6 - Integrated improvement_plan.md into roadmap (17.11.2025)
+1. **Monorepo** (PNPM workspace) ✅
+2. **WebSocket** для real-time (Socket.io) ✅
+3. **JWT** authentication ✅
+4. **Organization-based** multi-tenancy ✅
+5. **Variant A** signup for testing → **Invite system** for production ✅
+6. **Chat UI polish** after core features (v0.6) ✅
+7. **Vercel + Railway** for hosting
+8. **Free tier** для початку
 
 ---
 
-**Останнє оновлення:** 17.11.2025  
-**Поточна версія:** v0.3 🔄 **IN PROGRESS (50%)**  
-**Наступна версія:** v0.4 - AI Teammate + Task Manager + Security (12 днів)
+## 🎯 Success Metrics
 
-**Keep building! 🚀**
+**v0.3 (Chat MVP):**
+- ✅ Real-time messaging works
+- ✅ 5+ test users chatting
+- ✅ Group chats functional
+- ⏳ Zero critical bugs
+
+**v0.5 (Investor Demo):**
+- ✅ All core features working
+- ✅ Professional UI
+- ✅ Demo-ready presentation
+- ✅ 20+ hours of testing
+
+**v1.0 (Public Launch):**
+- ✅ 50+ beta users
+- ✅ 99.9% uptime
+- ✅ <200ms API response
+- ✅ Lighthouse >90
+
+---
+
+**Last Updated:** 2025-11-22  
+**Next Milestone:** Complete v0.3 (96% → 100%)  
+**Current Sprint:** Debugging duplicate users in ChatList
+
+---
+
+🚀 **Let's ship it!**
