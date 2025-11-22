@@ -56,26 +56,34 @@ export function ChatOverlay({
   }, [isOpen]);
 
   return (
-    <div
-      className={cn(
-        "fixed right-0 z-50 transition-transform duration-300 ease-out",
-        isOpen ? "translate-y-0" : "translate-y-[calc(100%+120px)]"
+    <>
+      {/* Full-screen backdrop - visible only when open */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={onClose}
+        />
       )}
-      style={{
-        left: SIDEBAR_WIDTH,      // так само як input bar
-        bottom: OVERLAY_BOTTOM_OFFSET,
-      }}
-      onClick={onClose} // Click backdrop to close
-    >
-      {/* ТА САМА сітка, що й у ChatInputBar / Dashboard:
-          спочатку горизонтальний padding, потім max-w-6xl mx-auto */}
-      <div className="px-8">
-        <div className="max-w-6xl mx-auto">
-          <div
-            className="bg-background rounded-2xl border border-border flex flex-col overflow-hidden"
-            style={{ height: OVERLAY_HEIGHT }}
-            onClick={(e) => e.stopPropagation()} // Don't close when clicking inside panel
-          >
+
+      {/* Chat panel container */}
+      <div
+        className={cn(
+          "fixed right-0 z-50 transition-transform duration-300 ease-out",
+          isOpen ? "translate-y-0" : "translate-y-[calc(100%+120px)]"
+        )}
+        style={{
+          left: SIDEBAR_WIDTH,      // так само як input bar
+          bottom: OVERLAY_BOTTOM_OFFSET,
+        }}
+      >
+        {/* ТА САМА сітка, що й у ChatInputBar / Dashboard:
+            спочатку горизонтальний padding, потім max-w-6xl mx-auto */}
+        <div className="px-8">
+          <div className="max-w-6xl mx-auto">
+            <div
+              className="bg-background rounded-2xl border border-border flex flex-col overflow-hidden"
+              style={{ height: OVERLAY_HEIGHT }}
+            >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b">
               <h2 className="text-xl font-semibold">Messages</h2>
@@ -128,5 +136,6 @@ export function ChatOverlay({
         </div>
       </div>
     </div>
+    </>
   );
 }
