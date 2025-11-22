@@ -20,6 +20,7 @@ export default function DashboardLayout({
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
+  const [chatListRefreshTrigger, setChatListRefreshTrigger] = useState(0);
 
   useEffect(() => {
     // Check authentication
@@ -144,6 +145,8 @@ export default function DashboardLayout({
   };
 
   const handleChatCreated = async (chatId: string) => {
+    // Trigger ChatList refresh to show new chat
+    setChatListRefreshTrigger(prev => prev + 1);
     handleChatSelect(chatId); // This will open overlay and select chat
   };
 
@@ -187,6 +190,7 @@ export default function DashboardLayout({
           currentUserName={user.name}
           organizationId={user.organizationId}
           onChatDeleted={handleChatDeleted}
+          refreshTrigger={chatListRefreshTrigger}
         />
       )}
 

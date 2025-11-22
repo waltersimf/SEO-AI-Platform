@@ -40,9 +40,10 @@ interface ChatListProps {
   currentUserId?: string;
   onChatDeleted?: (chatId: string) => void;
   compact?: boolean; // For smaller padding in overlay mode
+  refreshTrigger?: number; // Increment this to trigger a refresh
 }
 
-export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, currentUserId, onChatDeleted, compact = false }: ChatListProps) {
+export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, currentUserId, onChatDeleted, compact = false, refreshTrigger }: ChatListProps) {
   const [chats, setChats] = useState<Chat[]>([]);
   const [organizationUsers, setOrganizationUsers] = useState<OrganizationUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -140,6 +141,15 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
       (window as any).refreshChatList = loadChats;
     }
   }, [onRefresh]);
+
+  // Refresh chats when refreshTrigger changes (e.g., after creating a new chat)
+  useEffect(() => {
+    if (refreshTrigger !== undefined && refreshTrigger > 0) {
+      console.log('🔄 ChatList: Refresh trigger changed, reloading chats');
+      loadChats();
+      loadOrganizationUsers();
+    }
+  }, [refreshTrigger]);
 
   // Reset unread count locally when a chat becomes active
   useEffect(() => {
