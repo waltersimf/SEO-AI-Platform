@@ -133,5 +133,6 @@ export function ChatOverlay({
         </div>
       </div>
     </div>
+    </>
   );
 }
