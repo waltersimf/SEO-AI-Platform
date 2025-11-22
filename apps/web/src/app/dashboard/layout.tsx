@@ -7,7 +7,6 @@ import { Sidebar } from '@/components/sidebar';
 import { CreateChatDialog } from '@/components/chat/create-chat-dialog';
 import { ChatInputBar } from '@/components/chat/chat-input-bar';
 import { ChatOverlay } from '@/components/chat/chat-overlay';
-import { ToastManager } from '@/components/chat/notifications/toast-manager';
 import { ChatNotificationBubble } from '@/components/chat/notifications/chat-notification-bubble';
 
 export default function DashboardLayout({
@@ -81,18 +80,6 @@ export default function DashboardLayout({
           senderName: message.author?.name || 'Unknown',
           message: message.content,
         });
-
-        // Also show toast in top-right corner
-        const addToast = (window as any).addChatToast;
-        if (addToast) {
-          addToast({
-            id: message.id,
-            chatId: message.chatId,
-            chatName: message.chat?.name || 'Direct Message',
-            message: message.content,
-            authorName: message.author?.name || 'Unknown',
-          });
-        }
       }
     });
 
@@ -173,13 +160,6 @@ export default function DashboardLayout({
     }
   };
 
-  const handleToastClick = (chatId: string) => {
-    // Open overlay and select chat
-    setActiveChatId(chatId);
-    setIsChatOpen(true);
-    setNotificationBubble(null); // Clear notification bubble
-  };
-
   const handleBubbleClick = (chatId: string) => {
     // Open overlay and select chat
     handleChatSelect(chatId);
@@ -218,9 +198,6 @@ export default function DashboardLayout({
           refreshTrigger={chatListRefreshTrigger}
         />
       )}
-
-      {/* Toast Notifications - Top Right */}
-      {user && <ToastManager onToastClick={handleToastClick} />}
 
       {/* Sticky Chat Notification Bubble - Above Input Bar */}
       {notificationBubble && (
