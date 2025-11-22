@@ -502,6 +502,28 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
     );
   };
 
+  // 🔍 DEBUG LOGGING - Find duplicate users bug
+  console.log('🔍 ChatList Debug:');
+  console.log('- Chats:', chats.length, chats.map(c => ({ id: c.id, name: c.name || 'Direct', type: c.type })));
+  console.log('- Organization users:', organizationUsers.length, organizationUsers.map(u => ({ id: u.id, name: u.name })));
+  console.log('- Direct chats:', directChats.length);
+  console.log('- Users without chats:', usersWithoutChats.length, usersWithoutChats.map(u => u.name));
+  console.log('- Unified list:', unifiedList.length, unifiedList.map(item => ({
+    type: item.type,
+    name: item.type === 'chat' ? (item.data.name || 'Direct') : item.data.name
+  })));
+
+  // Check for duplicates in unified list
+  const allNames = unifiedList.map(item =>
+    item.type === 'chat'
+      ? getChatDisplayName(item.data)
+      : item.data.name
+  );
+  const uniqueNames = [...new Set(allNames)];
+  if (allNames.length !== uniqueNames.length) {
+    console.error('🔴 DUPLICATE NAMES FOUND:', allNames.filter((name, index) => allNames.indexOf(name) !== index));
+  }
+
   return (
     <div className="w-80 border-r bg-muted/10 flex flex-col h-full">
       {/* Header with Create Button */}
