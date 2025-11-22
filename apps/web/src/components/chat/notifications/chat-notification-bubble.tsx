@@ -11,6 +11,8 @@ interface ChatNotificationBubbleProps {
   onDismiss: () => void;
 }
 
+const SIDEBAR_WIDTH = 256;
+
 export function ChatNotificationBubble({
   chatId,
   senderName,
@@ -38,36 +40,50 @@ export function ChatNotificationBubble({
 
   return (
     <div
-      className={`fixed z-40 transition-all duration-300 ease-out ${
-        isVisible
-          ? "bottom-20 opacity-100"
-          : "bottom-16 opacity-0 pointer-events-none"
-      }`}
-      style={{ left: '280px' }}
+      className="fixed z-40 pointer-events-none"
+      style={{
+        left: SIDEBAR_WIDTH,
+        right: 0,
+        bottom: 0,
+      }}
     >
-      <div
-        onClick={handleClick}
-        className="flex items-center gap-3 px-4 py-3 bg-background border border-border rounded-full shadow-lg cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-200 max-w-md"
-      >
-        {/* Avatar */}
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-          <User className="h-5 w-5 text-primary" />
-        </div>
+      {/* Match the input bar's padding wrapper */}
+      <div className="w-full pl-8 pr-12 pb-20 pointer-events-auto">
+        {/* Match the input bar's max-width container */}
+        <div className="max-w-6xl mx-auto">
+          <div
+            className={`transition-all duration-300 ease-out ${
+              isVisible
+                ? "translate-y-0 opacity-100"
+                : "translate-y-4 opacity-0 pointer-events-none"
+            }`}
+          >
+            <div
+              onClick={handleClick}
+              className="flex items-center gap-3 px-4 py-2.5 bg-muted hover:bg-muted/90 rounded-lg cursor-pointer transition-colors shadow-sm border border-border/50"
+            >
+              {/* Avatar */}
+              <div className="flex-shrink-0 w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center">
+                <User className="h-5 w-5 text-primary" />
+              </div>
 
-        {/* Content */}
-        <div className="flex-1 min-w-0 pr-2">
-          <p className="text-sm font-bold truncate">{senderName}</p>
-          <p className="text-xs text-muted-foreground truncate">{message}</p>
-        </div>
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold truncate">{senderName}</p>
+                <p className="text-xs text-muted-foreground truncate">{message}</p>
+              </div>
 
-        {/* Close Button */}
-        <button
-          onClick={handleDismiss}
-          className="flex-shrink-0 w-6 h-6 rounded-full hover:bg-muted flex items-center justify-center transition-colors"
-          title="Dismiss"
-        >
-          <X className="h-4 w-4" />
-        </button>
+              {/* Close Button */}
+              <button
+                onClick={handleDismiss}
+                className="flex-shrink-0 w-9 h-9 rounded-md hover:bg-background flex items-center justify-center transition-colors"
+                title="Dismiss"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
