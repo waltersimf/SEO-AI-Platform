@@ -8,6 +8,7 @@ import { CreateChatDialog } from '@/components/chat/create-chat-dialog';
 import { ChatInputBar } from '@/components/chat/chat-input-bar';
 import { ChatOverlay } from '@/components/chat/chat-overlay';
 import { ToastManager } from '@/components/chat/notifications/toast-manager';
+import { ChatNotificationBubble } from '@/components/chat/notifications/chat-notification-bubble';
 
 export default function DashboardLayout({
   children,
@@ -21,6 +22,11 @@ export default function DashboardLayout({
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
   const [chatListRefreshTrigger, setChatListRefreshTrigger] = useState(0);
+  const [notificationBubble, setNotificationBubble] = useState<{
+    chatId: string;
+    senderName: string;
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     // Check authentication
@@ -67,8 +73,16 @@ export default function DashboardLayout({
     socket.on('new_message', (message: any) => {
       console.log('📨 Dashboard: New message received', message);
 
-      // Show toast only if overlay is closed and message is not from current user
+      // Show notification bubble if overlay is closed and message is not from current user
       if (!isChatOpen && message.authorId !== user.id) {
+        // Show sticky bubble above input bar
+        setNotificationBubble({
+          chatId: message.chatId,
+          senderName: message.author?.name || 'Unknown',
+          message: message.content,
+        });
+
+        // Also show toast in top-right corner
         const addToast = (window as any).addChatToast;
         if (addToast) {
           addToast({
@@ -121,6 +135,7 @@ export default function DashboardLayout({
   const handleChatSelect = async (chatId: string) => {
     setActiveChatId(chatId);
     setIsChatOpen(true); // Open overlay when chat selected
+    setNotificationBubble(null); // Clear notification bubble
 
     // Mark chat as read on the backend
     try {
@@ -162,6 +177,16 @@ export default function DashboardLayout({
     // Open overlay and select chat
     setActiveChatId(chatId);
     setIsChatOpen(true);
+    setNotificationBubble(null); // Clear notification bubble
+  };
+
+  const handleBubbleClick = (chatId: string) => {
+    // Open overlay and select chat
+    handleChatSelect(chatId);
+  };
+
+  const handleBubbleDismiss = () => {
+    setNotificationBubble(null);
   };
 
   return (
@@ -196,6 +221,17 @@ export default function DashboardLayout({
 
       {/* Toast Notifications - Top Right */}
       {user && <ToastManager onToastClick={handleToastClick} />}
+
+      {/* Sticky Chat Notification Bubble - Above Input Bar */}
+      {notificationBubble && (
+        <ChatNotificationBubble
+          chatId={notificationBubble.chatId}
+          senderName={notificationBubble.senderName}
+          message={notificationBubble.message}
+          onClick={handleBubbleClick}
+          onDismiss={handleBubbleDismiss}
+        />
+      )}
 
       {/* Create Chat Dialog */}
       {user && (
