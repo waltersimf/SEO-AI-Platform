@@ -29,31 +29,58 @@ export class AuthService {
     // Hash password
     const passwordHash = await bcrypt.hash(data.password, 10);
 
-    // Generate organization slug (with random suffix for uniqueness)
-    // ✅ ВИПРАВЛЕННЯ: randomBytes гарантує що slug ЗАВЖДИ унікальний!
-    const slug = `${data.organizationName}-${randomBytes(4).toString('hex')}`
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '');
-
-    // Create organization and user in transaction
-    const user = await this.prisma.user.create({
-      data: {
-        email: data.email,
-        name: data.name,
-        passwordHash,
-        role: 'admin', // First user is admin
-        organization: {
-          create: {
-            name: data.organizationName,
-            slug,
-          },
+    // Check if organization exists (case-insensitive)
+    const existingOrg = await this.prisma.organization.findFirst({
+      where: {
+        name: {
+          equals: data.organizationName,
+          mode: 'insensitive', // Case-insensitive search
         },
       },
-      include: {
-        organization: true,
-      },
     });
+
+    let user;
+
+    if (existingOrg) {
+      // JOIN existing organization
+      user = await this.prisma.user.create({
+        data: {
+          email: data.email,
+          name: data.name,
+          passwordHash,
+          role: 'admin', // Users joining existing org are also admin for now
+          organizationId: existingOrg.id, // Link to existing org
+        },
+        include: {
+          organization: true,
+        },
+      });
+    } else {
+      // CREATE new organization (current behavior)
+      // Generate organization slug (with random suffix for uniqueness)
+      const slug = `${data.organizationName}-${randomBytes(4).toString('hex')}`
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '');
+
+      user = await this.prisma.user.create({
+        data: {
+          email: data.email,
+          name: data.name,
+          passwordHash,
+          role: 'admin', // First user is admin
+          organization: {
+            create: {
+              name: data.organizationName,
+              slug,
+            },
+          },
+        },
+        include: {
+          organization: true,
+        },
+      });
+    }
 
     // Generate JWT
     const token = this.jwtService.sign({
