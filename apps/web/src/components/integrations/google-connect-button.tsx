@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import { API_URL } from '@/config/api';
+import { apiFetch } from '@/lib/api';
 
 export function GoogleConnectButton() {
   const [isConnected, setIsConnected] = useState(false);
@@ -15,19 +16,8 @@ export function GoogleConnectButton() {
 
   const checkConnection = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-
-      const response = await fetch(`${API_URL}/api/integrations/google`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setIsConnected(!!data);
-      }
+      const data = await apiFetch(`${API_URL}/api/integrations/google`);
+      setIsConnected(!!data);
     } catch (error) {
       console.error('Error checking connection:', error);
     } finally {
