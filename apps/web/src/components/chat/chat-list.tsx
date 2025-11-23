@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { Plus, MessageCircle, User, Users, Trash2 } from "lucide-react";
 import { io } from "socket.io-client";
 import { DeleteChatDialog } from "./delete-chat-dialog";
+import { API_URL, SOCKET_URL } from "@/config/api";
 
 interface Chat {
   id: string;
@@ -64,7 +65,7 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
     loadChats();
     loadOrganizationUsers();
 
-    const socket = io("http://localhost:4000");
+    const socket = io(SOCKET_URL);
 
     // Debug: Log when socket connects
     socket.on('connect', () => {
@@ -170,7 +171,7 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
   const loadChats = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:4000/api/chat/list", {
+      const response = await fetch(`${API_URL}/api/chat/list`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -190,7 +191,7 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
   const loadOrganizationUsers = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:4000/api/users/organization", {
+      const response = await fetch(`${API_URL}/api/users/organization`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -210,7 +211,7 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
   const createOrGetDirectChat = async (userId: string) => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:4000/api/chat/direct/${userId}`, {
+      const response = await fetch(`${API_URL}/api/chat/direct/${userId}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -240,7 +241,7 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:4000/api/chat/${chatToDelete.id}`, {
+      const response = await fetch(`${API_URL}/api/chat/${chatToDelete.id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

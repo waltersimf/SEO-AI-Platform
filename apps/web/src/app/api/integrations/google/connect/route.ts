@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
 export async function GET(request: NextRequest) {
   try {
     // Get token from query parameter
@@ -10,7 +12,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Make authenticated request to backend
-    const response = await fetch('http://localhost:4000/api/integrations/google/connect', {
+    const response = await fetch(`${API_URL}/api/integrations/google/connect`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

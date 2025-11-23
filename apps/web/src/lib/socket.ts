@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client';
+import { SOCKET_URL } from '@/config/api';
 
 // SSR-safe check
 const isBrowser = typeof window !== 'undefined';
@@ -12,7 +13,7 @@ export const getSocket = (): Socket => {
   }
 
   if (!socket) {
-    socket = io('http://localhost:4000', {
+    socket = io(SOCKET_URL, {
       autoConnect: true,
       reconnection: true,
       reconnectionDelay: 1000,

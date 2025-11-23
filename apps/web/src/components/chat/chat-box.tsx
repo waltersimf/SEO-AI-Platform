@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { initSocket, getSocket } from '../chat/socket';
 import { Send } from 'lucide-react';
 import { TypingIndicator } from './typing-indicator';
+import { API_URL } from '@/config/api';
 
 interface Message {
   id: string;
@@ -64,7 +65,7 @@ export function ChatBox({
     const loadMessageHistory = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:4000/api/chat/${chatId}/messages`, {
+        const response = await fetch(`${API_URL}/api/chat/${chatId}/messages`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },

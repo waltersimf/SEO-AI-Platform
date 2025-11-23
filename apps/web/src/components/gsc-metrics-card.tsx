@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { API_URL } from '@/config/api';
 
 interface GscMetric {
   keys: string[];
@@ -30,7 +31,7 @@ export function GscMetricsCard() {
         siteUrl: 'https://forgeline.io'
       });
 
-      const url = `http://localhost:4000/api/gsc/metrics?${params.toString()}`;
+      const url = `${API_URL}/api/gsc/metrics?${params.toString()}`;
       
       const response = await fetch(url, {
         headers: { 
