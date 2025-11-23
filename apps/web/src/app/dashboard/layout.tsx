@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, cloneElement } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { io } from 'socket.io-client';
 import { Sidebar } from '@/components/sidebar';
@@ -9,6 +9,7 @@ import { ChatInputBar } from '@/components/chat/chat-input-bar';
 import { ChatOverlay } from '@/components/chat/chat-overlay';
 import { ChatNotificationBubble } from '@/components/chat/notifications/chat-notification-bubble';
 import { API_URL, SOCKET_URL } from '@/config/api';
+import { SocketProvider } from '@/contexts/socket-context';
 
 export default function DashboardLayout({
   children,
@@ -183,11 +184,10 @@ export default function DashboardLayout({
   };
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <main className="flex-1">
-        {cloneElement(children as React.ReactElement, { socketStatus })}
-      </main>
+    <SocketProvider socketStatus={socketStatus}>
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <main className="flex-1">{children}</main>
 
       {/* Chat Input Bar - Fixed Bottom */}
       {user && (
@@ -233,6 +233,7 @@ export default function DashboardLayout({
           onChatCreated={handleChatCreated}
         />
       )}
-    </div>
+      </div>
+    </SocketProvider>
   );
 }
