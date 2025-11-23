@@ -57,6 +57,20 @@ export default function DashboardLayout({
   useEffect(() => {
     if (!user?.organizationId) return;
 
+    // Browser online/offline detection
+    const handleOnline = () => {
+      console.log('🌐 Browser ONLINE');
+      setSocketStatus('connected');
+    };
+
+    const handleOffline = () => {
+      console.log('📡 Browser OFFLINE');
+      setSocketStatus('disconnected');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
     const socket = io(SOCKET_URL);
 
     socket.on('connect', () => {
@@ -98,6 +112,8 @@ export default function DashboardLayout({
     });
 
     return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
       socket.disconnect();
     };
   }, [user, isChatOpen]);
