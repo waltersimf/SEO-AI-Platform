@@ -33,12 +33,18 @@ model User {
   email          String   @unique
   name           String
   passwordHash   String
-  
+  avatar         String?
+
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
-  role           String   @default("seo") // admin, seo, account_manager
-  
+
+  role           String   @default("seo") // admin, seo, account_manager, ai_assistant
+
+  isAI           Boolean  @default(false)
+  aiModel        String?
+  isOnline       Boolean  @default(false)
+  lastSeenAt     DateTime?
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -102,14 +108,18 @@ model Message {
   id        String   @id @default(cuid())
   chatId    String
   chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  
+
   authorId  String
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  
+
   content   String   @db.Text
-  
+
+  isAIResponse Boolean @default(false)
+  aiContext    Json?
+  aiModel      String?
+
   createdAt DateTime @default(now())
-  
+
   @@index([chatId, createdAt])
   @@map("messages")
 }

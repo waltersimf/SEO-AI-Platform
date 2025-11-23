@@ -1,0 +1,11 @@
+-- AlterTable
+ALTER TABLE "users" ADD COLUMN "avatar" TEXT,
+ADD COLUMN "isAI" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN "aiModel" TEXT,
+ADD COLUMN "isOnline" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN "lastSeenAt" TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "messages" ADD COLUMN "isAIResponse" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN "aiContext" JSONB,
+ADD COLUMN "aiModel" TEXT;
