@@ -6,6 +6,7 @@ import { IntegrationsModule } from './integrations/integrations.module';
 import { GscModule } from './gsc/gsc.module';
 import { ChatModule } from './chat/chat.module';
 import { UsersModule } from './users/users.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { UsersModule } from './users/users.module';
     GscModule,
     ChatModule,
     UsersModule,
+    AiModule,
   ],
 })
 export class AppModule {}
