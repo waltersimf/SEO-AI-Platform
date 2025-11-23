@@ -5,6 +5,7 @@ import { Plus, MessageCircle, User, Users, Trash2 } from "lucide-react";
 import { io } from "socket.io-client";
 import { DeleteChatDialog } from "./delete-chat-dialog";
 import { API_URL, SOCKET_URL } from "@/config/api";
+import { apiFetch } from "@/lib/api";
 
 interface Chat {
   id: string;
@@ -170,17 +171,8 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
 
   const loadChats = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${API_URL}/api/chat/list`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setChats(data);
-      }
+      const data = await apiFetch(`${API_URL}/api/chat/list`);
+      setChats(data);
     } catch (error) {
       console.error("Failed to load chats:", error);
     } finally {
@@ -190,19 +182,10 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
 
   const loadOrganizationUsers = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${API_URL}/api/users/organization`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Filter out current user
-        const otherUsers = data.filter((user: OrganizationUser) => user.id !== currentUserId);
-        setOrganizationUsers(otherUsers);
-      }
+      const data = await apiFetch(`${API_URL}/api/users/organization`);
+      // Filter out current user
+      const otherUsers = data.filter((user: OrganizationUser) => user.id !== currentUserId);
+      setOrganizationUsers(otherUsers);
     } catch (error) {
       console.error("Failed to load organization users:", error);
     }
@@ -210,21 +193,13 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
 
   const createOrGetDirectChat = async (userId: string) => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${API_URL}/api/chat/direct/${userId}`, {
+      const data = await apiFetch(`${API_URL}/api/chat/direct/${userId}`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Refresh chat list to include the new/existing chat
-        await loadChats();
-        // Select the chat
-        onChatSelect(data.chatId);
-      }
+      // Refresh chat list to include the new/existing chat
+      await loadChats();
+      // Select the chat
+      onChatSelect(data.chatId);
     } catch (error) {
       console.error("Failed to create/get direct chat:", error);
     }
@@ -240,28 +215,19 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
     if (!chatToDelete) return;
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${API_URL}/api/chat/${chatToDelete.id}`, {
+      await apiFetch(`${API_URL}/api/chat/${chatToDelete.id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
 
-      if (response.ok) {
-        // Remove chat from local state
-        setChats(prevChats => prevChats.filter(chat => chat.id !== chatToDelete.id));
+      // Remove chat from local state
+      setChats(prevChats => prevChats.filter(chat => chat.id !== chatToDelete.id));
 
-        // Notify parent if this was the active chat
-        if (onChatDeleted && chatToDelete.id === activeChatId) {
-          onChatDeleted(chatToDelete.id);
-        }
-
-        console.log('✅ Chat deleted successfully:', chatToDelete.id);
-      } else {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to delete chat');
+      // Notify parent if this was the active chat
+      if (onChatDeleted && chatToDelete.id === activeChatId) {
+        onChatDeleted(chatToDelete.id);
       }
+
+      console.log('✅ Chat deleted successfully:', chatToDelete.id);
     } catch (error) {
       console.error("Failed to delete chat:", error);
       throw error; // Re-throw to let dialog handle error display

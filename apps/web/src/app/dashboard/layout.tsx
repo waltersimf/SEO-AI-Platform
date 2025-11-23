@@ -10,6 +10,7 @@ import { ChatOverlay } from '@/components/chat/chat-overlay';
 import { ChatNotificationBubble } from '@/components/chat/notifications/chat-notification-bubble';
 import { API_URL, SOCKET_URL } from '@/config/api';
 import { SocketProvider } from '@/contexts/socket-context';
+import { apiFetch } from '@/lib/api';
 
 export default function DashboardLayout({
   children,
@@ -122,20 +123,9 @@ export default function DashboardLayout({
   useEffect(() => {
     const fetchUnreadCount = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-
-        const response = await fetch(`${API_URL}/api/chat/list`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const chats = await response.json();
-          const total = chats.reduce((sum: number, chat: any) => sum + (chat.unreadCount || 0), 0);
-          setTotalUnreadCount(total);
-        }
+        const chats = await apiFetch(`${API_URL}/api/chat/list`);
+        const total = chats.reduce((sum: number, chat: any) => sum + (chat.unreadCount || 0), 0);
+        setTotalUnreadCount(total);
       } catch (error) {
         console.error('Failed to fetch unread count:', error);
       }
@@ -156,14 +146,8 @@ export default function DashboardLayout({
 
     // Mark chat as read on the backend
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-
-      await fetch(`${API_URL}/api/chat/${chatId}/read`, {
+      await apiFetch(`${API_URL}/api/chat/${chatId}/read`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
 
       // Update local unread count
