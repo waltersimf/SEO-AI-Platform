@@ -5,10 +5,12 @@ import { GscMetricsCard } from "@/components/gsc-metrics-card";
 import { ConnectionStatus } from "@/components/connection-status";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSocket } from "@/contexts/socket-context";
 
-export default function DashboardPage({ socketStatus = 'disconnected' }: { socketStatus?: 'connected' | 'disconnected' | 'reconnecting' }) {
+export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
+  const { socketStatus } = useSocket();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
