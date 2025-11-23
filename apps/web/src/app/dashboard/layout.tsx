@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, cloneElement } from 'react';
 import { useRouter } from 'next/navigation';
 import { io } from 'socket.io-client';
 import { Sidebar } from '@/components/sidebar';
@@ -27,6 +27,7 @@ export default function DashboardLayout({
     senderName: string;
     message: string;
   } | null>(null);
+  const [socketStatus, setSocketStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('disconnected');
 
   useEffect(() => {
     // Check authentication
@@ -59,6 +60,7 @@ export default function DashboardLayout({
 
     socket.on('connect', () => {
       console.log('🔌 Dashboard: Socket connected');
+      setSocketStatus('connected');
       const token = localStorage.getItem('token');
       if (token) {
         try {
@@ -68,6 +70,16 @@ export default function DashboardLayout({
           console.error('Failed to join organization:', error);
         }
       }
+    });
+
+    socket.on('disconnect', () => {
+      console.log('🔌 Dashboard: Socket disconnected');
+      setSocketStatus('disconnected');
+    });
+
+    socket.io.on('reconnect_attempt', () => {
+      console.log('🔄 Dashboard: Socket reconnecting...');
+      setSocketStatus('reconnecting');
     });
 
     socket.on('new_message', (message: any) => {
@@ -173,7 +185,9 @@ export default function DashboardLayout({
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1">
+        {cloneElement(children as React.ReactElement, { socketStatus })}
+      </main>
 
       {/* Chat Input Bar - Fixed Bottom */}
       {user && (

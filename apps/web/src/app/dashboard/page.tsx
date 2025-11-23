@@ -2,10 +2,11 @@
 
 import { GoogleConnectButton } from "@/components/integrations/google-connect-button";
 import { GscMetricsCard } from "@/components/gsc-metrics-card";
+import { ConnectionStatus } from "@/components/connection-status";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function DashboardPage() {
+export default function DashboardPage({ socketStatus = 'disconnected' }: { socketStatus?: 'connected' | 'disconnected' | 'reconnecting' }) {
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
 
@@ -111,14 +112,14 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="flex items-start gap-3 text-sm">
-                    <div className="flex h-6 w-6 items-center justify-center rounded bg-primary/20 text-primary">
-                      3
+                    <div className="flex h-6 w-6 items-center justify-center rounded bg-green-500/20 text-green-600">
+                      ✓
                     </div>
                     <div>
                       <p className="font-medium">Connection Status</p>
-                      <p className="text-muted-foreground">
-                        See connection state
-                      </p>
+                      <div className="mt-1">
+                        <ConnectionStatus status={socketStatus} />
+                      </div>
                     </div>
                   </div>
                 </div>
