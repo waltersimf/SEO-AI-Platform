@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import { API_URL } from "@/config/api";
 
 interface OrganizationUser {
   id: string;
@@ -52,7 +53,7 @@ export function CreateChatDialog({ isOpen, onClose, onChatCreated }: CreateChatD
     setLoadingUsers(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:4000/api/users/organization", {
+      const response = await fetch(`${API_URL}/api/users/organization`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -105,7 +106,7 @@ export function CreateChatDialog({ isOpen, onClose, onChatCreated }: CreateChatD
         return;
       }
 
-      const response = await fetch("http://localhost:4000/api/chat/create", {
+      const response = await fetch(`${API_URL}/api/chat/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

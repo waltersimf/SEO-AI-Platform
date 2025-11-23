@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { CheckCircle2 } from 'lucide-react';
+import { API_URL } from '@/config/api';
 
 export function GoogleConnectButton() {
   const [isConnected, setIsConnected] = useState(false);
@@ -17,7 +18,7 @@ export function GoogleConnectButton() {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const response = await fetch('http://localhost:4000/api/integrations/google', {
+      const response = await fetch(`${API_URL}/api/integrations/google`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -35,7 +36,7 @@ export function GoogleConnectButton() {
   };
 
   const handleConnect = () => {
-    window.location.href = 'http://localhost:4000/api/integrations/google/connect';
+    window.location.href = `${API_URL}/api/integrations/google/connect`;
   };
 
   if (isLoading) {

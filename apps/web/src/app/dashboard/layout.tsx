@@ -8,6 +8,7 @@ import { CreateChatDialog } from '@/components/chat/create-chat-dialog';
 import { ChatInputBar } from '@/components/chat/chat-input-bar';
 import { ChatOverlay } from '@/components/chat/chat-overlay';
 import { ChatNotificationBubble } from '@/components/chat/notifications/chat-notification-bubble';
+import { API_URL, SOCKET_URL } from '@/config/api';
 
 export default function DashboardLayout({
   children,
@@ -54,7 +55,7 @@ export default function DashboardLayout({
   useEffect(() => {
     if (!user?.organizationId) return;
 
-    const socket = io('http://localhost:4000');
+    const socket = io(SOCKET_URL);
 
     socket.on('connect', () => {
       console.log('🔌 Dashboard: Socket connected');
@@ -95,7 +96,7 @@ export default function DashboardLayout({
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        const response = await fetch('http://localhost:4000/api/chat/list', {
+        const response = await fetch(`${API_URL}/api/chat/list`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -129,7 +130,7 @@ export default function DashboardLayout({
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      await fetch(`http://localhost:4000/api/chat/${chatId}/read`, {
+      await fetch(`${API_URL}/api/chat/${chatId}/read`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

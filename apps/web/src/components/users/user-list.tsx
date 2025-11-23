@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { User as UserIcon } from "lucide-react";
+import { API_URL } from "@/config/api";
 
 interface User {
   id: string;
@@ -29,7 +30,7 @@ export function UserList({ onUserClick, currentUserId }: UserListProps) {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const response = await fetch("http://localhost:4000/api/users/organization", {
+      const response = await fetch(`${API_URL}/api/users/organization`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

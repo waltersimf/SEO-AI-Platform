@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client';
+import { SOCKET_URL } from '@/config/api';
 
 let socket: Socket | null = null;
 let onlineUsers: Set<string> = new Set();
@@ -8,7 +9,7 @@ export const initSocket = (userId: string, organizationId: string): Socket => {
     return socket;
   }
 
-  socket = io('http://localhost:4000', {
+  socket = io(SOCKET_URL, {
     transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionDelay: 1000,
