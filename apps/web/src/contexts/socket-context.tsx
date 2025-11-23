@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useMemo } from 'react';
 
 type SocketStatus = 'connected' | 'disconnected' | 'reconnecting';
 
@@ -18,8 +18,10 @@ interface SocketProviderProps {
 }
 
 export function SocketProvider({ socketStatus, children }: SocketProviderProps) {
+  const value = useMemo(() => ({ socketStatus }), [socketStatus]);
+
   return (
-    <SocketContext.Provider value={{ socketStatus }}>
+    <SocketContext.Provider value={value}>
       {children}
     </SocketContext.Provider>
   );
