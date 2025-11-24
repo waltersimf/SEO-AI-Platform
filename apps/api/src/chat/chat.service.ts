@@ -19,6 +19,8 @@ export class ChatService {
             select: {
               id: true,
               name: true,
+              avatar: true,
+              isAI: true,
             },
           },
           chat: {
@@ -33,6 +35,47 @@ export class ChatService {
     } catch (error) {
       console.error('Error creating message:', error);
       throw new WsException('Failed to create message');
+    }
+  }
+
+  async createAIMessage(
+    chatId: string,
+    authorId: string,
+    content: string,
+    aiModel: string,
+    aiContext?: Record<string, any>,
+  ) {
+    try {
+      const message = await this.prisma.message.create({
+        data: {
+          chatId,
+          authorId,
+          content,
+          isAIResponse: true,
+          aiModel,
+          aiContext: aiContext || {},
+        },
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+              isAI: true,
+            },
+          },
+          chat: {
+            select: {
+              organizationId: true,
+            },
+          },
+        },
+      });
+
+      return message;
+    } catch (error) {
+      console.error('Error creating AI message:', error);
+      throw new WsException('Failed to create AI message');
     }
   }
 
