@@ -4,61 +4,74 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🤖 Starting AI user seed...\n');
+  console.log('🤖 Starting AI user seed for ALL organizations...\n');
 
   try {
-    // Find the first organization
-    const organization = await prisma.organization.findFirst();
+    // Find all organizations
+    const organizations = await prisma.organization.findMany();
 
-    if (!organization) {
-      console.error('❌ No organization found. Please create an organization first.');
+    if (organizations.length === 0) {
+      console.error('❌ No organizations found. Please create an organization first.');
       process.exit(1);
     }
 
-    console.log(`📊 Found organization: ${organization.name} (${organization.id})`);
+    console.log(`📊 Found ${organizations.length} organization(s)\n`);
 
-    // Check if AI user already exists
-    const existingAiUser = await prisma.user.findUnique({
-      where: { email: 'ai@forgeline.ai' }
-    });
-
-    if (existingAiUser) {
-      console.log('✅ AI user already exists:', existingAiUser.email);
-      console.log(`   ID: ${existingAiUser.id}`);
-      console.log(`   Name: ${existingAiUser.name}`);
-      console.log(`   Model: ${existingAiUser.aiModel}`);
-      return;
-    }
-
-    // Hash the impossible password
+    // Hash the impossible password once
     const passwordHash = await bcrypt.hash('IMPOSSIBLE_TO_LOGIN', 10);
 
-    // Create AI user
-    const aiUser = await prisma.user.create({
-      data: {
-        email: 'ai@forgeline.ai',
-        name: 'AI Assistant',
-        passwordHash,
-        organizationId: organization.id,
-        role: 'ai_assistant',
-        isAI: true,
-        aiModel: 'claude-sonnet-4-20250514',
-        avatar: '🤖',
-        isOnline: true,
-      }
-    });
+    let createdCount = 0;
+    let skippedCount = 0;
 
-    console.log('\n✅ AI user created successfully!');
-    console.log(`   Email: ${aiUser.email}`);
-    console.log(`   Name: ${aiUser.name}`);
-    console.log(`   ID: ${aiUser.id}`);
-    console.log(`   Model: ${aiUser.aiModel}`);
-    console.log(`   Avatar: ${aiUser.avatar}`);
-    console.log(`   Role: ${aiUser.role}`);
-    console.log(`   Online: ${aiUser.isOnline}`);
+    // Create AI user for each organization
+    for (const organization of organizations) {
+      console.log(`\n🔍 Processing organization: ${organization.name} (${organization.id})`);
+
+      // Check if AI user already exists for this organization
+      const existingAiUser = await prisma.user.findFirst({
+        where: {
+          organizationId: organization.id,
+          isAI: true,
+        }
+      });
+
+      if (existingAiUser) {
+        console.log(`   ⏭️  AI user already exists in this organization`);
+        console.log(`      Email: ${existingAiUser.email}`);
+        console.log(`      ID: ${existingAiUser.id}`);
+        skippedCount++;
+        continue;
+      }
+
+      // Create AI user for this organization
+      const aiUser = await prisma.user.create({
+        data: {
+          email: `ai-${organization.slug}@forgeline.ai`,
+          name: 'AI Assistant',
+          passwordHash,
+          organizationId: organization.id,
+          role: 'ai_assistant',
+          isAI: true,
+          aiModel: 'claude-sonnet-4-20250514',
+          avatar: '🤖',
+          isOnline: true,
+        }
+      });
+
+      console.log(`   ✅ AI user created successfully!`);
+      console.log(`      Email: ${aiUser.email}`);
+      console.log(`      ID: ${aiUser.id}`);
+      console.log(`      Avatar: ${aiUser.avatar}`);
+      createdCount++;
+    }
+
+    console.log(`\n\n📊 Summary:`);
+    console.log(`   ✅ Created: ${createdCount} AI user(s)`);
+    console.log(`   ⏭️  Skipped: ${skippedCount} (already existed)`);
+    console.log(`   📝 Total organizations: ${organizations.length}`);
 
   } catch (error) {
-    console.error('\n❌ Error creating AI user:', error);
+    console.error('\n❌ Error creating AI users:', error);
     throw error;
   } finally {
     await prisma.$disconnect();
