@@ -32,6 +32,9 @@ interface OrganizationUser {
   id: string;
   name: string;
   email: string;
+  avatar?: string;
+  isAI?: boolean;
+  isOnline?: boolean;
 }
 
 interface ChatListProps {
@@ -254,9 +257,18 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
     return null;
   };
 
+  // Helper: Check if user is AI
+  const isUserAI = (userId: string | null): boolean => {
+    if (!userId) return false;
+    const user = organizationUsers.find(u => u.id === userId);
+    return user?.isAI === true;
+  };
+
   // Helper: Check if user is online
   const isUserOnline = (userId: string | null): boolean => {
     if (!userId) return false;
+    // AI users are always online
+    if (isUserAI(userId)) return true;
     return onlineUsers.includes(userId);
   };
 
@@ -317,7 +329,7 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
 
   // Render individual user item for Direct Messages section
   const renderUserItem = (user: OrganizationUser) => {
-    const online = onlineUsers.includes(user.id);
+    const online = isUserOnline(user.id);
     const unreadCount = getUnreadCountForUser(user.id);
     const existingChat = getDirectChatForUser(user.id);
     const isActive = existingChat?.id === activeChatId;
@@ -333,7 +345,11 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
         <div className="flex items-start gap-3">
           {/* Avatar */}
           <div className="relative flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-            <User className="h-5 w-5 text-primary" />
+            {user.avatar ? (
+              <span className="text-2xl">{user.avatar}</span>
+            ) : (
+              <User className="h-5 w-5 text-primary" />
+            )}
             {/* Online status indicator */}
             {online && (
               <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />

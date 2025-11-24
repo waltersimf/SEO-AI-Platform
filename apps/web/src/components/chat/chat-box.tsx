@@ -12,17 +12,27 @@ interface Message {
   author: {
     id: string;
     name: string;
+    avatar?: string;
+    isAI?: boolean;
   };
   createdAt: string;
 }
 
-export function ChatBox({ 
-  chatId, 
-  userId, 
+interface OrganizationUser {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  isAI?: boolean;
+}
+
+export function ChatBox({
+  chatId,
+  userId,
   userName,
-  organizationId 
-}: { 
-  chatId: string; 
+  organizationId
+}: {
+  chatId: string;
   userId: string;
   userName: string;
   organizationId: string;
@@ -31,10 +41,16 @@ export function ChatBox({
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState<{ userId: string; userName: string } | null>(null);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+  const [organizationUsers, setOrganizationUsers] = useState<OrganizationUser[]>([]);
+  const [mentionDropdownVisible, setMentionDropdownVisible] = useState(false);
+  const [mentionSearchQuery, setMentionSearchQuery] = useState('');
+  const [mentionSelectedIndex, setMentionSelectedIndex] = useState(0);
+  const [mentionStartPos, setMentionStartPos] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hideTypingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Initialize socket with userId and organizationId
   useEffect(() => {
@@ -43,12 +59,37 @@ export function ChatBox({
     console.log('📡 ChatBox initialized socket for user:', userId);
   }, [userId, organizationId]);
 
+  // Load organization users for mentions
+  useEffect(() => {
+    const loadOrganizationUsers = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/users/organization`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const users = await response.json();
+          // Filter out current user
+          const otherUsers = users.filter((u: OrganizationUser) => u.id !== userId);
+          setOrganizationUsers(otherUsers);
+        }
+      } catch (error) {
+        console.error('Failed to load organization users:', error);
+      }
+    };
+
+    loadOrganizationUsers();
+  }, [userId]);
+
   // Listen for online users updates
   useEffect(() => {
     const handleOnlineUsersChange = (event: Event) => {
       const customEvent = event as CustomEvent<{ userIds: string[] }>;
       const userIds = customEvent.detail.userIds;
-      
+
       console.log('👥 Online users updated:', userIds);
       setOnlineUsers(userIds);
     };
@@ -92,7 +133,15 @@ export function ChatBox({
     // Listen for new messages
     socket.on('receive_message', (message: Message) => {
       console.log('New message:', message);
-      setMessages((prev) => [...prev, message]);
+      setMessages((prev) => {
+        // Check if message already exists to prevent duplicates
+        const messageExists = prev.some(m => m.id === message.id);
+        if (messageExists) {
+          console.log('Message already exists, skipping:', message.id);
+          return prev;
+        }
+        return [...prev, message];
+      });
     });
 
     // Listen for typing
@@ -155,8 +204,60 @@ export function ChatBox({
     setInputValue('');
   };
 
+  // Check for @ mention
+  const detectMention = (value: string, cursorPos: number) => {
+    // Find the last @ before cursor
+    const textBeforeCursor = value.substring(0, cursorPos);
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+
+    if (lastAtIndex === -1) {
+      setMentionDropdownVisible(false);
+      return;
+    }
+
+    // Check if there's a space between @ and cursor (means mention ended)
+    const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
+    if (textAfterAt.includes(' ')) {
+      setMentionDropdownVisible(false);
+      return;
+    }
+
+    // Show dropdown and set search query
+    setMentionSearchQuery(textAfterAt);
+    setMentionStartPos(lastAtIndex);
+    setMentionDropdownVisible(true);
+    setMentionSelectedIndex(0);
+  };
+
+  // Filter users based on mention search query
+  const getFilteredUsers = () => {
+    if (!mentionSearchQuery) return organizationUsers;
+    const query = mentionSearchQuery.toLowerCase();
+    return organizationUsers.filter(user =>
+      user.name.toLowerCase().includes(query) ||
+      user.email.toLowerCase().includes(query)
+    );
+  };
+
+  // Insert mention into input
+  const insertMention = (user: OrganizationUser) => {
+    const beforeMention = inputValue.substring(0, mentionStartPos);
+    const afterMention = inputValue.substring(mentionStartPos + mentionSearchQuery.length + 1);
+    const newValue = `${beforeMention}@${user.name} ${afterMention}`;
+    setInputValue(newValue);
+    setMentionDropdownVisible(false);
+    setMentionSearchQuery('');
+
+    // Focus input after insertion
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
   const handleTyping = (value: string) => {
     setInputValue(value);
+
+    // Detect mention
+    const cursorPos = inputRef.current?.selectionStart || value.length;
+    detectMention(value, cursorPos);
 
     const socket = socketRef.current;
     if (!socket) return;
@@ -177,6 +278,42 @@ export function ChatBox({
     } else {
       // Empty input - immediately stop typing
       socket.emit('typing_stop', { chatId, userId });
+    }
+  };
+
+  // Handle keyboard navigation in mention dropdown
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!mentionDropdownVisible) {
+      if (e.key === 'Enter') {
+        handleSend();
+      }
+      return;
+    }
+
+    const filteredUsers = getFilteredUsers();
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setMentionSelectedIndex((prev) =>
+          prev < filteredUsers.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setMentionSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (filteredUsers[mentionSelectedIndex]) {
+          insertMention(filteredUsers[mentionSelectedIndex]);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setMentionDropdownVisible(false);
+        setMentionSearchQuery('');
+        break;
     }
   };
 
@@ -234,14 +371,49 @@ export function ChatBox({
       )}
 
       {/* Input */}
-      <div className="border-t p-4">
+      <div className="border-t p-4 relative">
+        {/* Mention Dropdown */}
+        {mentionDropdownVisible && (
+          <div className="absolute bottom-full left-4 right-4 mb-2 max-h-64 overflow-y-auto bg-white border rounded-lg shadow-lg z-10">
+            {getFilteredUsers().length === 0 ? (
+              <div className="px-4 py-2 text-sm text-gray-500">No users found</div>
+            ) : (
+              getFilteredUsers().map((user, index) => (
+                <button
+                  key={user.id}
+                  onClick={() => insertMention(user)}
+                  className={`w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-3 ${
+                    index === mentionSelectedIndex ? 'bg-blue-50' : ''
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    {user.avatar ? (
+                      <span className="text-lg">{user.avatar}</span>
+                    ) : (
+                      <span className="text-sm font-semibold">{user.name[0]}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{user.name}</div>
+                    <div className="text-xs text-gray-500 truncate">{user.email}</div>
+                  </div>
+                  {user.isAI && (
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">AI</span>
+                  )}
+                </button>
+              ))
+            )}
+          </div>
+        )}
+
         <div className="flex gap-2">
           <input
+            ref={inputRef}
             type="text"
             value={inputValue}
             onChange={(e) => handleTyping(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Type a message..."
+            onKeyDown={handleKeyDown}
+            placeholder="Type a message... (@mention users)"
             className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
