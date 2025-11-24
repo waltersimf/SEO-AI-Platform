@@ -1,18 +1,88 @@
 # 📦 CHANGELOG
 
-**Версія документу:** 4.5  
-**Останнє оновлення:** 23.11.2025  
-**Поточна версія:** v0.3.1 ✅ **COMPLETE**
+**Версія документу:** 5.0  
+**Останнє оновлення:** 24.11.2025  
+**Поточна версія:** v0.4 🚧 **IN PROGRESS**
 
 ---
 
 ## 📋 Зміст
 
-- [Поточна версія (v0.3.1)](#v031---production-ready)
+- [Поточна версія (v0.4)](#v04---ai-teammate)
+- [v0.3.1 - Production Ready](#v031---production-ready)
 - [v0.3 - Chat Infrastructure](#v03---chat-infrastructure)
 - [Що реалізовано](#-що-реалізовано-100)
 - [Наступні кроки](#-наступні-кроки)
 - [Історія версій](#-історія-версій)
+
+---
+
+## v0.4 - AI Teammate
+
+**Дата початку:** 24.11.2025  
+**Статус:** 🚧 **IN PROGRESS**  
+**Тривалість:** 14 днів (план)  
+**Мета:** AI як повноцінний член команди в чаті
+
+### 🎯 Killer Feature
+
+**Унікальна диференціація:** Жоден конкурент (Ahrefs, SEMrush, Screaming Frog) не має AI teammate в team chat!
+
+- Користувачі можуть @mention AI в групових чатах
+- AI аналізує дані, дає рекомендації
+- BYOK модель = користувачі платять за свої API calls
+
+---
+
+### 📅 Day 1-2: AI Infrastructure Setup ✅
+
+**Дата:** 23-24.11.2025  
+**Статус:** ✅ **COMPLETE**  
+**Час:** ~4 години
+
+#### ✅ Що зроблено
+
+**1. Prisma Schema оновлено:**
+- User: додано `isAI`, `aiModel`, `avatar`, `isOnline`, `lastSeenAt`
+- Message: додано `isAIResponse`, `aiContext`, `aiModel`
+
+**2. AI User створено в БД:**
+- Email: ai@forgeline.ai
+- Name: AI Assistant
+- Model: claude-sonnet-4-20250514
+
+**3. AI Module створено:**
+```
+apps/api/src/ai/
+├── ai.module.ts
+├── ai.service.ts
+├── ai-context.service.ts
+└── dto/ai-query.dto.ts
+```
+
+**4. Dependencies:** `@anthropic-ai/sdk@0.70.1`
+
+**5. Environment:**
+- `.env` в КОРЕНІ проекту (важливо!)
+- `ANTHROPIC_API_KEY` + `AI_MODEL`
+
+**6. Результат:** `[AiService] ✅ Claude API initialized`
+
+#### 🐛 Troubleshooting
+
+**Проблема:** "ANTHROPIC_API_KEY not configured"  
+**Причина:** `app.module.ts` має `envFilePath: '../../.env'` - шукає в корені  
+**Рішення:** Створити `.env` в `SEO-AI-Platform/` (не в `apps/api/`)
+
+---
+
+### 📅 Day 3-4: Claude API Integration (NEXT)
+
+**Статус:** 📋 PLANNED
+
+- Імплементувати `generateResponse()`
+- @AI mention detection
+- AI відповідає в чаті
 
 ---
 
