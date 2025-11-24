@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
+import { AiContext } from './ai-context.service';
 
 @Injectable()
 export class AiService {
@@ -24,9 +25,9 @@ export class AiService {
   }
 
   /**
-   * Generate a response using Claude AI
+   * Generate a response using Claude AI with conversation history
    */
-  async generateResponse(prompt: string, context?: Record<string, any>): Promise<string> {
+  async generateResponse(currentMessage: string, context: AiContext): Promise<string> {
     if (!this.anthropic) {
       this.logger.warn('AI service not configured, returning fallback message');
       return 'AI assistant is currently unavailable. Please configure ANTHROPIC_API_KEY.';
@@ -39,19 +40,33 @@ export class AiService {
 
       const systemPrompt = this.buildSystemPrompt(context);
 
-      this.logger.debug(`Generating AI response with model: ${model}`);
+      // Build messages array from conversation history
+      const messages: Anthropic.MessageParam[] = [];
+
+      // Add conversation history (excluding the current message which we'll add separately)
+      for (const msg of context.conversationHistory) {
+        messages.push({
+          role: msg.role,
+          content: msg.content,
+        });
+      }
+
+      // Add the current user message
+      messages.push({
+        role: 'user',
+        content: currentMessage,
+      });
+
+      this.logger.debug(
+        `Generating AI response with model: ${model}, history: ${context.conversationHistory.length} messages`,
+      );
 
       const response = await this.anthropic.messages.create({
         model,
         max_tokens: maxTokens,
         temperature,
         system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
+        messages,
       });
 
       // Extract text content from the response
@@ -70,7 +85,7 @@ export class AiService {
   /**
    * Build system prompt for the AI assistant
    */
-  private buildSystemPrompt(context?: Record<string, any>): string {
+  private buildSystemPrompt(context: AiContext): string {
     let prompt = `You are an AI assistant for Forgeline, an SEO platform that helps teams collaborate on SEO projects.
 
 Your role is to:
@@ -88,8 +103,16 @@ Be concise, professional, and helpful. When discussing SEO topics:
 
 Always maintain a friendly and supportive tone.`;
 
-    if (context && Object.keys(context).length > 0) {
-      prompt += '\n\nAdditional context:\n' + JSON.stringify(context, null, 2);
+    // Add participants information if available
+    if (context.participants && context.participants.length > 0) {
+      const participantNames = context.participants
+        .filter((p) => !p.isAI)
+        .map((p) => p.name)
+        .join(', ');
+
+      if (participantNames) {
+        prompt += `\n\nYou are chatting with: ${participantNames}`;
+      }
     }
 
     return prompt;

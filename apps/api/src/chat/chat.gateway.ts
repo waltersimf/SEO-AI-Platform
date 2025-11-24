@@ -285,7 +285,7 @@ export class ChatGateway
         this.logger.log('AI mentioned in message, triggering AI response');
         // Run AI response asynchronously to not block the message flow
         setImmediate(() => {
-          this.handleAIResponse(payload.chatId, payload.content);
+          this.handleAIResponse(payload.chatId);
         });
       }
 
@@ -450,7 +450,7 @@ export class ChatGateway
   /**
    * Handle AI response generation and broadcasting
    */
-  private async handleAIResponse(chatId: string, userMessage: string) {
+  private async handleAIResponse(chatId: string) {
     if (!this.aiUserId) {
       this.logger.warn('AI user not found, skipping AI response');
       return;
@@ -464,11 +464,24 @@ export class ChatGateway
     try {
       this.logger.log(`Generating AI response for chat ${chatId}`);
 
-      // Build context for AI
+      // Build context for AI (includes last 10 messages with conversation history)
       const context = await this.aiContextService.buildContext(chatId, this.aiUserId);
 
-      // Generate AI response
-      const aiResponse = await this.aiService.generateResponse(userMessage, context);
+      // Check if there are any messages in the conversation
+      if (context.conversationHistory.length === 0) {
+        this.logger.warn('No conversation history found, skipping AI response');
+        return;
+      }
+
+      // Get the last user message from the conversation history
+      const lastMessage = context.conversationHistory[context.conversationHistory.length - 1];
+      if (!lastMessage || lastMessage.role !== 'user') {
+        this.logger.warn('Last message is not from a user, skipping AI response');
+        return;
+      }
+
+      // Generate AI response with full conversation context
+      const aiResponse = await this.aiService.generateResponse(lastMessage.content, context);
 
       // Get AI model from config
       const aiModel = this.configService.get<string>('AI_MODEL') || 'claude-sonnet-4-20250514';
