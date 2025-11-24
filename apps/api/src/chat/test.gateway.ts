@@ -9,7 +9,6 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
-import { ChatService } from './chat.service';
 
 @WebSocketGateway({
   cors: {
@@ -20,11 +19,11 @@ import { ChatService } from './chat.service';
 export class TestGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
   private logger = new Logger('TestGateway');
-  
+
   // Track online users: userId → socketId
   private onlineUsers = new Map<string, string>();
 
-  constructor(private chatService: ChatService) {}
+  constructor() {}
 
   handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
@@ -68,16 +67,6 @@ export class TestGateway implements OnGatewayConnection, OnGatewayDisconnect {
     };
   }
 
-  @SubscribeMessage('join_room')
-  handleJoinRoom(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() chatId: string,
-  ) {
-    client.join(chatId);
-    this.logger.log(`Client ${client.id} joined room ${chatId}`);
-    return { event: 'joined_room', data: chatId };
-  }
-
   @SubscribeMessage('join_organization')
   handleJoinOrganization(
     @ConnectedSocket() client: Socket,
@@ -89,70 +78,15 @@ export class TestGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return { event: 'joined_organization', data: organizationId };
   }
 
-  @SubscribeMessage('send_message')
-  async handleMessage(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { chatId: string; authorId: string; content: string },
-  ) {
-    try {
-      this.logger.log(`Message from ${client.id}: ${payload.content}`);
-
-      // Save to database using ChatService (includes chat.organizationId)
-      const message = await this.chatService.createMessage(
-        payload.chatId,
-        payload.authorId,
-        payload.content,
-      );
-
-      // Broadcast to chat room with REAL author name from DB
-      this.server.to(payload.chatId).emit('receive_message', message);
-
-      // Also broadcast to organization room for unread counter updates
-      if (message.chat?.organizationId) {
-        const orgRoom = `org:${message.chat.organizationId}`;
-        this.logger.log(`Broadcasting new_message to org room: ${orgRoom}`);
-        this.server.to(orgRoom).emit('new_message', message);
-      }
-
-      return message;
-    } catch (error) {
-      this.logger.error('Error handling message:', error);
-      return { error: 'Failed to send message' };
-    }
-  }
-
-  @SubscribeMessage('typing_start')
-  handleTypingStart(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { chatId: string; userId: string; userName: string },
-  ) {
-    client.to(payload.chatId).emit('user_typing', {
-      userId: payload.userId,
-      userName: payload.userName,
-      isTyping: true,
-    });
-  }
-
-  @SubscribeMessage('typing_stop')
-  handleTypingStop(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { chatId: string; userId: string },
-  ) {
-    client.to(payload.chatId).emit('user_typing', {
-      userId: payload.userId,
-      isTyping: false,
-    });
-  }
-
   /**
    * Broadcast updated list of online users to ALL connected clients
    */
   private broadcastOnlineUsers() {
     const onlineUserIds = Array.from(this.onlineUsers.keys());
-    
+
     // Emit to ALL clients
     this.server.emit('online_users_updated', onlineUserIds);
-    
+
     this.logger.log(`Broadcasting online users: ${onlineUserIds.length} online`);
   }
 
