@@ -76,15 +76,59 @@ apps/api/src/ai/
 
 ---
 
-### 📅 Day 3-4: Claude API Integration (NEXT)
+### 🗓 Day 3-4: Claude API Integration ✅
 
-**Статус:** 📋 PLANNED
+**Дата:** 24.11.2025
+**Статус:** ✅ **COMPLETE**
+**Час:** ~3 години
 
-- Імплементувати `generateResponse()`
-- @AI mention detection
-- AI відповідає в чаті
+#### ✅ Що зроблено
+
+**1. Claude API Integration:**
+- Реальні виклики до Claude API (claude-sonnet-4-20250514)
+- `ai.service.ts`: generateResponse() з system prompt
+- `ai.controller.ts`: POST /api/ai/chat endpoint
+- Environment: ANTHROPIC_API_KEY, AI_MODEL, AI_MAX_TOKENS
+
+**2. @AI Mention Detection:**
+- AI відповідає на @AI або @assistant в чаті
+- Async processing через setImmediate()
+- AI responses зберігаються з isAIResponse: true
+
+**3. AI User для всіх організацій:**
+- seed-ai-user.ts створює AI для кожної організації
+- Email: ai-{slug}@forgeline.ai
+- AI завжди показує Online 🟢
 
 ---
+
+### 🗓 Day 5-7: @Mention UX ✅
+
+**Дата:** 24.11.2025
+**Статус:** ✅ **COMPLETE**
+**Час:** ~2 години
+
+#### ✅ Що зроблено
+
+**1. @Mention Autocomplete:**
+- Dropdown при вводі @ з пошуком користувачів
+- Keyboard navigation (↑↓ Enter Escape)
+- AI Assistant в списку mentions
+
+**2. Ukrainian Keyboard Support:**
+- Mention працює на `"` (Shift+2)
+- Обидва символи тригерять dropdown
+
+**3. Bug Fixes:**
+- Message duplication fixed (видалено дублі з TestGateway)
+- Real-time messaging fixed (join_room payload)
+- AI user visibility across organizations
+
+#### 🔜 TODO (Day 8-10)
+- AI avatar в повідомленнях (показує "A" замість 🤖)
+- Context Understanding
+- UI Polish
+
 
 ## v0.3.1 - Production Ready
 
