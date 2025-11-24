@@ -280,9 +280,13 @@ export class ChatGateway
 
       this.logger.log(`Message ${message.id} delivered to room ${payload.chatId}`);
 
-      // Check if AI is mentioned and generate response
-      if (this.mentionsAI(payload.content)) {
-        this.logger.log('AI mentioned in message, triggering AI response');
+      // Check if AI should respond
+      // AI responds in two cases:
+      // 1. User mentions @AI or @assistant
+      // 2. It's a direct chat with AI (2 participants, one is AI)
+      const shouldRespondToAI = await this.shouldAIRespond(payload.chatId, payload.content);
+      if (shouldRespondToAI) {
+        this.logger.log('AI should respond, triggering AI response');
         // Run AI response asynchronously to not block the message flow
         setImmediate(() => {
           this.handleAIResponse(payload.chatId);
@@ -445,6 +449,57 @@ export class ChatGateway
   private mentionsAI(content: string): boolean {
     const lowerContent = content.toLowerCase();
     return lowerContent.includes('@ai') || lowerContent.includes('@assistant');
+  }
+
+  /**
+   * Determine if AI should respond to a message
+   * AI responds in two cases:
+   * 1. Message mentions @AI or @assistant
+   * 2. It's a direct chat with AI (2 participants, one is AI)
+   */
+  private async shouldAIRespond(chatId: string, content: string): Promise<boolean> {
+    // Case 1: Check if message mentions AI
+    if (this.mentionsAI(content)) {
+      return true;
+    }
+
+    // Case 2: Check if it's a direct chat with AI
+    try {
+      const chat = await this.prisma.chat.findUnique({
+        where: { id: chatId },
+        include: {
+          members: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  isAI: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!chat) {
+        return false;
+      }
+
+      // Check if chat type is 'direct' and has exactly 2 members
+      if (chat.type === 'direct' && chat.members.length === 2) {
+        // Check if one of the members is the AI user
+        const hasAIUser = chat.members.some(member => member.user.isAI);
+        if (hasAIUser) {
+          this.logger.log(`Direct chat with AI detected, auto-responding`);
+          return true;
+        }
+      }
+
+      return false;
+    } catch (error) {
+      this.logger.error('Error checking if AI should respond:', error);
+      return false;
+    }
   }
 
   /**

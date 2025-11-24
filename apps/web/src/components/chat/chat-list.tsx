@@ -345,7 +345,9 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
         <div className="flex items-start gap-3">
           {/* Avatar */}
           <div className="relative flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-            {user.avatar ? (
+            {user.isAI ? (
+              <span className="text-2xl">🤖</span>
+            ) : user.avatar ? (
               <span className="text-2xl">{user.avatar}</span>
             ) : (
               <User className="h-5 w-5 text-primary" />

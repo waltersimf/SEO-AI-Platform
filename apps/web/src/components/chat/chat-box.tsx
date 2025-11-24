@@ -5,6 +5,7 @@ import { initSocket, getSocket } from '../chat/socket';
 import { Send } from 'lucide-react';
 import { TypingIndicator } from './typing-indicator';
 import { API_URL } from '@/config/api';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   id: string;
@@ -51,6 +52,8 @@ export function ChatBox({
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hideTypingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isInitialLoad = useRef(true);
+  const previousMessageCount = useRef(0);
 
   // Initialize socket with userId and organizationId
   useEffect(() => {
@@ -102,6 +105,10 @@ export function ChatBox({
   }, []);
 
   useEffect(() => {
+    // Reset initial load flag when chat changes
+    isInitialLoad.current = true;
+    previousMessageCount.current = 0;
+
     // Завантажити історію повідомлень з БД
     const loadMessageHistory = async () => {
       try {
@@ -181,9 +188,21 @@ export function ChatBox({
     };
   }, [chatId, userId]);
 
-  // Auto-scroll to bottom
+  // Auto-scroll to bottom only for new messages, not initial load
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // On initial load, scroll to bottom immediately without smooth animation
+    if (isInitialLoad.current && messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+      isInitialLoad.current = false;
+      previousMessageCount.current = messages.length;
+      return;
+    }
+
+    // For new messages (count increased), scroll smoothly to bottom
+    if (messages.length > previousMessageCount.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      previousMessageCount.current = messages.length;
+    }
   }, [messages]);
 
   const handleSend = () => {
@@ -381,7 +400,14 @@ export function ChatBox({
                   })}
                 </p>
               </div>
-              <p className="text-sm">{message.content}</p>
+              {/* Render markdown for AI messages, plain text for others */}
+              {message.author.isAI ? (
+                <div className="text-sm prose prose-sm max-w-none dark:prose-invert">
+                  <ReactMarkdown>{message.content}</ReactMarkdown>
+                </div>
+              ) : (
+                <p className="text-sm">{message.content}</p>
+              )}
             </div>
 
             {/* Show avatar for current user (on the right) */}
