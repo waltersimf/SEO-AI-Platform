@@ -10,8 +10,12 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ChatService } from './chat.service';
 import { CreateMessageDto } from './dto/create-message.dto';
+import { AiService } from '../ai/ai.service';
+import { AiContextService } from '../ai/ai-context.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 interface ConnectedClient {
   socketId: string;
@@ -37,8 +41,33 @@ export class ChatGateway
   private logger: Logger = new Logger('ChatGateway');
   private connectedClients: Map<string, ConnectedClient> = new Map();
   private readonly MAX_RECONNECT_ATTEMPTS = 5;
+  private aiUserId: string | null = null;
 
-  constructor(private chatService: ChatService) {}
+  constructor(
+    private chatService: ChatService,
+    private aiService: AiService,
+    private aiContextService: AiContextService,
+    private prisma: PrismaService,
+    private configService: ConfigService,
+  ) {}
+
+  async onModuleInit() {
+    // Find the AI user on module initialization
+    try {
+      const aiUser = await this.prisma.user.findFirst({
+        where: { isAI: true },
+      });
+
+      if (aiUser) {
+        this.aiUserId = aiUser.id;
+        this.logger.log(`AI user found: ${aiUser.email} (${aiUser.id})`);
+      } else {
+        this.logger.warn('AI user not found in database. AI responses will be disabled.');
+      }
+    } catch (error) {
+      this.logger.error('Error finding AI user:', error);
+    }
+  }
 
   afterInit(server: Server) {
     this.logger.log('WebSocket Gateway initialized');
@@ -251,6 +280,15 @@ export class ChatGateway
 
       this.logger.log(`Message ${message.id} delivered to room ${payload.chatId}`);
 
+      // Check if AI is mentioned and generate response
+      if (this.mentionsAI(payload.content)) {
+        this.logger.log('AI mentioned in message, triggering AI response');
+        // Run AI response asynchronously to not block the message flow
+        setImmediate(() => {
+          this.handleAIResponse(payload.chatId, payload.content);
+        });
+      }
+
       return { success: true, message };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -399,5 +437,64 @@ export class ChatGateway
       serverTime: new Date().toISOString(),
       connectedClients: this.connectedClients.size,
     };
+  }
+
+  /**
+   * Check if a message mentions the AI assistant
+   */
+  private mentionsAI(content: string): boolean {
+    const lowerContent = content.toLowerCase();
+    return lowerContent.includes('@ai') || lowerContent.includes('@assistant');
+  }
+
+  /**
+   * Handle AI response generation and broadcasting
+   */
+  private async handleAIResponse(chatId: string, userMessage: string) {
+    if (!this.aiUserId) {
+      this.logger.warn('AI user not found, skipping AI response');
+      return;
+    }
+
+    if (!this.aiService.isConfigured()) {
+      this.logger.warn('AI service not configured, skipping AI response');
+      return;
+    }
+
+    try {
+      this.logger.log(`Generating AI response for chat ${chatId}`);
+
+      // Build context for AI
+      const context = await this.aiContextService.buildContext(chatId, this.aiUserId);
+
+      // Generate AI response
+      const aiResponse = await this.aiService.generateResponse(userMessage, context);
+
+      // Get AI model from config
+      const aiModel = this.configService.get<string>('AI_MODEL') || 'claude-sonnet-4-20250514';
+
+      // Save AI message to database
+      const aiMessage = await this.chatService.createAIMessage(
+        chatId,
+        this.aiUserId,
+        aiResponse,
+        aiModel,
+        context,
+      );
+
+      // Broadcast AI response to all clients in the room
+      this.server.to(chatId).emit('receive_message', aiMessage);
+
+      // Broadcast to all clients to refresh their chat lists
+      this.logger.log('🤖 Broadcasting AI response and refresh_chat_list');
+      this.server.emit('refresh_chat_list', {
+        chatId: aiMessage.chatId,
+        timestamp: new Date(),
+      });
+
+      this.logger.log(`AI message ${aiMessage.id} delivered to room ${chatId}`);
+    } catch (error) {
+      this.logger.error('Error generating AI response:', error);
+    }
   }
 }
