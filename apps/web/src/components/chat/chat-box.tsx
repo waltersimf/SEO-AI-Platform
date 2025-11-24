@@ -338,7 +338,9 @@ export function ChatBox({
             {message.author.id !== userId && (
               <div className="flex-shrink-0 mr-2">
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                  {message.author.avatar ? (
+                  {message.author.isAI ? (
+                    <span className="text-lg">🤖</span>
+                  ) : message.author.avatar ? (
                     <span className="text-lg">{message.author.avatar}</span>
                   ) : (
                     <span className="text-xs font-semibold">{message.author.name[0]}</span>
@@ -356,8 +358,8 @@ export function ChatBox({
             >
               <div className="flex items-center gap-2 mb-1">
                 {/* Show avatar emoji inline for AI users */}
-                {message.author.isAI && message.author.avatar && (
-                  <span className="text-base">{message.author.avatar}</span>
+                {message.author.isAI && (
+                  <span className="text-base">🤖</span>
                 )}
                 <p className="text-xs font-semibold">
                   {message.author.name}
@@ -386,7 +388,9 @@ export function ChatBox({
             {message.author.id === userId && (
               <div className="flex-shrink-0 ml-2">
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                  {message.author.avatar ? (
+                  {message.author.isAI ? (
+                    <span className="text-lg">🤖</span>
+                  ) : message.author.avatar ? (
                     <span className="text-lg">{message.author.avatar}</span>
                   ) : (
                     <span className="text-xs font-semibold">{message.author.name[0]}</span>
