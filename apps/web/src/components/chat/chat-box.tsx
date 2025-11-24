@@ -127,8 +127,8 @@ export function ChatBox({
     if (!socket) return;
 
     // Join chat room
-    socket.emit('join_room', chatId);
-    console.log('Joined room:', chatId);
+    socket.emit('join_room', { chatId, userId, userName });
+    console.log('Joined room:', chatId, 'as', userName);
 
     // Listen for new messages
     socket.on('receive_message', (message: Message) => {
@@ -204,27 +204,30 @@ export function ChatBox({
     setInputValue('');
   };
 
-  // Check for @ mention
+  // Check for @ mention (supports both @ and " for Ukrainian keyboard)
   const detectMention = (value: string, cursorPos: number) => {
-    // Find the last @ before cursor
     const textBeforeCursor = value.substring(0, cursorPos);
-    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
 
-    if (lastAtIndex === -1) {
+    // Find the last @ or " before cursor (Ukrainian keyboard Shift+2 = ")
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+    const lastQuoteIndex = textBeforeCursor.lastIndexOf('"');
+    const lastMentionIndex = Math.max(lastAtIndex, lastQuoteIndex);
+
+    if (lastMentionIndex === -1) {
       setMentionDropdownVisible(false);
       return;
     }
 
-    // Check if there's a space between @ and cursor (means mention ended)
-    const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
-    if (textAfterAt.includes(' ')) {
+    // Check if there's a space after the mention character (means mention ended)
+    const textAfterMention = textBeforeCursor.substring(lastMentionIndex + 1);
+    if (textAfterMention.includes(' ')) {
       setMentionDropdownVisible(false);
       return;
     }
 
     // Show dropdown and set search query
-    setMentionSearchQuery(textAfterAt);
-    setMentionStartPos(lastAtIndex);
+    setMentionSearchQuery(textAfterMention);
+    setMentionStartPos(lastMentionIndex);
     setMentionDropdownVisible(true);
     setMentionSelectedIndex(0);
   };
@@ -331,6 +334,19 @@ export function ChatBox({
             key={message.id}
             className={`flex ${message.author.id === userId ? 'justify-end' : 'justify-start'}`}
           >
+            {/* Show avatar for other users (on the left) */}
+            {message.author.id !== userId && (
+              <div className="flex-shrink-0 mr-2">
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                  {message.author.avatar ? (
+                    <span className="text-lg">{message.author.avatar}</span>
+                  ) : (
+                    <span className="text-xs font-semibold">{message.author.name[0]}</span>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div
               className={`max-w-[70%] rounded-lg p-3 ${
                 message.author.id === userId
@@ -339,9 +355,17 @@ export function ChatBox({
               }`}
             >
               <div className="flex items-center gap-2 mb-1">
+                {/* Show avatar emoji inline for AI users */}
+                {message.author.isAI && message.author.avatar && (
+                  <span className="text-base">{message.author.avatar}</span>
+                )}
                 <p className="text-xs font-semibold">
                   {message.author.name}
                 </p>
+                {/* AI Badge */}
+                {message.author.isAI && (
+                  <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">AI</span>
+                )}
                 {/* Online Status Indicator */}
                 {isUserOnline(message.author.id) && (
                   <span className="text-green-500" title="Online">
@@ -357,6 +381,19 @@ export function ChatBox({
               </div>
               <p className="text-sm">{message.content}</p>
             </div>
+
+            {/* Show avatar for current user (on the right) */}
+            {message.author.id === userId && (
+              <div className="flex-shrink-0 ml-2">
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                  {message.author.avatar ? (
+                    <span className="text-lg">{message.author.avatar}</span>
+                  ) : (
+                    <span className="text-xs font-semibold">{message.author.name[0]}</span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         ))}
 
