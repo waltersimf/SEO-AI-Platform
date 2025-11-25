@@ -23,6 +23,7 @@ export default function DashboardLayout({
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
+  const [unreadChats, setUnreadChats] = useState<Array<{id: string, name: string, unreadCount: number}>>([]);
   const [chatListRefreshTrigger, setChatListRefreshTrigger] = useState(0);
   const [notificationBubble, setNotificationBubble] = useState<{
     chatId: string;
@@ -54,11 +55,10 @@ export default function DashboardLayout({
     }
   }, [router]);
 
-  // Socket listener for new messages (show toast if overlay closed)
+  // Socket listener for new messages
   useEffect(() => {
     if (!user?.organizationId) return;
 
-    // Browser online/offline detection
     const handleOnline = () => {
       console.log('🌐 Browser ONLINE');
       setSocketStatus('connected');
@@ -101,15 +101,16 @@ export default function DashboardLayout({
     socket.on('new_message', (message: any) => {
       console.log('📨 Dashboard: New message received', message);
 
-      // Show notification bubble if overlay is closed and message is not from current user
       if (!isChatOpen && message.authorId !== user.id) {
-        // Show sticky bubble above input bar
         setNotificationBubble({
           chatId: message.chatId,
           senderName: message.author?.name || 'Unknown',
           message: message.content,
         });
       }
+      
+      // Refresh unread count
+      fetchUnreadCount();
     });
 
     return () => {
@@ -119,41 +120,97 @@ export default function DashboardLayout({
     };
   }, [user, isChatOpen]);
 
-  // Fetch total unread count
-  useEffect(() => {
-    const fetchUnreadCount = async () => {
-      try {
-        const chats = await apiFetch(`${API_URL}/api/chat/list`);
-        const total = chats.reduce((sum: number, chat: any) => sum + (chat.unreadCount || 0), 0);
-        setTotalUnreadCount(total);
-      } catch (error) {
-        console.error('Failed to fetch unread count:', error);
-      }
-    };
+  // Helper function to get chat name
+  const getChatName = (chat: any): string => {
+    console.log('🏷️ getChatName for chat:', chat.id, 'type:', chat.type, 'name:', chat.name);
+    
+    if (chat.name) {
+      return chat.name;
+    }
+    
+    if (chat.type === 'direct' && chat.members) {
+      const otherMember = chat.members.find((m: any) => m.userId !== user?.id);
+      console.log('👤 Other member:', otherMember);
+      return otherMember?.user?.name || 'Direct Chat';
+    }
+    
+    return 'Unnamed Chat';
+  };
 
+  // Fetch total unread count AND list of unread chats
+  const fetchUnreadCount = async () => {
+    console.log('🚀 fetchUnreadCount called!');
+    
+    try {
+      const chats = await apiFetch(`${API_URL}/api/chat/list`);
+      
+      console.log('🔍 All chats from API:', chats);
+      
+      // Total count
+      const total = chats.reduce((sum: number, chat: any) => sum + (chat.unreadCount || 0), 0);
+      setTotalUnreadCount(total);
+      
+      console.log('📊 Total unread count:', total);
+      
+      // Extract chats with unread messages
+      const unread = chats
+        .filter((chat: any) => {
+          console.log('🔎 Checking chat:', chat.id, 'unreadCount:', chat.unreadCount);
+          return chat.unreadCount > 0;
+        })
+        .map((chat: any) => {
+          const name = getChatName(chat);
+          console.log('📝 Mapped unread chat:', { id: chat.id, name, unreadCount: chat.unreadCount });
+          return {
+            id: chat.id,
+            name: name,
+            unreadCount: chat.unreadCount
+          };
+        });
+      
+      console.log('📬 Final unreadChats array:', unread);
+      console.log('📬 unreadChats.length:', unread.length);
+      
+      setUnreadChats(unread);
+      
+    } catch (error) {
+      console.error('❌ Failed to fetch unread count:', error);
+    }
+  };
+
+  useEffect(() => {
+    console.log('👤 User changed:', user?.id);
+    
     if (user) {
+      console.log('✅ User exists, calling fetchUnreadCount...');
       fetchUnreadCount();
-      // Refresh every 30 seconds
-      const interval = setInterval(fetchUnreadCount, 30000);
+      
+      const interval = setInterval(() => {
+        console.log('⏰ Interval: refreshing unread count...');
+        fetchUnreadCount();
+      }, 30000);
+      
       return () => clearInterval(interval);
     }
   }, [user]);
 
+  // DEBUG: Log when unreadChats changes
+  useEffect(() => {
+    console.log('🔄 unreadChats state updated:', unreadChats);
+    console.log('🔄 hasMultipleUnread:', unreadChats.length > 1);
+  }, [unreadChats]);
+
   const handleChatSelect = async (chatId: string) => {
     setActiveChatId(chatId);
-    setIsChatOpen(true); // Open overlay when chat selected
-    setNotificationBubble(null); // Clear notification bubble
+    setIsChatOpen(true);
+    setNotificationBubble(null);
 
-    // Mark chat as read on the backend
     try {
       await apiFetch(`${API_URL}/api/chat/${chatId}/read`, {
         method: 'POST',
       });
 
-      // Update local unread count
-      setTotalUnreadCount((prev) => Math.max(0, prev - 1));
-
-      // No need to refresh - ChatList handles unread count reset locally
+      fetchUnreadCount();
 
     } catch (error) {
       console.error('Error marking chat as read:', error);
@@ -161,13 +218,11 @@ export default function DashboardLayout({
   };
 
   const handleChatCreated = async (chatId: string) => {
-    // Trigger ChatList refresh to show new chat
     setChatListRefreshTrigger(prev => prev + 1);
-    handleChatSelect(chatId); // This will open overlay and select chat
+    handleChatSelect(chatId);
   };
 
   const handleChatDeleted = (deletedChatId: string) => {
-    // If the deleted chat was active, clear the active chat
     if (deletedChatId === activeChatId) {
       setActiveChatId(null);
       console.log('🗑️ Active chat deleted, clearing selection');
@@ -175,7 +230,6 @@ export default function DashboardLayout({
   };
 
   const handleBubbleClick = (chatId: string) => {
-    // Open overlay and select chat
     handleChatSelect(chatId);
   };
 
@@ -195,6 +249,7 @@ export default function DashboardLayout({
           isOpen={isChatOpen}
           onToggle={() => setIsChatOpen(!isChatOpen)}
           unreadCount={totalUnreadCount}
+          unreadChats={unreadChats}
         />
       )}
 
@@ -214,7 +269,7 @@ export default function DashboardLayout({
         />
       )}
 
-      {/* Sticky Chat Notification Bubble - Above Input Bar */}
+      {/* Sticky Chat Notification Bubble */}
       {notificationBubble && (
         <ChatNotificationBubble
           chatId={notificationBubble.chatId}
