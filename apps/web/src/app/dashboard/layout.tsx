@@ -163,16 +163,18 @@ export default function DashboardLayout({
     <SocketProvider socketStatus={socketStatus}>
       <div className="flex min-h-screen">
         <Sidebar />
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 relative">
+          {children}
 
-        {user && (
-          <ChatInputBar
-            isOpen={isChatOpen}
-            onToggle={() => setIsChatOpen(!isChatOpen)}
-            unreadCount={totalUnreadCount}
-            unreadChats={unreadChats}
-          />
-        )}
+          {user && (
+            <ChatInputBar
+              isOpen={isChatOpen}
+              onToggle={() => setIsChatOpen(!isChatOpen)}
+              unreadCount={totalUnreadCount}
+              unreadChats={unreadChats}
+            />
+          )}
+        </main>
 
         {user && (
           <ChatOverlay
