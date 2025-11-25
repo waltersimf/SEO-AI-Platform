@@ -33,14 +33,12 @@ export default function DashboardLayout({
   const [socketStatus, setSocketStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('disconnected');
 
   useEffect(() => {
-    // Check authentication
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/auth/login');
       return;
     }
 
-    // Decode JWT to get user info
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       setUser({
@@ -55,19 +53,11 @@ export default function DashboardLayout({
     }
   }, [router]);
 
-  // Socket listener for new messages
   useEffect(() => {
     if (!user?.organizationId) return;
 
-    const handleOnline = () => {
-      console.log('🌐 Browser ONLINE');
-      setSocketStatus('connected');
-    };
-
-    const handleOffline = () => {
-      console.log('📡 Browser OFFLINE');
-      setSocketStatus('disconnected');
-    };
+    const handleOnline = () => setSocketStatus('connected');
+    const handleOffline = () => setSocketStatus('disconnected');
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -75,7 +65,6 @@ export default function DashboardLayout({
     const socket = io(SOCKET_URL);
 
     socket.on('connect', () => {
-      console.log('🔌 Dashboard: Socket connected');
       setSocketStatus('connected');
       const token = localStorage.getItem('token');
       if (token) {
@@ -88,19 +77,10 @@ export default function DashboardLayout({
       }
     });
 
-    socket.on('disconnect', () => {
-      console.log('🔌 Dashboard: Socket disconnected');
-      setSocketStatus('disconnected');
-    });
-
-    socket.io.on('reconnect_attempt', () => {
-      console.log('🔄 Dashboard: Socket reconnecting...');
-      setSocketStatus('reconnecting');
-    });
+    socket.on('disconnect', () => setSocketStatus('disconnected'));
+    socket.io.on('reconnect_attempt', () => setSocketStatus('reconnecting'));
 
     socket.on('new_message', (message: any) => {
-      console.log('📨 Dashboard: New message received', message);
-
       if (!isChatOpen && message.authorId !== user.id) {
         setNotificationBubble({
           chatId: message.chatId,
@@ -108,8 +88,6 @@ export default function DashboardLayout({
           message: message.content,
         });
       }
-      
-      // Refresh unread count
       fetchUnreadCount();
     });
 
@@ -120,85 +98,41 @@ export default function DashboardLayout({
     };
   }, [user, isChatOpen]);
 
-  // Helper function to get chat name
   const getChatName = (chat: any): string => {
-    console.log('🏷️ getChatName for chat:', chat.id, 'type:', chat.type, 'name:', chat.name);
-    
-    if (chat.name) {
-      return chat.name;
-    }
-    
+    if (chat.name) return chat.name;
     if (chat.type === 'direct' && chat.members) {
       const otherMember = chat.members.find((m: any) => m.userId !== user?.id);
-      console.log('👤 Other member:', otherMember);
       return otherMember?.user?.name || 'Direct Chat';
     }
-    
     return 'Unnamed Chat';
   };
 
-  // Fetch total unread count AND list of unread chats
   const fetchUnreadCount = async () => {
-    console.log('🚀 fetchUnreadCount called!');
-    
     try {
       const chats = await apiFetch(`${API_URL}/api/chat/list`);
-      
-      console.log('🔍 All chats from API:', chats);
-      
-      // Total count
       const total = chats.reduce((sum: number, chat: any) => sum + (chat.unreadCount || 0), 0);
       setTotalUnreadCount(total);
       
-      console.log('📊 Total unread count:', total);
-      
-      // Extract chats with unread messages
       const unread = chats
-        .filter((chat: any) => {
-          console.log('🔎 Checking chat:', chat.id, 'unreadCount:', chat.unreadCount);
-          return chat.unreadCount > 0;
-        })
-        .map((chat: any) => {
-          const name = getChatName(chat);
-          console.log('📝 Mapped unread chat:', { id: chat.id, name, unreadCount: chat.unreadCount });
-          return {
-            id: chat.id,
-            name: name,
-            unreadCount: chat.unreadCount
-          };
-        });
-      
-      console.log('📬 Final unreadChats array:', unread);
-      console.log('📬 unreadChats.length:', unread.length);
-      
+        .filter((chat: any) => chat.unreadCount > 0)
+        .map((chat: any) => ({
+          id: chat.id,
+          name: getChatName(chat),
+          unreadCount: chat.unreadCount
+        }));
       setUnreadChats(unread);
-      
     } catch (error) {
-      console.error('❌ Failed to fetch unread count:', error);
+      console.error('Failed to fetch unread count:', error);
     }
   };
 
   useEffect(() => {
-    console.log('👤 User changed:', user?.id);
-    
     if (user) {
-      console.log('✅ User exists, calling fetchUnreadCount...');
       fetchUnreadCount();
-      
-      const interval = setInterval(() => {
-        console.log('⏰ Interval: refreshing unread count...');
-        fetchUnreadCount();
-      }, 30000);
-      
+      const interval = setInterval(fetchUnreadCount, 30000);
       return () => clearInterval(interval);
     }
   }, [user]);
-
-  // DEBUG: Log when unreadChats changes
-  useEffect(() => {
-    console.log('🔄 unreadChats state updated:', unreadChats);
-    console.log('🔄 hasMultipleUnread:', unreadChats.length > 1);
-  }, [unreadChats]);
 
   const handleChatSelect = async (chatId: string) => {
     setActiveChatId(chatId);
@@ -206,12 +140,8 @@ export default function DashboardLayout({
     setNotificationBubble(null);
 
     try {
-      await apiFetch(`${API_URL}/api/chat/${chatId}/read`, {
-        method: 'POST',
-      });
-
+      await apiFetch(`${API_URL}/api/chat/${chatId}/read`, { method: 'POST' });
       fetchUnreadCount();
-
     } catch (error) {
       console.error('Error marking chat as read:', error);
     }
@@ -223,19 +153,11 @@ export default function DashboardLayout({
   };
 
   const handleChatDeleted = (deletedChatId: string) => {
-    if (deletedChatId === activeChatId) {
-      setActiveChatId(null);
-      console.log('🗑️ Active chat deleted, clearing selection');
-    }
+    if (deletedChatId === activeChatId) setActiveChatId(null);
   };
 
-  const handleBubbleClick = (chatId: string) => {
-    handleChatSelect(chatId);
-  };
-
-  const handleBubbleDismiss = () => {
-    setNotificationBubble(null);
-  };
+  const handleBubbleClick = (chatId: string) => handleChatSelect(chatId);
+  const handleBubbleDismiss = () => setNotificationBubble(null);
 
   return (
     <SocketProvider socketStatus={socketStatus}>
@@ -243,51 +165,47 @@ export default function DashboardLayout({
         <Sidebar />
         <main className="flex-1">{children}</main>
 
-      {/* Chat Input Bar - Fixed Bottom */}
-      {user && (
-        <ChatInputBar
-          isOpen={isChatOpen}
-          onToggle={() => setIsChatOpen(!isChatOpen)}
-          unreadCount={totalUnreadCount}
-          unreadChats={unreadChats}
-        />
-      )}
+        {user && (
+          <ChatInputBar
+            isOpen={isChatOpen}
+            onToggle={() => setIsChatOpen(!isChatOpen)}
+            unreadCount={totalUnreadCount}
+            unreadChats={unreadChats}
+          />
+        )}
 
-      {/* Chat Overlay - Slide Up/Down */}
-      {user && (
-        <ChatOverlay
-          isOpen={isChatOpen}
-          onClose={() => setIsChatOpen(false)}
-          activeChatId={activeChatId}
-          onChatSelect={handleChatSelect}
-          onCreateChat={() => setIsCreateDialogOpen(true)}
-          currentUserId={user.id}
-          currentUserName={user.name}
-          organizationId={user.organizationId}
-          onChatDeleted={handleChatDeleted}
-          refreshTrigger={chatListRefreshTrigger}
-        />
-      )}
+        {user && (
+          <ChatOverlay
+            isOpen={isChatOpen}
+            onClose={() => setIsChatOpen(false)}
+            activeChatId={activeChatId}
+            onChatSelect={handleChatSelect}
+            onCreateChat={() => setIsCreateDialogOpen(true)}
+            currentUserId={user.id}
+            currentUserName={user.name}
+            organizationId={user.organizationId}
+            onChatDeleted={handleChatDeleted}
+            refreshTrigger={chatListRefreshTrigger}
+          />
+        )}
 
-      {/* Sticky Chat Notification Bubble */}
-      {notificationBubble && (
-        <ChatNotificationBubble
-          chatId={notificationBubble.chatId}
-          senderName={notificationBubble.senderName}
-          message={notificationBubble.message}
-          onClick={handleBubbleClick}
-          onDismiss={handleBubbleDismiss}
-        />
-      )}
+        {notificationBubble && (
+          <ChatNotificationBubble
+            chatId={notificationBubble.chatId}
+            senderName={notificationBubble.senderName}
+            message={notificationBubble.message}
+            onClick={handleBubbleClick}
+            onDismiss={handleBubbleDismiss}
+          />
+        )}
 
-      {/* Create Chat Dialog */}
-      {user && (
-        <CreateChatDialog
-          isOpen={isCreateDialogOpen}
-          onClose={() => setIsCreateDialogOpen(false)}
-          onChatCreated={handleChatCreated}
-        />
-      )}
+        {user && (
+          <CreateChatDialog
+            isOpen={isCreateDialogOpen}
+            onClose={() => setIsCreateDialogOpen(false)}
+            onChatCreated={handleChatCreated}
+          />
+        )}
       </div>
     </SocketProvider>
   );
