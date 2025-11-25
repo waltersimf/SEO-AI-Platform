@@ -1,17 +1,15 @@
 'use client';
 
-import { MessageCircle, ChevronUp, Inbox, ExternalLink } from 'lucide-react';
+import { ChevronUp, ChevronDown, MessageCircle, Inbox } from "lucide-react";
 
 interface ChatInputBarProps {
   isOpen: boolean;
   onToggle: () => void;
   unreadCount?: number;
-  unreadChats?: Array<{
-    id: string;
-    name: string;
-    unreadCount: number;
-  }>;
+  unreadChats?: Array<{id: string, name: string, unreadCount: number}>;
 }
+
+const SIDEBAR_WIDTH = 256;
 
 export function ChatInputBar({
   isOpen,
@@ -20,88 +18,110 @@ export function ChatInputBar({
   unreadChats = []
 }: ChatInputBarProps) {
   
-  const hasUnread = unreadCount > 0;
+  // Check if multiple unread senders
+  const hasMultipleUnread = unreadChats.length > 1;
   
-  if (isOpen) {
-    return null;
-  }
-  
+  // Format sender list "AI, George, +1 more"
   const formatSenderList = () => {
     if (unreadChats.length === 0) return '';
     if (unreadChats.length === 1) return unreadChats[0].name;
     if (unreadChats.length === 2) {
       return `${unreadChats[0].name}, ${unreadChats[1].name}`;
     }
+    
+    // 3+ senders: "AI, George, +X more"
     const firstTwo = unreadChats.slice(0, 2).map(c => c.name).join(', ');
     const remaining = unreadChats.length - 2;
     return `${firstTwo}, +${remaining} more`;
   };
 
   return (
-    <div className="fixed bottom-0 left-64 right-0 z-40 p-8 pt-0 pointer-events-none">
-      <div className="pointer-events-auto">
-        {hasUnread ? (
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-            <div 
-              className="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50"
+    <div
+      className="fixed bottom-0 right-0 z-40 bg-transparent pointer-events-none"
+      style={{ left: SIDEBAR_WIDTH }}
+    >
+      <div className="w-full pl-8 pr-12 py-4 pointer-events-auto">
+        <div className="max-w-6xl mx-auto">
+          
+          {/* IF multiple unread - show inbox summary */}
+          {hasMultipleUnread ? (
+            <div
               onClick={onToggle}
+              className="flex items-center gap-3 px-4 py-3 bg-muted hover:bg-muted/90 rounded-lg cursor-pointer transition-colors shadow-sm border border-border/50"
             >
+              {/* Inbox icon with badge */}
               <div className="relative">
-                <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center">
-                  <Inbox className="h-5 w-5 text-blue-600" />
-                </div>
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                <Inbox className="h-5 w-5 text-blue-600" />
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
                   {unreadCount}
                 </span>
               </div>
               
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-gray-900">
+              {/* Text content */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-900">
                   📬 {unreadCount} New Message{unreadCount !== 1 ? 's' : ''}
                 </p>
-                <p className="text-xs text-gray-500">
-                  <span className="text-gray-400">From: </span>
-                  <span className="font-medium text-gray-600">{formatSenderList()}</span>
+                <p className="text-xs text-muted-foreground truncate">
+                  <span className="font-medium">From: </span>
+                  <span className="font-semibold text-gray-800">{formatSenderList()}</span>
                 </p>
               </div>
-            </div>
-            
-            <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-2">
-              <div 
-                className="flex-1 flex items-center border border-gray-200 rounded-lg px-3 py-2 cursor-pointer hover:border-blue-300 hover:bg-blue-50/30 transition-colors"
-                onClick={onToggle}
+
+              {/* Expand button */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggle();
+                }}
+                className="flex items-center justify-center w-9 h-9 rounded-md text-primary bg-background hover:bg-muted transition-colors"
+                title="Open inbox"
               >
-                <span className="text-sm text-blue-600">Open inbox to reply...</span>
-              </div>
+                <ChevronUp className="h-5 w-5" />
+              </button>
+            </div>
+          ) : (
+            /* ELSE - show normal input */
+            <div
+              className="relative flex items-center gap-3 px-4 py-2.5 bg-muted hover:bg-muted/90 rounded-lg cursor-pointer transition-colors shadow-sm border border-border/50"
+              onClick={() => !isOpen && onToggle()}
+            >
+              <MessageCircle className="h-5 w-5 text-muted-foreground" />
               
-              <button 
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                onClick={onToggle}
+              <input
+                type="text"
+                placeholder="Type message..."
+                className="flex-1 bg-transparent outline-none text-sm pointer-events-none text-muted-foreground"
+                readOnly
+              />
+
+              {/* Unread badge */}
+              {unreadCount > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[1.5rem] px-1.5 h-6 rounded-full bg-primary text-xs font-medium text-primary-foreground">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+
+              {/* Toggle button */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggle();
+                }}
+                className="flex items-center justify-center w-9 h-9 rounded-md text-primary bg-background hover:bg-muted transition-colors"
+                title={isOpen ? "Close chat" : "Open chat"}
               >
-                <Inbox className="h-5 w-5 text-gray-400" />
-              </button>
-              <button 
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                onClick={onToggle}
-              >
-                <ExternalLink className="h-4 w-4 text-gray-400" />
+                {isOpen ? (
+                  <ChevronDown className="h-5 w-5" />
+                ) : (
+                  <ChevronUp className="h-5 w-5" />
+                )}
               </button>
             </div>
-          </div>
-        ) : (
-          <div 
-            className="bg-white rounded-xl shadow-lg border border-gray-200 px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50"
-            onClick={onToggle}
-          >
-            <MessageCircle className="h-5 w-5 text-gray-400" />
-            <div className="flex-1 border border-gray-200 rounded-lg px-3 py-2">
-              <span className="text-sm text-gray-400">Type message...</span>
-            </div>
-            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <ChevronUp className="h-5 w-5 text-gray-600" />
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
