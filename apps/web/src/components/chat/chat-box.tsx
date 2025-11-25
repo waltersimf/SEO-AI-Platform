@@ -190,9 +190,9 @@ export function ChatBox({
 
   // Auto-scroll to bottom only for new messages, not initial load
   useEffect(() => {
-    // On initial load, scroll to bottom immediately without smooth animation
+    // On initial load, scroll to bottom immediately
     if (isInitialLoad.current && messages.length > 0) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
       isInitialLoad.current = false;
       previousMessageCount.current = messages.length;
       return;
