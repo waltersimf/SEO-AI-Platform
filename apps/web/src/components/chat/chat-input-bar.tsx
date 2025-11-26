@@ -98,12 +98,12 @@ export function ChatInputBar({
 
 
           {/* --- Нижня Секція (Quick Reply / Action Button) --- */}
-          <form 
+          <form
             onSubmit={(e) => { e.preventDefault(); /* ... quick reply logic */ }}
-            className="px-4 py-3 bg-gray-50 flex items-center gap-3"
-            // Важливо: зупиняємо спливання кліку на цьому рівні, щоб клік всередині форми 
-            // не викликав onToggle (handleBarClick) від батьківського div, коли не треба.
-            onClick={(e) => e.stopPropagation()} 
+            className={`px-4 py-3 bg-gray-50 flex items-center gap-3 ${isSummaryView ? 'cursor-pointer' : ''}`}
+            // Коли isSummaryView - клік по формі має відкрити чат
+            // В інших режимах - зупиняємо спливання, щоб інпут працював
+            onClick={isSummaryView ? onToggle : (e) => e.stopPropagation()}
           >
              
              <div className="relative flex-1">
