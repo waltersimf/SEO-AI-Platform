@@ -261,7 +261,8 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
   const isUserAI = (userId: string | null): boolean => {
     if (!userId) return false;
     const user = organizationUsers.find(u => u.id === userId);
-    return user?.isAI === true;
+    // Check both isAI flag and name for robustness
+    return user?.isAI === true || user?.name === 'AI Assistant';
   };
 
   // Helper: Check if user is online
@@ -345,7 +346,7 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
         <div className="flex items-start gap-3">
           {/* Avatar */}
           <div className="relative flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-            {user.isAI ? (
+            {(user.isAI || user.name === 'AI Assistant') ? (
               <span className="text-2xl">🤖</span>
             ) : user.avatar ? (
               <span className="text-2xl">{user.avatar}</span>
