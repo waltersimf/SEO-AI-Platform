@@ -1,14 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { X } from "lucide-react";
+import { X, MessageSquare } from "lucide-react";
 import { ChatList } from "./chat-list";
 import { ChatBox } from "./chat-box";
 import { cn } from "@/lib/utils";
 
-const SIDEBAR_WIDTH = 256;
-const OVERLAY_HEIGHT = 500;
-const OVERLAY_BOTTOM_OFFSET = 88; // відстань до input bar, можна підкрутити
+const WINDOW_HEIGHT = 600;
 
 interface ChatOverlayProps {
   isOpen: boolean;
@@ -35,88 +33,81 @@ export function ChatOverlay({
   onChatDeleted,
   refreshTrigger,
 }: ChatOverlayProps) {
-  // ESC для закриття
+  
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) onClose();
     };
-
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
   }, [isOpen, onClose]);
 
-  // Лочимо скрол, коли overlay відкритий
-  useEffect(() => {
-    if (!isOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev || "unset";
-    };
-  }, [isOpen]);
-
   return (
     <>
-      {/* Full-screen backdrop - visible only when open */}
+      {/* BACKDROP: Невидимий шар (z-30) на весь екран.
+        Він перекриває контент сайту, але лежить ПІД ChatInputBar (який має z-40) 
+        і ПІД самим вікном чату (z-50).
+      */}
       {isOpen && (
-        <div
-          className="fixed inset-0 z-40"
+        <div 
+          className="fixed inset-0 z-30 bg-transparent"
           onClick={onClose}
         />
       )}
 
-      {/* Chat panel container */}
-      <div
+      {/* WINDOW CONTAINER */}
+      <div 
         className={cn(
-          "fixed right-0 z-50 transition-transform duration-300 ease-out",
-          isOpen ? "translate-y-0" : "translate-y-[calc(100%+120px)]"
+          "fixed inset-x-0 bottom-[90px] z-50 flex justify-center pl-64 pr-4 pointer-events-none transition-all duration-300 ease-out",
+          isOpen ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0 pointer-events-none"
         )}
-        style={{
-          left: SIDEBAR_WIDTH,      // так само як input bar
-          bottom: OVERLAY_BOTTOM_OFFSET,
-        }}
       >
-        {/* ТА САМА сітка, що й у ChatInputBar / Dashboard:
-            спочатку горизонтальний padding, потім max-w-6xl mx-auto */}
-        <div className="px-8">
-          <div className="max-w-6xl mx-auto">
-            <div
-              className="bg-background rounded-2xl border border-border flex flex-col overflow-hidden"
-              style={{ height: OVERLAY_HEIGHT }}
-            >
+        <div className="w-full max-w-6xl pointer-events-auto">
+          <div 
+            className="bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col w-full overflow-hidden"
+            style={{ height: WINDOW_HEIGHT }}
+            // Зупиняємо спливання кліку, щоб клік по самому вікну не закривав його
+            onClick={(e) => e.stopPropagation()} 
+          >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b">
-              <h2 className="text-xl font-semibold">Messages</h2>
-              <button
-                onClick={onClose}
-                className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-muted transition-colors"
-                title="Close"
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white shrink-0">
+              <div className="flex items-center gap-2">
+                 <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                    <MessageSquare size={20} />
+                 </div>
+                 <div>
+                    <h2 className="text-lg font-bold text-gray-900">Messages</h2>
+                    <p className="text-xs text-gray-500">Real-time collaboration</p>
+                 </div>
+              </div>
+              
+              <button 
+                onClick={onClose} 
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-700"
               >
-                <X className="h-5 w-5" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Content */}
-            <div className="flex flex-1">
-              {/* Список чатів */}
-              <div className="w-[300px] border-r overflow-y-auto overflow-x-hidden">
-                <ChatList
-                  activeChatId={activeChatId || undefined}
-                  onChatSelect={onChatSelect}
-                  onCreateChat={onCreateChat}
-                  currentUserId={currentUserId}
-                  onChatDeleted={onChatDeleted}
-                  compact
-                  refreshTrigger={refreshTrigger}
-                />
+            {/* Content Area */}
+            <div className="flex flex-1 overflow-hidden bg-white"> 
+              
+              {/* Sidebar List */}
+              <div className="w-80 border-r border-gray-100 bg-gray-50/50 flex flex-col shrink-0">
+                 <ChatList
+                    activeChatId={activeChatId || undefined}
+                    onChatSelect={onChatSelect}
+                    onCreateChat={onCreateChat}
+                    currentUserId={currentUserId}
+                    onChatDeleted={onChatDeleted}
+                    compact={false} 
+                    refreshTrigger={refreshTrigger}
+                  />
               </div>
 
-              {/* Вміст чату */}
-              <div className="flex flex-1 flex-col overflow-hidden">
-                {activeChatId &&
-                currentUserId &&
-                currentUserName &&
-                organizationId ? (
+              {/* Main Chat Area */}
+              <div className="flex-1 flex flex-col bg-white overflow-hidden relative">
+                {activeChatId && currentUserId && currentUserName && organizationId ? (
                   <ChatBox
                     chatId={activeChatId}
                     userId={currentUserId}
@@ -124,18 +115,21 @@ export function ChatOverlay({
                     organizationId={organizationId}
                   />
                 ) : (
-                  <div className="flex flex-1 items-center justify-center text-muted-foreground">
-                    <div className="text-center">
-                      <p className="mb-2 text-lg">No chat selected</p>
-                      <p className="text-sm">Select a chat from the list</p>
+                  <div className="flex flex-col items-center justify-center h-full text-gray-400 bg-gray-50/30">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4 shadow-sm">
+                      <span className="text-4xl">👋</span>
                     </div>
+                    <h3 className="text-lg font-semibold text-gray-700">Welcome to Chat</h3>
+                    <p className="text-sm text-gray-500 mt-2 max-w-xs text-center">
+                      Select a conversation from the sidebar or start a new group chat.
+                    </p>
                   </div>
                 )}
               </div>
             </div>
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 }

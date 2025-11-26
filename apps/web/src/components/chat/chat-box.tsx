@@ -14,7 +14,8 @@ interface Message {
     id: string;
     name: string;
     avatar?: string;
-    isAI?: boolean;
+    // ⭐ ЗМІНА: Поле isAI має бути тут, але ми його перевірятимемо у хелпері
+    isAI?: boolean; 
   };
   createdAt: string;
 }
@@ -26,6 +27,21 @@ interface OrganizationUser {
   avatar?: string;
   isAI?: boolean;
 }
+
+// ⭐ ДОДАНО: ХЕЛПЕР-ФУНКЦІЯ для відображення аватара
+const renderAvatarContent = (user: { name: string; avatar?: string; isAI?: boolean }) => {
+    // Якщо це AI, завжди показуємо робота
+    if (user.isAI) {
+        return <span className="text-lg">🤖</span>; 
+    }
+    // Інакше, показуємо існуючий аватар
+    if (user.avatar) {
+        return <span className="text-lg">{user.avatar}</span>;
+    }
+    // Або ініціали
+    return <span className="text-xs font-semibold">{user.name[0]}</span>;
+};
+
 
 export function ChatBox({
   chatId,
@@ -357,13 +373,8 @@ export function ChatBox({
             {message.author.id !== userId && (
               <div className="flex-shrink-0 mr-2">
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                  {message.author.isAI ? (
-                    <span className="text-lg">🤖</span>
-                  ) : message.author.avatar ? (
-                    <span className="text-lg">{message.author.avatar}</span>
-                  ) : (
-                    <span className="text-xs font-semibold">{message.author.name[0]}</span>
-                  )}
+                  {/* ⭐ ЗМІНА ТУТ: ВИКЛИК ХЕЛПЕРА */}
+                  {renderAvatarContent(message.author)}
                 </div>
               </div>
             )}
@@ -414,13 +425,8 @@ export function ChatBox({
             {message.author.id === userId && (
               <div className="flex-shrink-0 ml-2">
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                  {message.author.isAI ? (
-                    <span className="text-lg">🤖</span>
-                  ) : message.author.avatar ? (
-                    <span className="text-lg">{message.author.avatar}</span>
-                  ) : (
-                    <span className="text-xs font-semibold">{message.author.name[0]}</span>
-                  )}
+                  {/* ⭐ ЗМІНА ТУТ: ВИКЛИК ХЕЛПЕРА */}
+                  {renderAvatarContent(message.author)}
                 </div>
               </div>
             )}
@@ -454,11 +460,8 @@ export function ChatBox({
                   }`}
                 >
                   <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                    {user.avatar ? (
-                      <span className="text-lg">{user.avatar}</span>
-                    ) : (
-                      <span className="text-sm font-semibold">{user.name[0]}</span>
-                    )}
+                    {/* ⭐ ЗМІНА ТУТ: ВИКЛИК ХЕЛПЕРА */}
+                    {renderAvatarContent(user)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">{user.name}</div>
