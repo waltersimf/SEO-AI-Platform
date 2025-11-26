@@ -71,6 +71,17 @@ export function ChatBox({
   const isInitialLoad = useRef(true);
   const previousMessageCount = useRef(0);
 
+  // Helper function to render avatar content consistently
+  const renderAvatarContent = (user: { name: string; avatar?: string; isAI?: boolean }) => {
+    if (user.isAI || user.name === 'AI Assistant') {
+      return <span className="text-lg">🤖</span>;
+    }
+    if (user.avatar) {
+      return <span className="text-lg">{user.avatar}</span>;
+    }
+    return <span className="text-xs font-semibold">{user.name?.[0] || '?'}</span>;
+  };
+
   // Initialize socket with userId and organizationId
   useEffect(() => {
     socketRef.current = initSocket(userId, organizationId);
@@ -137,7 +148,15 @@ export function ChatBox({
 
         if (response.ok) {
           const history = await response.json();
-          setMessages(history);
+          // Ensure isAI flag is set for AI Assistant messages (API might not include it)
+          const processedHistory = history.map((msg: Message) => ({
+            ...msg,
+            author: {
+              ...msg.author,
+              isAI: msg.author.isAI || msg.author.name === 'AI Assistant'
+            }
+          }));
+          setMessages(processedHistory);
         }
       } catch (error) {
         console.error('Failed to load message history:', error);
@@ -388,14 +407,14 @@ export function ChatBox({
             >
               <div className="flex items-center gap-2 mb-1">
                 {/* Show avatar emoji inline for AI users */}
-                {message.author.isAI && (
+                {(message.author.isAI || message.author.name === 'AI Assistant') && (
                   <span className="text-base">🤖</span>
                 )}
                 <p className="text-xs font-semibold">
                   {message.author.name}
                 </p>
                 {/* AI Badge */}
-                {message.author.isAI && (
+                {(message.author.isAI || message.author.name === 'AI Assistant') && (
                   <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">AI</span>
                 )}
                 {/* Online Status Indicator */}
@@ -412,7 +431,7 @@ export function ChatBox({
                 </p>
               </div>
               {/* Render markdown for AI messages, plain text for others */}
-              {message.author.isAI ? (
+              {(message.author.isAI || message.author.name === 'AI Assistant') ? (
                 <div className="text-sm prose prose-sm max-w-none dark:prose-invert">
                   <ReactMarkdown>{message.content}</ReactMarkdown>
                 </div>
@@ -467,7 +486,7 @@ export function ChatBox({
                     <div className="text-sm font-medium truncate">{user.name}</div>
                     <div className="text-xs text-gray-500 truncate">{user.email}</div>
                   </div>
-                  {user.isAI && (
+                  {(user.isAI || user.name === 'AI Assistant') && (
                     <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">AI</span>
                   )}
                 </button>

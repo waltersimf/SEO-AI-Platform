@@ -262,7 +262,8 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
     if (!userId) return false;
     // Find the user in the organizationUsers list to check the isAI flag
     const user = organizationUsers.find(u => u.id === userId);
-    return user?.isAI === true;
+    // Check both isAI flag and name for robustness
+    return user?.isAI === true || user?.name === 'AI Assistant';
   };
 
   // Helper: Check if user is online
