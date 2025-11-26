@@ -117,11 +117,11 @@ export function ChatInputBar({
       <div className="p-4 border-b border-gray-100 flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition-colors">
         {/* Avatar */}
         <div className="relative">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm bg-blue-500">
+          <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm bg-blue-100">
             {isAi ? (
               <span className="text-2xl">🤖</span>
             ) : (
-              <span className="text-white font-semibold text-lg">
+              <span className="text-blue-600 font-semibold text-lg">
                 {contact.name.charAt(0).toUpperCase()}
               </span>
             )}
