@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { X } from "lucide-react";
+import { X, MessageSquare } from "lucide-react";
 import { ChatList } from "./chat-list";
 import { ChatBox } from "./chat-box";
 import { cn } from "@/lib/utils";
@@ -43,78 +43,93 @@ export function ChatOverlay({
   }, [isOpen, onClose]);
 
   return (
-    // ВИПРАВЛЕНА СІТКА (Overlay):
-    // 1. inset-0 - займає весь екран (для backdrop)
-    // 2. md:left-64 - зсув контенту вправо на ширину сайдбару
-    // 3. justify-center - центрування контейнера
-    <div 
-      className={cn(
-        "fixed inset-0 z-50 flex flex-col justify-end items-center md:pl-64 pointer-events-none transition-all duration-300 ease-in-out",
-        isOpen ? "bg-black/20 backdrop-blur-sm pointer-events-auto" : "bg-transparent pointer-events-none"
-      )}
-      onClick={onClose}
-    >
-      {/* ВНУТРІШНІЙ КОНТЕЙНЕР:
-        w-full max-w-5xl px-8: Це ідентичні параметри, що і в Input Bar.
-        Це гарантує, що вікно чату буде мати ТУ Ж САМУ ширину і ТІ Ж САМІ відступи, що і контент сторінки.
+    <>
+      {/* BACKDROP: Невидимий шар (z-30) на весь екран.
+        Він перекриває контент сайту, але лежить ПІД ChatInputBar (який має z-40) 
+        і ПІД самим вікном чату (z-50).
       */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-30 bg-transparent"
+          onClick={onClose}
+        />
+      )}
+
+      {/* WINDOW CONTAINER */}
       <div 
         className={cn(
-          "w-full max-w-5xl px-8 transition-transform duration-300 ease-in-out pb-0", 
-           isOpen ? "translate-y-0" : "translate-y-full"
+          "fixed inset-x-0 bottom-[90px] z-50 flex justify-center pl-64 pr-4 pointer-events-none transition-all duration-300 ease-out",
+          isOpen ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0 pointer-events-none"
         )}
       >
-        <div 
-          className="bg-white rounded-t-xl shadow-2xl border border-gray-200 flex flex-col w-full overflow-hidden"
-          style={{ height: WINDOW_HEIGHT }}
-          onClick={(e) => e.stopPropagation()} 
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white">
-            <h2 className="text-xl font-bold text-gray-800">Messages</h2>
-            <button 
-              onClick={onClose} 
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
-          </div>
-
-          {/* Content Area */}
-          <div className="flex flex-1 overflow-hidden bg-white"> 
-            
-            {/* Sidebar List */}
-            <div className="w-1/3 border-r border-gray-100 bg-gray-50 flex flex-col">
-               <ChatList
-                  activeChatId={activeChatId || undefined}
-                  onChatSelect={onChatSelect}
-                  onCreateChat={onCreateChat}
-                  currentUserId={currentUserId}
-                  onChatDeleted={onChatDeleted}
-                  compact={true} 
-                  refreshTrigger={refreshTrigger}
-                />
+        <div className="w-full max-w-6xl pointer-events-auto">
+          <div 
+            className="bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col w-full overflow-hidden"
+            style={{ height: WINDOW_HEIGHT }}
+            // Зупиняємо спливання кліку, щоб клік по самому вікну не закривав його
+            onClick={(e) => e.stopPropagation()} 
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white shrink-0">
+              <div className="flex items-center gap-2">
+                 <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                    <MessageSquare size={20} />
+                 </div>
+                 <div>
+                    <h2 className="text-lg font-bold text-gray-900">Messages</h2>
+                    <p className="text-xs text-gray-500">Real-time collaboration</p>
+                 </div>
+              </div>
+              
+              <button 
+                onClick={onClose} 
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            {/* Main Chat Area */}
-            <div className="flex-1 flex flex-col bg-white overflow-hidden relative">
-              {activeChatId && currentUserId && currentUserName && organizationId ? (
-                <ChatBox
-                  chatId={activeChatId}
-                  userId={currentUserId}
-                  userName={currentUserName}
-                  organizationId={organizationId}
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                  <span className="text-4xl mb-2">👋</span>
-                  <p className="font-medium">Select a conversation to start chatting</p>
-                </div>
-              )}
+            {/* Content Area */}
+            <div className="flex flex-1 overflow-hidden bg-white"> 
+              
+              {/* Sidebar List */}
+              <div className="w-80 border-r border-gray-100 bg-gray-50/50 flex flex-col shrink-0">
+                 <ChatList
+                    activeChatId={activeChatId || undefined}
+                    onChatSelect={onChatSelect}
+                    onCreateChat={onCreateChat}
+                    currentUserId={currentUserId}
+                    onChatDeleted={onChatDeleted}
+                    compact={false} 
+                    refreshTrigger={refreshTrigger}
+                  />
+              </div>
+
+              {/* Main Chat Area */}
+              <div className="flex-1 flex flex-col bg-white overflow-hidden relative">
+                {activeChatId && currentUserId && currentUserName && organizationId ? (
+                  <ChatBox
+                    chatId={activeChatId}
+                    userId={currentUserId}
+                    userName={currentUserName}
+                    organizationId={organizationId}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-gray-400 bg-gray-50/30">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4 shadow-sm">
+                      <span className="text-4xl">👋</span>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-700">Welcome to Chat</h3>
+                    <p className="text-sm text-gray-500 mt-2 max-w-xs text-center">
+                      Select a conversation from the sidebar or start a new group chat.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

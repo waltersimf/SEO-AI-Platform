@@ -14,7 +14,8 @@ interface Message {
     id: string;
     name: string;
     avatar?: string;
-    isAI?: boolean;
+    // ⭐ ЗМІНА: Поле isAI має бути тут, але ми його перевірятимемо у хелпері
+    isAI?: boolean; 
   };
   createdAt: string;
 }
@@ -26,6 +27,21 @@ interface OrganizationUser {
   avatar?: string;
   isAI?: boolean;
 }
+
+// ⭐ ДОДАНО: ХЕЛПЕР-ФУНКЦІЯ для відображення аватара
+const renderAvatarContent = (user: { name: string; avatar?: string; isAI?: boolean }) => {
+    // Якщо це AI, завжди показуємо робота
+    if (user.isAI) {
+        return <span className="text-lg">🤖</span>; 
+    }
+    // Інакше, показуємо існуючий аватар
+    if (user.avatar) {
+        return <span className="text-lg">{user.avatar}</span>;
+    }
+    // Або ініціали
+    return <span className="text-xs font-semibold">{user.name[0]}</span>;
+};
+
 
 export function ChatBox({
   chatId,
@@ -209,9 +225,9 @@ export function ChatBox({
 
   // Auto-scroll to bottom only for new messages, not initial load
   useEffect(() => {
-    // On initial load, scroll to bottom immediately
+    // On initial load, scroll to bottom immediately without smooth animation
     if (isInitialLoad.current && messages.length > 0) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
       isInitialLoad.current = false;
       previousMessageCount.current = messages.length;
       return;
@@ -364,9 +380,9 @@ export function ChatBox({
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-background">
+    <div className="flex flex-col h-[600px] border rounded-lg">
       {/* Messages */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
           <div
             key={message.id}
@@ -376,6 +392,7 @@ export function ChatBox({
             {message.author.id !== userId && (
               <div className="flex-shrink-0 mr-2">
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                  {/* ⭐ ЗМІНА ТУТ: ВИКЛИК ХЕЛПЕРА */}
                   {renderAvatarContent(message.author)}
                 </div>
               </div>
@@ -427,6 +444,7 @@ export function ChatBox({
             {message.author.id === userId && (
               <div className="flex-shrink-0 ml-2">
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                  {/* ⭐ ЗМІНА ТУТ: ВИКЛИК ХЕЛПЕРА */}
                   {renderAvatarContent(message.author)}
                 </div>
               </div>
@@ -461,6 +479,7 @@ export function ChatBox({
                   }`}
                 >
                   <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    {/* ⭐ ЗМІНА ТУТ: ВИКЛИК ХЕЛПЕРА */}
                     {renderAvatarContent(user)}
                   </div>
                   <div className="flex-1 min-w-0">

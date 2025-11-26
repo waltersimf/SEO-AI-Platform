@@ -88,8 +88,6 @@ export class ChatService {
             select: {
               id: true,
               name: true,
-              avatar: true,
-              isAI: true,
             },
           },
         },
