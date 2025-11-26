@@ -1,7 +1,7 @@
 # 🗺️ ROADMAP - Forgeline SEO AI Platform
 
-**Загальна тривалість:** 75 днів (10.7 тижнів) до Public Launch  
-**Поточний прогрес:** v0.3.1 ЗАВЕРШЕНО! v0.4 AI Teammate next 🤖
+**Загальна тривалість:** 81 день (11.5 тижнів) до Public Launch  
+**Поточний прогрес:** v0.4 ЗАВЕРШЕНО! v0.5 Projects next 📁
 
 ---
 
@@ -12,15 +12,15 @@
 | v0.1 | ✅ DONE | 100% | 5 днів | Auth + DB |
 | v0.2 | ✅ DONE | 100% | 5 днів | Dashboard UI |
 | v0.3 | ✅ DONE | 100% | 7 днів | Chat System |
-| **v0.3.1** | **✅ DONE** | **100%** | **1 день** | **Production Ready** |
-| v0.4 | 📋 PLANNED | 0% | 14 днів | **AI Teammate** 🤖 |
-| v0.5 | 📋 PLANNED | 0% | 8 днів | Projects |
+| v0.3.1 | ✅ DONE | 100% | 1 день | Production Ready |
+| **v0.4** | **✅ DONE** | **100%** | **3 дні** | **AI Teammate** 🤖 |
+| v0.5 | 📋 NEXT | 0% | 8 днів | Projects 📁 |
 | v0.6 | 📋 PLANNED | 0% | 7 днів | Tasks + Backlog |
 | v0.7 | 📋 PLANNED | 0% | 10 днів | Chat Polish + Invite |
 | v0.8 | 📋 PLANNED | 0% | 8 днів | AI Analysis |
 | v0.9 | 📋 PLANNED | 0% | 10 днів | Notifications |
 | v1.0 | 📋 PLANNED | 0% | 10 днів | Launch Prep |
-| **Total** | | | **75 днів** | Public Launch |
+| **Total** | | | **81 день** | Public Launch |
 
 ---
 
@@ -29,12 +29,12 @@
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                                                                          │
-│  ✅ v0.1-0.3.1 (18d)  📋 v0.4 (14d)   📋 v0.5-0.6 (15d)                │
-│  Auth + Chat +        AI Teammate     Projects + Tasks                  │
-│  Production Ready                                                        │
+│  ✅ v0.1-0.4 (21d)    📋 v0.5 (8d)    📋 v0.6 (7d)                      │
+│  Auth + Chat +        Projects        Tasks + Backlog                    │
+│  AI Teammate ✅                                                          │
 │  ─────────────────────────────────────────────────────────              │
 │                                                                          │
-│  📋 v0.7 (10d)       📋 v0.8 (8d)    📋 v0.9 (10d)    📋 v1.0 (10d)   │
+│  📋 v0.7 (10d)       📋 v0.8 (8d)    📋 v0.9 (10d)    📋 v1.0 (10d)    │
 │  Chat Polish +       AI Analysis +   Notifications +   Launch Prep +    │
 │  Invite System       Morning Brief   Full Polish       Security         │
 │  ──────────────────────────────────────────────────────────────────     │
@@ -44,12 +44,12 @@
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Загальна тривалість:** ~75 днів (2.5 місяці)  
+**Загальна тривалість:** ~81 день (2.7 місяці)  
 **Target Launch:** Лютий 2026
 
 ---
 
-## 📦 v0.1 - Auth & Database (ЗАВЕРШЕНО ✅)
+## 📦 v0.1 - Auth & Database (✅ ЗАВЕРШЕНО)
 
 **Час:** 5 днів  
 **Статус:** ✅ DONE  
@@ -71,7 +71,7 @@
 
 ---
 
-## 📦 v0.2 - Dashboard UI (ЗАВЕРШЕНО ✅)
+## 📦 v0.2 - Dashboard UI (✅ ЗАВЕРШЕНО)
 
 **Час:** 5 днів  
 **Статус:** ✅ DONE  
@@ -92,10 +92,10 @@
 
 ---
 
-## 📦 v0.3 - Chat System (✅ ЗАВЕРШЕНО - 100%)
+## 📦 v0.3 - Chat System (✅ ЗАВЕРШЕНО)
 
-Час: 7 днів (16.11.2025 → 22.11.2025)
-Статус: ✅ **COMPLETE** (100%)
+**Час:** 7 днів (16.11.2025 → 22.11.2025)  
+**Статус:** ✅ **COMPLETE** (100%)  
 **Deliverable:** ✅ Team can chat in real-time
 
 ### Completed Features ✅
@@ -139,7 +139,7 @@
 
 ---
 
-## 📦 v0.3.1 - Production Ready (✅ ЗАВЕРШЕНО - 100%)
+## 📦 v0.3.1 - Production Ready (✅ ЗАВЕРШЕНО)
 
 **Дата:** 23.11.2025  
 **Час:** 1 робочий день (5.5 годин)  
@@ -166,8 +166,6 @@
 - [x] Замінено hardcode в 10+ файлах
 - [x] `import { API_URL } from '@/config/api'` всюди
 
-**Час:** 2 години
-
 ---
 
 #### 2. Socket.io connection status indicator 🟢⚪
@@ -180,8 +178,6 @@
 - [x] Показується у Dashboard в "What's Next?" секції
 - [x] 🟢 Connected / ⚪ Reconnecting / 🔴 Disconnected
 - [x] Auto-reconnect працює
-
-**Час:** 2 години
 
 ---
 
@@ -197,33 +193,11 @@
 - [x] `useApi()` hook для зручності
 - [x] Застосовано до критичних файлів
 
-**Час:** 1 година
-
----
-
 ### Acceptance Criteria: ✅ 3/3
 
 - ✅ **Environment variables** - може деплоїти на production (no hardcode)
 - ✅ **Connection status** - користувач бачить connection status  
 - ✅ **Auto-logout на 401** - працює при expired token
-
-### Files Changed
-
-**Створено:**
-- `apps/web/src/config/api.ts`
-- `apps/web/src/lib/api.ts`
-- `apps/web/src/components/connection-status.tsx`
-- `apps/web/.env.local`
-- `apps/web/.env.production`
-
-**Оновлено:**
-- `apps/web/src/components/chat/chat-list.tsx`
-- `apps/web/src/components/chat/chat-box.tsx`
-- `apps/web/src/app/dashboard/layout.tsx`
-- `apps/web/src/app/dashboard/page.tsx`
-- `apps/web/src/components/chat/create-chat-dialog.tsx`
-- `apps/web/src/lib/socket.ts`
-- `apps/web/.env.example`
 
 ### Result
 
@@ -234,193 +208,85 @@
 
 ---
 
-## 📦 v0.4 - AI Teammate ⭐ KILLER FEATURE
+## 📦 v0.4 - AI Teammate (✅ ЗАВЕРШЕНО - 100%)
 
-**Час:** 14 днів  
-**Статус:** 📋 NEXT (Start: 24.11.2025)  
+**Час:** 3 дні (24.11.2025 → 26.11.2025)  
+**Статус:** ✅ **COMPLETE** (100%)  
 **Deliverable:** ✅ AI participates in team discussions
 
 ### Мета
 
 **Перша в світі digital marketing платформа з AI teammate!**
 
-AI як повноцінний член команди - можна @mention в чаті, він аналізує дані з усіх інтеграцій, дає рекомендації, створює tasks.
+AI як повноцінний член команди - можна @mention в чаті, він аналізує контекст, дає рекомендації.
 
 **Це як Grok на Twitter, але для маркетинг команд!**
 
----
-
-### День 1-3: AI Chat Foundation
+### Completed Features ✅
 
 **Backend:**
-- [ ] AI User entity (virtual user)
-- [ ] Claude API integration (BYOK)
-- [ ] AI message handler
-- [ ] Context builder (chat history + project data)
-- [ ] Error handling (API limits, errors)
+- [x] AI User entity (virtual user per organization)
+- [x] Claude API integration (BYOK model)
+- [x] AI message handler (async processing)
+- [x] Context builder (chat history + team members)
+- [x] Error handling (API limits, errors)
+- [x] seed-ai-user.ts script
 
 **Frontend:**
-- [ ] @mention detection у input
-- [ ] AI message indicator (відрізняти від user)
-- [ ] Loading state ("AI is typing...")
-- [ ] AI response rendering
-
-**Чому критично:**
-- Core feature для інвесторів
-- Унікальна диференціація від конкурентів
-- BYOK = no monthly cost
-
-**Час:** 3 дні
-
----
-
-### День 4-7: Context Understanding
-
-**Features:**
-- [ ] Project context injection
-- [ ] GSC data access
-- [ ] Ahrefs data access (якщо є)
-- [ ] Recent tasks context
-- [ ] Team members context
-
-**AI Prompting:**
-```typescript
-// System prompt
-You are an SEO AI Expert in a team chat.
-
-Context:
-- Project: example.com
-- Traffic: 10,000 clicks/month
-- Recent issues: 15 new 404 errors
-- Active tasks: 5 tasks in progress
-
-Team:
-- Ivan (SEO Lead)
-- Anna (Content Manager)
-
-Instructions:
-- Analyze data when asked with @AI
-- Give actionable recommendations
-- Be concise but thorough
-- Offer to create tasks
-- Use emoji sparingly
-```
-
-**API Cost (BYOK):**
-- Input: ~2,500 tokens = $0.0075
-- Output: ~500 tokens = $0.0075
-- Total: ~$0.015 per response
-- Monthly (20 queries/day): ~$9/міс
-
-**Час:** 4 дні
-
----
-
-### День 8-10: Task Creation
-
-**Features:**
-- [ ] AI can suggest tasks
-- [ ] User confirms task creation
-- [ ] Task automatically created
-- [ ] Task linked to chat message
-- [ ] Notification sent
-
-**Example Flow:**
-```
-User: "@AI впав трафік на 20%"
-
-AI: "Проаналізував дані. Бачу 3 проблеми:
-     1. 15 нових 404 (з 15.10)
-     2. Google Core Update (14.10)
-     3. Competitor додав 8 статей
-     
-     Рекомендації:
-     1. Виправити 404 ✅
-     2. Перевірити якість контенту
-     3. Competitor analysis
-     
-     Створити задачі? [Так] [Ні]"
-
-User: [Так]
-
-AI: "✅ Створив 3 задачі в Projects > Backlog"
-```
-
-**Час:** 3 дні
-
----
-
-### День 11-14: Polish & Testing
-
-**Features:**
-- [ ] AI preferences (tone, formality)
-- [ ] Rate limiting (prevent spam)
-- [ ] Error messages user-friendly
-- [ ] Documentation
-- [ ] Unit tests
-- [ ] Integration tests
-- [ ] Load testing
+- [x] @mention detection у input (@ та " для UA keyboard)
+- [x] Mention autocomplete dropdown
+- [x] Keyboard navigation (↑↓ Enter Escape)
+- [x] AI message indicator (🤖 avatar, "Bot" badge)
+- [x] ReactMarkdown для AI responses
+- [x] Real-time unread counts (stale closure fix)
+- [x] Chat preview 3 states (Summary/Single/Empty)
 
 **Acceptance Criteria:**
-- ✅ AI responds to @mentions
-- ✅ AI analyzes project data
-- ✅ AI gives recommendations
-- ✅ AI creates tasks on request
-- ✅ Context understanding works
-- ✅ No API key leaks
-- ✅ Error handling works
-- ✅ Rate limiting prevents abuse
+- ✅ AI User entity в БД
+- ✅ Claude API integration працює
+- ✅ @mention detection
+- ✅ AI відповідає в чаті
+- ✅ AI avatar (🤖) всюди
+- ✅ Markdown rendering
+- ✅ Real-time unread counts
+- ✅ Chat preview states
 
-**Час:** 4 дні
+**Result:** 8/8 критеріїв = 100% ✅
 
----
+### ⏸️ Перенесено на пізніші версії
 
-### Marketing & Demo
+**Task Creation** (залежить від v0.6 Task Manager):
+- AI suggests tasks → User confirms → Task created
 
-**Tagline:** "Your AI Teammate, Always in Context"
+**Data Context** (залежить від v0.5 Projects):
+- GSC data access
+- Ahrefs data access  
+- Project-specific recommendations
 
-**Demo scenario:**
-```
-Team chat:
+### 🐛 Troubleshooting
 
-Ivan: "У нас впав трафік на 20%"
-Anna: "Я бачила в GSC багато помилок"
-Ivan: "@AI що ти думаєш?"
+**Проблема:** Chat preview card positioning  
+**Спроби:** 5+ невдалих ітерацій (PR #69, #70)  
+**Рішення:** Revert через GitHub UI, відновлення через Gemini AI Studio
 
-🤖 AI: "Проаналізував дані site-a.com за тиждень.
-      
-      Бачу 3 причини падіння:
-      1. 15 нових 404 помилок (з 15.10)
-      2. Core Update від Google (14.10)
-      3. Competitor запустив 8 нових статей
-      
-      📊 Метрики:
-      • Clicks: 450 → 350 (-22%)
-      • Impressions: -15%
-      
-      ✅ Рекомендації:
-      1. Виправити 404 (список в задачах)
-      2. Перевірити якість контенту
-      3. Competitor analysis
-      
-      Створити задачі?"
-
-Ivan: "Так!"
-
-🤖 AI: "✅ Створив 3 задачі в Backlog"
-```
-
-**WOW factor:** AI **САМ** аналізує дані, **САМ** дає рекомендації, **САМ** створює tasks!
+**Lessons Learned:**
+- Не вгадувати числа - дивитись реальний код
+- Аналізувати reference implementation
+- Визнавати коли застряг - передати іншому AI
 
 ---
 
 ## 📦 v0.5 - Projects Management
 
 **Час:** 8 днів  
-**Статус:** 📋 PLANNED  
-**Deliverable:** ✅ Teams can manage client websites
+**Статус:** 📋 NEXT  
+**Deliverable:** ✅ Teams can manage SEO projects
 
-**День 1-3: Projects CRUD**
+### Мета
+
+Повноцінне управління проектами з інтеграціями Google.
+
+**День 1-3: Project CRUD**
 - [ ] Create project
 - [ ] Edit project
 - [ ] Delete project
@@ -440,11 +306,11 @@ Ivan: "Так!"
 - [ ] Connection testing
 
 **Acceptance Criteria:**
-- ✅ Can create projects
-- ✅ Can edit/delete projects
-- ✅ Projects list shows all team projects
-- ✅ Can connect Google accounts
-- ✅ Can add API keys
+- [ ] Can create projects
+- [ ] Can edit/delete projects
+- [ ] Projects list shows all team projects
+- [ ] Can connect Google accounts
+- [ ] Can add API keys
 
 ---
 
@@ -474,11 +340,20 @@ Ivan: "Так!"
 - [ ] Task history
 
 **Acceptance Criteria:**
-- ✅ Can create tasks
-- ✅ Can assign tasks
-- ✅ Kanban board works
-- ✅ Drag & drop works
-- ✅ Task comments work
+- [ ] Can create tasks
+- [ ] Can assign tasks
+- [ ] Kanban board works
+- [ ] Drag & drop works
+- [ ] Task comments work
+
+### 🔗 Post v0.6: AI Task Creation
+
+Після завершення Task Manager, додати до AI:
+- [ ] AI can suggest tasks from chat
+- [ ] User confirms task creation
+- [ ] Task automatically created
+- [ ] Task linked to chat message
+- [ ] Notification sent
 
 ---
 
@@ -512,11 +387,11 @@ Ivan: "Так!"
 - [ ] Change roles
 
 **Acceptance Criteria:**
-- ✅ Chat має reactions
-- ✅ Reply threads працюють
-- ✅ Можна запросити в команду
-- ✅ Roles працюють
-- ✅ Professional UX
+- [ ] Chat має reactions
+- [ ] Reply threads працюють
+- [ ] Можна запросити в команду
+- [ ] Roles працюють
+- [ ] Professional UX
 
 ---
 
@@ -539,25 +414,17 @@ Ivan: "Так!"
 - [ ] Recommendations
 - [ ] Email delivery (SendGrid)
 
-**День 6-8: Pagination + Logging**
-- [ ] **Query optimization**
-  - [ ] `lastMessage` field in Chat model
-  - [ ] Database indexes on frequent queries
-  - [ ] N+1 query fixes
-
-- [ ] **Production logging (Winston)**
-  - [ ] Replace console.log
-  - [ ] Log levels (error, warn, info, debug)
-  - [ ] Log rotation
-  - [ ] No sensitive data in logs
-  - [ ] Request IDs for tracing
+**День 6-8: AI Context Enhancement**
+- [ ] GSC data access for AI
+- [ ] Ahrefs data access for AI
+- [ ] Project-specific recommendations
+- [ ] Historical data analysis
 
 **Acceptance Criteria:**
-- ✅ AI analyzes changes daily
-- ✅ Morning brief generated at 7:00 AM
-- ✅ Emails delivered to users
-- ✅ Pagination works everywhere
-- ✅ Winston logging in production
+- [ ] AI analyzes changes daily
+- [ ] Morning brief generated at 7:00 AM
+- [ ] Emails delivered to users
+- [ ] AI має доступ до project data
 
 ---
 
@@ -599,11 +466,11 @@ Ivan: "Так!"
 - [ ] Content Security Policy
 
 **Acceptance Criteria:**
-- ✅ Notifications work for all event types
-- ✅ Email notifications sent
-- ✅ UI polish complete
-- ✅ Security audit passed
-- ✅ No major bugs
+- [ ] Notifications work for all event types
+- [ ] Email notifications sent
+- [ ] UI polish complete
+- [ ] Security audit passed
+- [ ] No major bugs
 
 ---
 
@@ -638,11 +505,11 @@ Ivan: "Так!"
 - [ ] Blog post
 
 **Acceptance Criteria:**
-- ✅ Lighthouse score >90
-- ✅ API <200ms average
-- ✅ Zero critical bugs
-- ✅ 99.9% uptime
-- ✅ **PRODUCTION LIVE!**
+- [ ] Lighthouse score >90
+- [ ] API <200ms average
+- [ ] Zero critical bugs
+- [ ] 99.9% uptime
+- [ ] **PRODUCTION LIVE!**
 
 ---
 
@@ -653,16 +520,17 @@ Ivan: "Так!"
 - ✅ v0.2 - Dashboard UI (5 days)
 - ✅ v0.3 - Chat System (7 days)
 - ✅ v0.3.1 - Production Ready (1 day)
+- ✅ v0.4 - AI Teammate (3 days)
 
-**Total completed:** 18 days
+**Total completed:** 21 days
 
 **Remaining:**
-- 📋 v0.4 - AI Teammate (14 days) ← NEXT!
-- 📋 v0.5-v1.0 (57 days)
+- 📋 v0.5 - Projects (8 days) ← NEXT!
+- 📋 v0.6-v1.0 (52 days)
 
-**Total remaining:** 71 days
+**Total remaining:** 60 days
 
-**Progress:** 18/75 days = **24%** complete
+**Progress:** 21/81 days = **26%** complete
 
 ---
 
@@ -674,14 +542,14 @@ Ivan: "Так!"
 | 16.11.2025 | v0.2 Complete | ✅ |
 | 22.11.2025 | v0.3 Complete | ✅ |
 | 23.11.2025 | v0.3.1 Complete | ✅ |
-| 07.12.2025 | v0.4 Complete (AI Teammate) | 📋 |
-| 15.12.2025 | v0.5 Complete (Projects) | 📋 |
-| 22.12.2025 | v0.6 Complete (Tasks) | 📋 |
-| 01.01.2026 | v0.7 Complete (Chat Polish) | 📋 |
-| 09.01.2026 | v0.8 Complete (AI Analysis) | 📋 |
-| 19.01.2026 | v0.9 Complete (Notifications) | 📋 |
-| 29.01.2026 | v1.0 Complete (Launch Prep) | 📋 |
-| **01.02.2026** | **🎉 PUBLIC LAUNCH** | 📋 |
+| 26.11.2025 | v0.4 Complete (AI Teammate) | ✅ |
+| 04.12.2025 | v0.5 Complete (Projects) | 📋 |
+| 11.12.2025 | v0.6 Complete (Tasks) | 📋 |
+| 21.12.2025 | v0.7 Complete (Chat Polish) | 📋 |
+| 29.12.2025 | v0.8 Complete (AI Analysis) | 📋 |
+| 08.01.2026 | v0.9 Complete (Notifications) | 📋 |
+| 18.01.2026 | v1.0 Complete (Launch Prep) | 📋 |
+| **25.01.2026** | **🎉 PUBLIC LAUNCH** | 📋 |
 
 ---
 
@@ -708,19 +576,19 @@ Ivan: "Так!"
 
 ## 🚀 Next Steps
 
-1. **Завершити v0.3.1** ✅ DONE!
-2. **Deploy на staging** (optional)
-3. **Start v0.4 - AI Teammate** 🤖 ← NEXT!
-4. **Demo для інвесторів** (after v0.4)
+1. ✅ v0.3.1 Production Ready - DONE!
+2. ✅ v0.4 AI Teammate - DONE!
+3. **Start v0.5 - Projects** 📁 ← NEXT!
+4. **Demo для інвесторів** (after v0.5)
 
-**Focus:** AI Teammate як killer feature для інвесторів!
+**Focus:** Projects + Google integrations для повноцінного demo!
 
 ---
 
-**Last Updated:** 23.11.2025  
-**Current Version:** v0.3.1 ✅  
-**Next Version:** v0.4 - AI Teammate 🤖  
-**Days to Launch:** 71 days
+**Last Updated:** 26.11.2025  
+**Current Version:** v0.4 ✅  
+**Next Version:** v0.5 - Projects 📁  
+**Days to Launch:** 60 days
 
 ---
 

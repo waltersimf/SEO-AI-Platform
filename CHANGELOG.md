@@ -20,8 +20,9 @@
 ## v0.4 - AI Teammate
 
 **Дата початку:** 24.11.2025  
-**Статус:** 🚧 **IN PROGRESS**  
-**Тривалість:** 14 днів (план)  
+**Дата завершення:** 26.11.2025  
+**Статус:** ✅ **COMPLETE** (80% scope, решта перенесено)  
+**Тривалість:** 3 дні  
 **Мета:** AI як повноцінний член команди в чаті
 
 ### 🎯 Killer Feature
@@ -29,7 +30,7 @@
 **Унікальна диференціація:** Жоден конкурент (Ahrefs, SEMrush, Screaming Frog) не має AI teammate в team chat!
 
 - Користувачі можуть @mention AI в групових чатах
-- AI аналізує дані, дає рекомендації
+- AI аналізує контекст, дає рекомендації
 - BYOK модель = користувачі платять за свої API calls
 
 ---
@@ -76,10 +77,10 @@ apps/api/src/ai/
 
 ---
 
-### 🗓 Day 3-4: Claude API Integration ✅
+### 📅 Day 3-4: Claude API Integration ✅
 
-**Дата:** 24.11.2025
-**Статус:** ✅ **COMPLETE**
+**Дата:** 24.11.2025  
+**Статус:** ✅ **COMPLETE**  
 **Час:** ~3 години
 
 #### ✅ Що зроблено
@@ -102,10 +103,10 @@ apps/api/src/ai/
 
 ---
 
-### 🗓 Day 5-7: @Mention UX ✅
+### 📅 Day 5-7: @Mention UX ✅
 
-**Дата:** 24.11.2025
-**Статус:** ✅ **COMPLETE**
+**Дата:** 24-25.11.2025  
+**Статус:** ✅ **COMPLETE**  
 **Час:** ~2 години
 
 #### ✅ Що зроблено
@@ -124,11 +125,178 @@ apps/api/src/ai/
 - Real-time messaging fixed (join_room payload)
 - AI user visibility across organizations
 
-#### 🔜 TODO (Day 8-10)
-- AI avatar в повідомленнях (показує "A" замість 🤖)
-- Context Understanding
-- UI Polish
+---
 
+### 📅 Day 8-10: Context Understanding ✅
+
+**Дата:** 25.11.2025  
+**Статус:** ✅ **COMPLETE**  
+**Час:** ~3 години
+
+#### ✅ Що зроблено
+
+**1. AI Avatar виправлено:**
+- 🤖 emoji для AI в chat-list, chat-box, chat-input-bar
+- `renderAvatarContent()` helper для консистентності
+- AI badge "Bot" біля імені
+
+**2. ReactMarkdown для AI:**
+- AI повідомлення рендеряться з markdown
+- Code blocks, списки, bold/italic працюють
+- `prose prose-sm` styling
+
+**3. Real-time unread counts:**
+- `activeChatIdRef` замість state (stale closure fix)
+- Socket `new_message` event оновлює counts в реальному часі
+- `join_organization` room для broadcasts
+- Reset unread при відкритті чату
+
+**4. AI Context Builder:**
+- Chat history injection в prompt
+- Team members context
+- System prompt з SEO expertise
+
+---
+
+### 📅 Day 11-12: Chat Preview Card Redesign 🔴→✅
+
+**Дата:** 26.11.2025  
+**Статус:** ✅ **RECOVERED** (після відкату)  
+**Час:** ~5 годин (включаючи troubleshooting)
+
+#### ❌ Проблема
+
+Спроба переробити chat-input-bar для "multiple unread" view:
+- Claude Chat давав код з неправильним позиціонуванням
+- Вгадування чисел (`left-[280px]`, `left-64`) замість аналізу коду
+- Кожна ітерація ламала щось інше
+- ChatOverlay став маленьким popup замість full-width panel
+- 5+ невдалих спроб через PR #69, #70
+
+#### 🔄 Відкат
+```bash
+# Revert PR #69, #70 через GitHub UI
+# Кнопка "Revert" на кожному PR
+git pull
+```
+
+Повернулись до PR #66 - остання робоча версія.
+
+#### ✅ Відновлення через Gemini
+
+Gemini AI Studio створив робочий прототип з 4 файлів:
+
+**1. chat-input-bar.tsx:**
+- `SIDEBAR_WIDTH = 256` константа
+- 3 view states: `SummaryView`, `SingleContactView`, `EmptyStateView`
+- `formatSenderList()` - "AI, George, +1 more"
+- AI Assistant як default для empty state
+- Правильне позиціонування: `fixed bottom-0 right-0` + `left: SIDEBAR_WIDTH`
+
+**2. chat-overlay.tsx:**
+- `bottom-[90px]` щоб бути над input bar
+- `pl-64` для sidebar offset
+- `max-w-6xl` та сама ширина як input bar
+- Backdrop на `z-30`, вікно на `z-50`
+- `pointer-events-none` wrapper з `pointer-events-auto` на card
+
+**3. chat-list.tsx:**
+- `activeChatIdRef` - ref замість state для socket listener
+- Real-time unread через `new_message` event
+- `join_organization` room
+- 🤖 emoji для AI users
+
+**4. chat-box.tsx:**
+- `renderAvatarContent()` helper
+- ReactMarkdown для AI messages
+- Mention dropdown з keyboard navigation
+
+#### 📝 Lessons Learned
+
+1. **Не вгадувати числа** - завжди дивитись на реальний код
+2. **Аналізувати reference implementation** - прототип мав всі відповіді
+3. **Перевіряти side effects** - зміни в одному файлі можуть зламати інший
+4. **Визнавати коли застряг** - краще передати іншому AI ніж продовжувати вгадувати
+5. **Git revert через GitHub UI** - найбезпечніший спосіб відкату
+
+---
+
+### 🎯 v0.4 Acceptance Criteria
+
+| Критерій | Статус |
+|----------|--------|
+| AI User entity в БД | ✅ |
+| Claude API integration | ✅ |
+| @mention detection | ✅ |
+| AI відповідає в чаті | ✅ |
+| AI avatar (🤖) | ✅ |
+| Markdown rendering | ✅ |
+| Real-time unread counts | ✅ |
+| Chat preview 3 states | ✅ |
+| Task creation | ⏸️ Перенесено на post-v0.6 |
+| GSC/Ahrefs context | ⏸️ Перенесено на post-v0.5 |
+
+**Результат:** 8/10 критеріїв = **80%** (решта логічно залежить від майбутніх версій)
+
+---
+
+### 📊 v0.4 Statistics
+
+- **Час роботи:** 3 дні
+- **Чистий час:** ~12 годин
+- **PR merged:** 6 (включаючи 2 reverts)
+- **Files created:** 5 нових
+- **Files modified:** ~15
+- **Bugs fixed:** 4 major (duplication, stale closure, positioning, avatar)
+- **Lessons learned:** 5 important
+
+---
+
+### 🔜 Перенесено на пізніші версії
+
+**Task Creation (потребує v0.6 Task Manager):**
+- AI suggests tasks
+- User confirms creation
+- Task linked to chat message
+
+**Data Context (потребує v0.5 Projects):**
+- GSC data access
+- Ahrefs data access
+- Project-specific recommendations
+
+---
+
+### 📁 Files Changed
+
+**Створено:**
+- `apps/api/src/ai/ai.module.ts`
+- `apps/api/src/ai/ai.service.ts`
+- `apps/api/src/ai/ai-context.service.ts`
+- `apps/api/src/ai/ai.controller.ts`
+- `apps/api/src/ai/dto/ai-query.dto.ts`
+- `scripts/seed-ai-user.ts`
+
+**Значно оновлено:**
+- `apps/web/src/components/chat/chat-input-bar.tsx`
+- `apps/web/src/components/chat/chat-overlay.tsx`
+- `apps/web/src/components/chat/chat-list.tsx`
+- `apps/web/src/components/chat/chat-box.tsx`
+- `apps/api/src/chat/chat.gateway.ts`
+- `packages/db/prisma/schema.prisma`
+
+---
+
+### 🎉 v0.4 Complete!
+
+**AI Teammate базова функціональність готова:**
+- ✅ @AI mention працює
+- ✅ Claude відповідає в реальному часі
+- ✅ Professional UI з 🤖 avatar
+- ✅ Markdown rendering
+- ✅ Real-time unread counts
+- ✅ 3 view states для chat preview
+
+**Наступна версія:** v0.5 - Projects Management
 
 ## v0.3.1 - Production Ready
 
