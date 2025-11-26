@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Plus, MessageCircle, User, Users, Trash2 } from "lucide-react";
+import { Plus, User, Users, Trash2 } from "lucide-react";
 import { io } from "socket.io-client";
 import { DeleteChatDialog } from "./delete-chat-dialog";
 import { API_URL, SOCKET_URL } from "@/config/api";
@@ -274,9 +274,8 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
     return onlineUsers.includes(userId);
   };
 
-  // Separate direct and group chats
+  // Separate direct chats
   const directChats = chats.filter(chat => chat.type === 'direct');
-  const groupChats = chats.filter(chat => chat.type !== 'direct');
 
   // Helper: Get direct chat for a specific user
   const getDirectChatForUser = (userId: string): Chat | undefined => {
@@ -520,7 +519,7 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
           </div>
         ) : (
           <div className="divide-y">
-            {unifiedList.map((item, index) => {
+            {unifiedList.map((item) => {
               if (item.type === 'chat') {
                 return renderChatItem(item.data);
               } else {
