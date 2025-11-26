@@ -28,21 +28,6 @@ interface OrganizationUser {
   isAI?: boolean;
 }
 
-// ⭐ ДОДАНО: ХЕЛПЕР-ФУНКЦІЯ для відображення аватара
-const renderAvatarContent = (user: { name: string; avatar?: string; isAI?: boolean }) => {
-    // Якщо це AI, завжди показуємо робота
-    if (user.isAI) {
-        return <span className="text-lg">🤖</span>; 
-    }
-    // Інакше, показуємо існуючий аватар
-    if (user.avatar) {
-        return <span className="text-lg">{user.avatar}</span>;
-    }
-    // Або ініціали
-    return <span className="text-xs font-semibold">{user.name[0]}</span>;
-};
-
-
 export function ChatBox({
   chatId,
   userId,
