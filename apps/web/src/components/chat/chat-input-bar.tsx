@@ -117,9 +117,7 @@ export function ChatInputBar({
       <div className="p-4 border-b border-gray-100 flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition-colors">
         {/* Avatar */}
         <div className="relative">
-          <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-sm ${
-            isAi ? 'bg-gradient-to-br from-indigo-500 to-purple-600' : 'bg-blue-500'
-          }`}>
+          <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm bg-blue-500">
             {isAi ? (
               <span className="text-2xl">🤖</span>
             ) : (
@@ -146,7 +144,7 @@ export function ChatInputBar({
             <span className="font-semibold text-gray-900">{contact.name}</span>
             {/* Bot badge */}
             {isAi && (
-              <span className="px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-xs font-medium rounded border border-indigo-100">
+              <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-xs font-medium rounded border border-blue-100">
                 Bot
               </span>
             )}
