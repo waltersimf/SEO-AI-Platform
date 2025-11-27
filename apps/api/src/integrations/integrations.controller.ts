@@ -8,6 +8,7 @@ import {
   Req,
   Res,
   Query,
+  NotFoundException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { IntegrationsService } from './integrations.service';
@@ -31,7 +32,22 @@ export class IntegrationsController {
   @UseGuards(JwtAuthGuard)
   async getOne(@Req() req, @Param('provider') provider: string) {
     const organizationId = req.user.organizationId;
-    return this.integrationsService.findOne(organizationId, provider);
+    const integration = await this.integrationsService.findOne(organizationId, provider);
+
+    if (!integration) {
+      throw new NotFoundException(`Integration for ${provider} not found`);
+    }
+
+    // Return a clean response without exposing tokens
+    return {
+      id: integration.id,
+      provider: integration.provider,
+      connected: true,
+      scopes: integration.scopes,
+      metadata: integration.metadata,
+      createdAt: integration.createdAt,
+      updatedAt: integration.updatedAt,
+    };
   }
 
   // Delete integration
