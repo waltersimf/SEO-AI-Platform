@@ -8,7 +8,6 @@ import {
   Req,
   Res,
   Query,
-  InternalServerErrorException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { IntegrationsService } from './integrations.service';
@@ -146,7 +145,7 @@ googleConnect(@Res() res) {
         }
       }
     } catch (error) {
-      console.error('Error fetching GSC properties:', error.message);
+      console.error('Error fetching GSC properties:', error instanceof Error ? error.message : error);
     }
 
     // Fetch GA4 properties
@@ -169,7 +168,7 @@ googleConnect(@Res() res) {
         }
       }
     } catch (error) {
-      console.error('Error fetching GA4 properties:', error.message);
+      console.error('Error fetching GA4 properties:', error instanceof Error ? error.message : error);
     }
 
     return {
