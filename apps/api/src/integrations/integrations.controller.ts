@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Delete,
+  Post,
   Param,
   UseGuards,
   Req,
@@ -190,5 +191,108 @@ export class IntegrationsController {
       gscProperties,
       gaProperties,
     };
+  }
+
+  // Helper to get OAuth2 client for Google APIs
+  private async getGoogleOAuth2Client(organizationId: string) {
+    const integration = await this.integrationsService.findOne(organizationId, 'google');
+    if (!integration) {
+      throw new BadRequestException('Google account not connected');
+    }
+
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+    );
+
+    oauth2Client.setCredentials({
+      access_token: integration.accessToken,
+      refresh_token: integration.refreshToken,
+    });
+
+    return oauth2Client;
+  }
+
+  // Get Google Drive files
+  @Get('google/drive/files')
+  @UseGuards(JwtAuthGuard)
+  async getDriveFiles(@Req() req) {
+    const organizationId = req.user.organizationId;
+    const oauth2Client = await this.getGoogleOAuth2Client(organizationId);
+
+    try {
+      const drive = google.drive({ version: 'v3', auth: oauth2Client });
+      const response = await drive.files.list({
+        pageSize: 10,
+        fields: 'files(id, name, mimeType, webViewLink)',
+      });
+
+      return {
+        files: response.data.files || [],
+      };
+    } catch (error) {
+      console.error('Error fetching Drive files:', error instanceof Error ? error.message : error);
+      throw new BadRequestException('Failed to fetch Drive files');
+    }
+  }
+
+  // Create a test Google Doc
+  @Post('google/docs/create')
+  @UseGuards(JwtAuthGuard)
+  async createTestDoc(@Req() req) {
+    const organizationId = req.user.organizationId;
+    const oauth2Client = await this.getGoogleOAuth2Client(organizationId);
+
+    try {
+      const docs = google.docs({ version: 'v1', auth: oauth2Client });
+      const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+      const response = await docs.documents.create({
+        requestBody: {
+          title: `Forgeline Test Doc - ${timestamp}`,
+        },
+      });
+
+      const documentId = response.data.documentId;
+
+      return {
+        documentId,
+        title: response.data.title,
+        webViewLink: `https://docs.google.com/document/d/${documentId}/edit`,
+      };
+    } catch (error) {
+      console.error('Error creating Google Doc:', error instanceof Error ? error.message : error);
+      throw new BadRequestException('Failed to create Google Doc');
+    }
+  }
+
+  // Create a test Google Sheet
+  @Post('google/sheets/create')
+  @UseGuards(JwtAuthGuard)
+  async createTestSheet(@Req() req) {
+    const organizationId = req.user.organizationId;
+    const oauth2Client = await this.getGoogleOAuth2Client(organizationId);
+
+    try {
+      const sheets = google.sheets({ version: 'v4', auth: oauth2Client });
+      const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+      const response = await sheets.spreadsheets.create({
+        requestBody: {
+          properties: {
+            title: `Forgeline Test Sheet - ${timestamp}`,
+          },
+        },
+      });
+
+      return {
+        spreadsheetId: response.data.spreadsheetId,
+        title: response.data.properties?.title,
+        webViewLink: response.data.spreadsheetUrl,
+      };
+    } catch (error) {
+      console.error('Error creating Google Sheet:', error instanceof Error ? error.message : error);
+      throw new BadRequestException('Failed to create Google Sheet');
+    }
   }
 }
