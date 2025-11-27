@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { io } from 'socket.io-client';
 import { Sidebar } from '@/components/sidebar';
 import { CreateChatDialog } from '@/components/chat/create-chat-dialog';
@@ -18,7 +18,11 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
+
+  // Only show chat on main dashboard and chat pages
+  const showChat = pathname === '/dashboard' || pathname.startsWith('/dashboard/chat');
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -165,7 +169,7 @@ export default function DashboardLayout({
         <Sidebar />
         <main className="flex-1">{children}</main>
 
-        {user && (
+        {user && showChat && (
           <ChatInputBar
             isOpen={isChatOpen}
             onToggle={() => setIsChatOpen(!isChatOpen)}
@@ -174,7 +178,7 @@ export default function DashboardLayout({
           />
         )}
 
-        {user && (
+        {user && showChat && (
           <ChatOverlay
             isOpen={isChatOpen}
             onClose={() => setIsChatOpen(false)}
@@ -189,7 +193,7 @@ export default function DashboardLayout({
           />
         )}
 
-        {notificationBubble && (
+        {showChat && notificationBubble && (
           <ChatNotificationBubble
             chatId={notificationBubble.chatId}
             senderName={notificationBubble.senderName}
@@ -199,7 +203,7 @@ export default function DashboardLayout({
           />
         )}
 
-        {user && (
+        {user && showChat && (
           <CreateChatDialog
             isOpen={isCreateDialogOpen}
             onClose={() => setIsCreateDialogOpen(false)}
