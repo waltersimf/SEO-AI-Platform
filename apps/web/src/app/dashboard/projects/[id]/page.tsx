@@ -441,7 +441,10 @@ export default function ProjectDetailPage() {
                         Connect your Google account to link Search Console and Analytics properties.
                       </p>
                       <Button
-                        onClick={() => window.location.href = `${API_URL}/api/integrations/google/connect`}
+                        onClick={() => {
+                          const token = localStorage.getItem('token');
+                          window.location.href = `${API_URL}/api/integrations/google/connect?token=${token}`;
+                        }}
                       >
                         Connect Google Account
                       </Button>

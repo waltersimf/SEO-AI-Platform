@@ -59,13 +59,12 @@ export class IntegrationsController {
   }
 
   // Google OAuth: Initiate
-@Get('google/connect')
-// @UseGuards(JwtAuthGuard)  // TODO v0.3: Enable when cookies auth is ready
-googleConnect(@Res() res) {
-  // TODO v0.3: Get from req.user.organizationId when JWT guard enabled
-  const organizationId = 'cmi03mh7f0001nuvzjw3w1oq8';
+  @Get('google/connect')
+  @UseGuards(JwtAuthGuard)
+  googleConnect(@Req() req, @Res() res) {
+    const organizationId = req.user.organizationId;
 
-  const state = Buffer.from(JSON.stringify({ organizationId })).toString('base64');
+    const state = Buffer.from(JSON.stringify({ organizationId })).toString('base64');
 
   const scopes = [
     'email',
