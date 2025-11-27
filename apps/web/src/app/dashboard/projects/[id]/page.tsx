@@ -104,10 +104,14 @@ export default function ProjectDetailPage() {
 
       if (response.ok) {
         const data = await response.json();
-        if (data) {
+        // Check for connected flag in response
+        if (data && data.connected) {
           setGoogleConnected(true);
           fetchGoogleProperties(token);
         }
+      } else if (response.status === 404) {
+        // Integration not found - not connected
+        setGoogleConnected(false);
       }
     } catch (err) {
       console.error('Error checking Google connection:', err);
