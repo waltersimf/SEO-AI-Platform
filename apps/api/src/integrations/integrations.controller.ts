@@ -89,7 +89,7 @@ googleConnect(@Res() res) {
       throw new BadRequestException('Invalid state parameter');
     }
     
-    await this.integrationsService.create({
+    await this.integrationsService.createOrUpdate({
       organizationId,
       provider: 'google',
       accessToken,
