@@ -14,7 +14,7 @@ import {
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Projects', href: '/projects', icon: FolderKanban, disabled: true },
+  { name: 'Projects', href: '/dashboard/projects', icon: FolderKanban },
   { name: 'Tasks', href: '/tasks', icon: CheckSquare, disabled: true },
   { name: 'Chat', href: '/chat', icon: MessageSquare, disabled: true },
   { name: 'Settings', href: '/settings', icon: Settings, disabled: true },
@@ -40,7 +40,7 @@ export function Sidebar() {
         <nav className="flex-1 space-y-1 px-4">
           {navigation.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href;
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
             const isDisabled = item.disabled;
 
             return (
