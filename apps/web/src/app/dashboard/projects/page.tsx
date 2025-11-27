@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ProjectCard } from '@/components/projects/project-card';
 import { Plus, FolderKanban } from 'lucide-react';
+import { API_URL } from '@/config/api';
 
 interface Project {
   id: string;
@@ -31,7 +32,7 @@ export default function ProjectsPage() {
 
   const fetchProjects = async (token: string) => {
     try {
-      const response = await fetch('/api/projects', {
+      const response = await fetch(`${API_URL}/api/projects`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

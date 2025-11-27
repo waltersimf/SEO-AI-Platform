@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Globe, Calendar, Pencil, Trash2, Tag, Users } from 'lucide-react';
+import { API_URL } from '@/config/api';
 
 interface Project {
   id: string;
@@ -40,7 +41,7 @@ export default function ProjectDetailPage() {
 
   const fetchProject = async (token: string) => {
     try {
-      const response = await fetch(`/api/projects/${projectId}`, {
+      const response = await fetch(`${API_URL}/api/projects/${projectId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -77,7 +78,7 @@ export default function ProjectDetailPage() {
     setDeleting(true);
 
     try {
-      const response = await fetch(`/api/projects/${projectId}`, {
+      const response = await fetch(`${API_URL}/api/projects/${projectId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
