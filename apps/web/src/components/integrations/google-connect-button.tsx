@@ -17,16 +17,18 @@ export function GoogleConnectButton() {
   const checkConnection = async () => {
     try {
       const data = await apiFetch(`${API_URL}/api/integrations/google`);
-      setIsConnected(!!data);
+      setIsConnected(data && data.connected);
     } catch (error) {
-      console.error('Error checking connection:', error);
+      // 404 means not connected, which is expected
+      setIsConnected(false);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleConnect = () => {
-    window.location.href = `${API_URL}/api/integrations/google/connect`;
+    const token = localStorage.getItem('token');
+    window.location.href = `${API_URL}/api/integrations/google/connect?token=${token}`;
   };
 
   if (isLoading) {
