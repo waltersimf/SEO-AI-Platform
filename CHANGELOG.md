@@ -1,19 +1,308 @@
 # 📦 CHANGELOG
 
-**Версія документу:** 5.0  
-**Останнє оновлення:** 24.11.2025  
-**Поточна версія:** v0.4 🚧 **IN PROGRESS**
+**Версія документу:** 6.0  
+**Останнє оновлення:** 27.11.2025  
+**Поточна версія:** v0.5 ✅ **COMPLETE**
 
 ---
 
 ## 📋 Зміст
 
-- [Поточна версія (v0.4)](#v04---ai-teammate)
+- [Поточна версія (v0.5)](#v05---projects-management--google-integration)
+- [v0.4 - AI Teammate](#v04---ai-teammate)
 - [v0.3.1 - Production Ready](#v031---production-ready)
 - [v0.3 - Chat Infrastructure](#v03---chat-infrastructure)
-- [Що реалізовано](#-що-реалізовано-100)
 - [Наступні кроки](#-наступні-кроки)
 - [Історія версій](#-історія-версій)
+
+---
+
+## v0.5 - Projects Management & Google Integration
+
+**Дата початку:** 27.11.2025  
+**Дата завершення:** 27.11.2025  
+**Статус:** ✅ **COMPLETE** (100%)  
+**Тривалість:** 1 день  
+**Мета:** Повноцінне управління проектами з Google інтеграціями
+
+### 🎯 Основні досягнення
+
+**Унікальність:** Всі Google інтеграції на рівні Organization (один OAuth для всіх проектів)
+
+- Projects CRUD з повним функціоналом
+- Google OAuth з 5 сервісами (GSC, GA4, Drive, Docs, Sheets)
+- Settings page для управління інтеграціями
+- Property selector для GSC/GA4 на Project level
+
+---
+
+### 📅 Projects Management ✅
+
+**Статус:** ✅ **COMPLETE**
+
+#### ✅ Що зроблено
+
+**1. Backend (NestJS):**
+```
+apps/api/src/projects/
+├── projects.module.ts
+├── projects.controller.ts
+├── projects.service.ts
+├── dto/create-project.dto.ts
+└── dto/update-project.dto.ts
+```
+
+**Endpoints:**
+- `GET /api/projects` — список проектів організації
+- `POST /api/projects` — створити проект
+- `GET /api/projects/:id` — деталі проекту
+- `PATCH /api/projects/:id` — оновити проект
+- `DELETE /api/projects/:id` — видалити проект (soft delete)
+
+**2. Database Schema:**
+```prisma
+model Project {
+  id             String   @id @default(cuid())
+  name           String
+  domain         String
+  organizationId String
+  targetKeywords String[]
+  competitors    String[]
+  gscPropertyUrl String?
+  gaPropertyId   String?
+  isDeleted      Boolean  @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+```
+
+**3. Frontend Pages:**
+- `/dashboard/projects` — список проектів з карточками
+- `/dashboard/projects/new` — форма створення
+- `/dashboard/projects/[id]` — деталі проекту
+- `/dashboard/projects/[id]/edit` — редагування
+
+**4. UI Features:**
+- Project cards з domain та датою
+- Target keywords tags
+- Competitors list
+- Edit/Delete buttons
+- Google Integration card з property selector
+
+---
+
+### 📅 Google Integration (Organization-level) ✅
+
+**Статус:** ✅ **COMPLETE**
+
+#### ✅ Архітектура
+
+```
+Organization (Компанія)
+│
+├── Google Integration ← ОДИН OAuth для всієї організації
+│   ├── accessToken (encrypted)
+│   ├── refreshToken (encrypted)
+│   └── scopes: [GSC, GA4, Drive, Docs, Sheets]
+│
+├── Project: site-a.com
+│   ├── gscPropertyUrl: "https://site-a.com/"
+│   └── gaPropertyId: "123456"
+│
+└── Project: site-b.com
+    ├── gscPropertyUrl: "https://site-b.com/"
+    └── gaPropertyId: "789012"
+```
+
+#### ✅ OAuth Scopes
+
+```typescript
+const scopes = [
+  'https://www.googleapis.com/auth/webmasters.readonly',   // GSC
+  'https://www.googleapis.com/auth/analytics.readonly',    // GA4
+  'https://www.googleapis.com/auth/drive.file',            // Drive
+  'https://www.googleapis.com/auth/documents',             // Docs
+  'https://www.googleapis.com/auth/spreadsheets',          // Sheets
+  'https://www.googleapis.com/auth/userinfo.email',
+  'https://www.googleapis.com/auth/userinfo.profile'
+];
+```
+
+#### ✅ Backend Endpoints
+
+**Integration Management:**
+- `GET /api/integrations` — список інтеграцій
+- `GET /api/integrations/:provider` — статус інтеграції
+- `DELETE /api/integrations/:provider` — disconnect
+
+**Google OAuth:**
+- `GET /api/integrations/google/connect?token=JWT` — initiate OAuth
+- `GET /api/integrations/google/callback` — OAuth callback
+- `GET /api/integrations/google/properties` — GSC/GA4 properties
+
+**Google Services Test:**
+- `GET /api/integrations/google/drive/files` — список файлів
+- `POST /api/integrations/google/docs/create` — створити документ
+- `POST /api/integrations/google/sheets/create` — створити таблицю
+
+#### ✅ Frontend Settings Page
+
+```
+/dashboard/settings
+
+┌─────────────────────────────────────────────────┐
+│  Google Integration                              │
+│                                                  │
+│  ✅ Connected: waltersimf@gmail.com [Disconnect] │
+│                                                  │
+│  ┌──────────┐ ┌──────────┐ ┌──────────────────┐ │
+│  │ Search   │ │Analytics │ │ Drive            │ │
+│  │ Console  │ │          │ │                  │ │
+│  │✅Connected│ │✅Connected│ │✅Connected       │ │
+│  │          │ │          │ │ [View Files]     │ │
+│  └──────────┘ └──────────┘ └──────────────────┘ │
+│                                                  │
+│  ┌──────────────────┐ ┌──────────────────────┐  │
+│  │ Docs             │ │ Sheets               │  │
+│  │ ✅ Connected     │ │ ✅ Connected         │  │
+│  │ [Create Test Doc]│ │ [Create Test Sheet]  │  │
+│  └──────────────────┘ └──────────────────────┘  │
+└─────────────────────────────────────────────────┘
+```
+
+---
+
+### 🐛 Bug Fixes
+
+**1. Hardcoded organizationId:**
+```typescript
+// ❌ Було (hardcoded)
+const organizationId = 'cmi03mh7f0001nuvzjw3w1oq8';
+
+// ✅ Стало (з JWT token)
+const organizationId = req.user.organizationId;
+```
+
+**2. JWT Token в OAuth Connect:**
+```typescript
+// Frontend передає token в URL
+window.location.href = `${API_URL}/api/integrations/google/connect?token=${token}`;
+
+// Backend custom extractor
+const jwtFromRequest = ExtractJwt.fromExtractors([
+  (req) => req.query?.token,  // Query param first
+  ExtractJwt.fromAuthHeaderAsBearerToken()  // Header fallback
+]);
+```
+
+**3. Upsert замість Create:**
+```typescript
+// Для повторного підключення Google
+await prisma.integration.upsert({
+  where: { organizationId_provider: { organizationId, provider } },
+  update: { accessToken, refreshToken, scopes },
+  create: { organizationId, provider, accessToken, refreshToken, scopes }
+});
+```
+
+**4. Dashboard Connect Button:**
+- Виправлено передачу token для Dashboard page
+- Окремий компонент `google-connect-button.tsx`
+
+**5. Google APIs Activation:**
+- Docs API, Sheets API, Drive API потрібно активувати в Google Cloud Console
+
+---
+
+### 🎯 v0.5 Acceptance Criteria
+
+| Критерій | Статус |
+|----------|--------|
+| Project CRUD | ✅ |
+| Project list page | ✅ |
+| Project detail page | ✅ |
+| Target keywords | ✅ |
+| Competitors | ✅ |
+| Google OAuth (organization-level) | ✅ |
+| GSC property selector | ✅ |
+| GA4 property selector | ✅ |
+| Google Drive integration | ✅ |
+| Google Docs integration | ✅ |
+| Google Sheets integration | ✅ |
+| Settings page | ✅ |
+| Disconnect functionality | ✅ |
+
+**Результат:** 13/13 критеріїв = **100%** ✅
+
+---
+
+### 📊 v0.5 Statistics
+
+- **Час роботи:** 1 день
+- **Чистий час:** ~8 годин
+- **PR merged:** 5
+- **Files created:** 8 нових
+- **Files modified:** ~12
+- **Bugs fixed:** 5 major
+- **APIs enabled:** 3 (Docs, Sheets, Drive)
+
+---
+
+### 📁 Files Changed
+
+**Backend (створено/оновлено):**
+- `apps/api/src/projects/` — повний CRUD module
+- `apps/api/src/integrations/integrations.controller.ts` — Google endpoints
+- `apps/api/src/integrations/integrations.service.ts` — upsert logic
+- `apps/api/src/auth/jwt.strategy.ts` — custom extractor
+
+**Frontend (створено/оновлено):**
+- `apps/web/src/app/dashboard/projects/page.tsx` — list
+- `apps/web/src/app/dashboard/projects/new/page.tsx` — create
+- `apps/web/src/app/dashboard/projects/[id]/page.tsx` — detail
+- `apps/web/src/app/dashboard/projects/[id]/edit/page.tsx` — edit
+- `apps/web/src/app/dashboard/settings/page.tsx` — settings (NEW)
+- `apps/web/src/components/google-connect-button.tsx` — connect button
+
+**Database:**
+- `packages/db/prisma/schema.prisma` — Project model
+- `packages/db/migrations/20251127_add_projects/` — migration
+
+---
+
+### 💡 Key Learnings
+
+**1. Organization-level Integration:**
+- OAuth tokens на рівні організації, не проекту
+- Property selection на рівні проекту
+- Спрощує архітектуру та UX
+
+**2. JWT в Query Parameters:**
+- Для OAuth redirect flows потрібен custom extractor
+- `?token=JWT` працює для non-AJAX redirects
+
+**3. Google Cloud APIs:**
+- Кожен API треба окремо активувати
+- Помилка "API not enabled" чітко вказує на проблему
+
+**4. Upsert Pattern:**
+- Для OAuth reconnect завжди upsert
+- Unique constraint на (organizationId, provider)
+
+---
+
+### 🎉 v0.5 Complete!
+
+**Projects Management + Google Integration готові:**
+- ✅ Повний CRUD для проектів
+- ✅ Google OAuth з 5 сервісами
+- ✅ Settings page для управління
+- ✅ Property selector працює
+- ✅ Create Doc/Sheet тестування працює
+- ✅ Drive files viewer працює
+
+**Наступна версія:** v0.6 - Tasks & Backlog
 
 ---
 
