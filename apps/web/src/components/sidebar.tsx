@@ -17,7 +17,7 @@ const navigation = [
   { name: 'Projects', href: '/dashboard/projects', icon: FolderKanban },
   { name: 'Tasks', href: '/tasks', icon: CheckSquare, disabled: true },
   { name: 'Chat', href: '/chat', icon: MessageSquare, disabled: true },
-  { name: 'Settings', href: '/settings', icon: Settings, disabled: true },
+  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
 export function Sidebar() {
