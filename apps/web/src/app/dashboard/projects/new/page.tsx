@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft } from 'lucide-react';
+import { API_URL } from '@/config/api';
 
 export default function NewProjectPage() {
   const [name, setName] = useState('');
@@ -40,7 +41,7 @@ export default function NewProjectPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/projects', {
+      const response = await fetch(`${API_URL}/api/projects`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
