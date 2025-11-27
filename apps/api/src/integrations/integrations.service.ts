@@ -51,7 +51,7 @@ export class IntegrationsService {
     };
   }
 
-  async create(data: {
+  async createOrUpdate(data: {
     organizationId: string;
     provider: string;
     accessToken: string;
@@ -61,16 +61,35 @@ export class IntegrationsService {
     metadata?: any;
   }) {
     // Encrypt tokens before saving
-    const encryptedData = {
-      ...data,
-      accessToken: this.encryptionService.encrypt(data.accessToken),
-      refreshToken: data.refreshToken 
-        ? this.encryptionService.encrypt(data.refreshToken)
-        : null,
-    };
+    const encryptedAccessToken = this.encryptionService.encrypt(data.accessToken);
+    const encryptedRefreshToken = data.refreshToken
+      ? this.encryptionService.encrypt(data.refreshToken)
+      : null;
 
-    return this.prisma.integration.create({
-      data: encryptedData,
+    return this.prisma.integration.upsert({
+      where: {
+        organizationId_provider: {
+          organizationId: data.organizationId,
+          provider: data.provider,
+        },
+      },
+      update: {
+        accessToken: encryptedAccessToken,
+        refreshToken: encryptedRefreshToken,
+        tokenExpiry: data.tokenExpiry,
+        scopes: data.scopes,
+        metadata: data.metadata,
+        updatedAt: new Date(),
+      },
+      create: {
+        organizationId: data.organizationId,
+        provider: data.provider,
+        accessToken: encryptedAccessToken,
+        refreshToken: encryptedRefreshToken,
+        tokenExpiry: data.tokenExpiry,
+        scopes: data.scopes,
+        metadata: data.metadata,
+      },
     });
   }
 
