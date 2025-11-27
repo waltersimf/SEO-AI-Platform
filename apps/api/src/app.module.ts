@@ -7,13 +7,14 @@ import { GscModule } from './gsc/gsc.module';
 import { ChatModule } from './chat/chat.module';
 import { UsersModule } from './users/users.module';
 import { AiModule } from './ai/ai.module';
+import { ProjectsModule } from './projects/projects.module';
 
 @Module({
   imports: [
-  ConfigModule.forRoot({
-   isGlobal: true,
-    envFilePath: '../../.env',
-  }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '../../.env',
+    }),
     PrismaModule,
     AuthModule,
     IntegrationsModule,
@@ -21,6 +22,7 @@ import { AiModule } from './ai/ai.module';
     ChatModule,
     UsersModule,
     AiModule,
+    ProjectsModule,
   ],
 })
 export class AppModule {}
