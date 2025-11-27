@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Globe, Calendar, Pencil, Trash2, Tag, Users } from 'lucide-react';
+import { ArrowLeft, Globe, Calendar, Pencil, Trash2, Tag, Users, Link2, Check, Loader2 } from 'lucide-react';
 import { API_URL } from '@/config/api';
 
 interface Project {
@@ -19,12 +19,34 @@ interface Project {
   updatedAt: string;
 }
 
+interface GscProperty {
+  siteUrl: string;
+  permissionLevel: string;
+}
+
+interface GaProperty {
+  propertyId: string;
+  displayName: string;
+}
+
 export default function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Google integration state
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [loadingGoogle, setLoadingGoogle] = useState(true);
+  const [gscProperties, setGscProperties] = useState<GscProperty[]>([]);
+  const [gaProperties, setGaProperties] = useState<GaProperty[]>([]);
+  const [selectedGsc, setSelectedGsc] = useState<string>('');
+  const [selectedGa, setSelectedGa] = useState<string>('');
+  const [savingIntegrations, setSavingIntegrations] = useState(false);
+  const [integrationError, setIntegrationError] = useState<string | null>(null);
+  const [integrationSuccess, setIntegrationSuccess] = useState(false);
+
   const router = useRouter();
   const params = useParams();
   const projectId = params.id as string;
@@ -37,6 +59,7 @@ export default function ProjectDetailPage() {
     }
 
     fetchProject(token);
+    checkGoogleConnection(token);
   }, [router, projectId]);
 
   const fetchProject = async (token: string) => {
@@ -61,10 +84,92 @@ export default function ProjectDetailPage() {
 
       const data = await response.json();
       setProject(data);
+      // Initialize selected values from project data
+      setSelectedGsc(data.gscPropertyUrl || '');
+      setSelectedGa(data.gaPropertyId || '');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkGoogleConnection = async (token: string) => {
+    try {
+      const response = await fetch(`${API_URL}/api/integrations/google`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data) {
+          setGoogleConnected(true);
+          fetchGoogleProperties(token);
+        }
+      }
+    } catch (err) {
+      console.error('Error checking Google connection:', err);
+    } finally {
+      setLoadingGoogle(false);
+    }
+  };
+
+  const fetchGoogleProperties = async (token: string) => {
+    try {
+      const response = await fetch(`${API_URL}/api/integrations/google/properties`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setGscProperties(data.gscProperties || []);
+        setGaProperties(data.gaProperties || []);
+      }
+    } catch (err) {
+      console.error('Error fetching Google properties:', err);
+    }
+  };
+
+  const handleSaveIntegrations = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
+
+    setSavingIntegrations(true);
+    setIntegrationError(null);
+    setIntegrationSuccess(false);
+
+    try {
+      const response = await fetch(`${API_URL}/api/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          gscPropertyUrl: selectedGsc || null,
+          gaPropertyId: selectedGa || null,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save integrations');
+      }
+
+      const updatedProject = await response.json();
+      setProject(updatedProject);
+      setIntegrationSuccess(true);
+      setTimeout(() => setIntegrationSuccess(false), 3000);
+    } catch (err) {
+      setIntegrationError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setSavingIntegrations(false);
     }
   };
 
@@ -315,21 +420,118 @@ export default function ProjectDetailPage() {
               {/* Integrations */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Integrations</CardTitle>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Link2 className="h-5 w-5" />
+                    Google Integration
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Google Search Console</p>
-                    <p className="font-medium">
-                      {project.gscPropertyUrl || 'Not connected'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Google Analytics 4</p>
-                    <p className="font-medium">
-                      {project.gaPropertyId || 'Not connected'}
-                    </p>
-                  </div>
+                  {loadingGoogle ? (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Checking connection...</span>
+                    </div>
+                  ) : !googleConnected ? (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Connect your Google account to link Search Console and Analytics properties.
+                      </p>
+                      <Button
+                        onClick={() => window.location.href = `${API_URL}/api/integrations/google/connect`}
+                      >
+                        Connect Google Account
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Success/Error Messages */}
+                      {integrationSuccess && (
+                        <div className="flex items-center gap-2 text-green-600 text-sm bg-green-50 p-3 rounded-lg">
+                          <Check className="h-4 w-4" />
+                          Integrations saved successfully!
+                        </div>
+                      )}
+                      {integrationError && (
+                        <div className="text-destructive text-sm bg-destructive/10 p-3 rounded-lg">
+                          {integrationError}
+                        </div>
+                      )}
+
+                      {/* GSC Property Selection */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Google Search Console</label>
+                        {gscProperties.length > 0 ? (
+                          <select
+                            value={selectedGsc}
+                            onChange={(e) => setSelectedGsc(e.target.value)}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          >
+                            <option value="">Select a property...</option>
+                            {gscProperties.map((prop) => (
+                              <option key={prop.siteUrl} value={prop.siteUrl}>
+                                {prop.siteUrl}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            No Search Console properties found
+                          </p>
+                        )}
+                        {project.gscPropertyUrl && (
+                          <p className="text-xs text-green-600 flex items-center gap-1">
+                            <Check className="h-3 w-3" />
+                            Connected: {project.gscPropertyUrl}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* GA4 Property Selection */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Google Analytics 4</label>
+                        {gaProperties.length > 0 ? (
+                          <select
+                            value={selectedGa}
+                            onChange={(e) => setSelectedGa(e.target.value)}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          >
+                            <option value="">Select a property...</option>
+                            {gaProperties.map((prop) => (
+                              <option key={prop.propertyId} value={prop.propertyId}>
+                                {prop.displayName} ({prop.propertyId})
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            No Analytics properties found
+                          </p>
+                        )}
+                        {project.gaPropertyId && (
+                          <p className="text-xs text-green-600 flex items-center gap-1">
+                            <Check className="h-3 w-3" />
+                            Connected: {project.gaPropertyId}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Save Button */}
+                      <Button
+                        onClick={handleSaveIntegrations}
+                        disabled={savingIntegrations}
+                        className="w-full"
+                      >
+                        {savingIntegrations ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          'Save Integrations'
+                        )}
+                      </Button>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>
