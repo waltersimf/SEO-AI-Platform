@@ -8,6 +8,7 @@ import { ChatModule } from './chat/chat.module';
 import { UsersModule } from './users/users.module';
 import { AiModule } from './ai/ai.module';
 import { ProjectsModule } from './projects/projects.module';
+import { TaskModule } from './task/task.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ProjectsModule } from './projects/projects.module';
     UsersModule,
     AiModule,
     ProjectsModule,
+    TaskModule,
   ],
 })
 export class AppModule {}
