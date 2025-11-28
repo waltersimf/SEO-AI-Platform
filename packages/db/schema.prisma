@@ -10,106 +10,136 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Task Management Enums
+enum TaskStatus {
+  backlog
+  scheduled
+  todo
+  in_progress
+  blocked
+  paused
+  done
+  wont_do
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+  critical
+}
+
 model Organization {
-  id          String   @id @default(cuid())
+  id          String @id @default(cuid())
   name        String
-  slug        String   @unique
-  plan        String   @default("free")
-  maxProjects Int      @default(5)
+  slug        String @unique
+  plan        String @default("free")
+  maxProjects Int    @default(5)
 
   users        User[]
   integrations Integration[]
   projects     Project[]
+  tasks        Task[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  chats        Chat[]
+  chats Chat[]
 
   @@map("organizations")
 }
 
 model Project {
-  id              String   @id @default(cuid())
-  name            String
-  domain          String
+  id     String @id @default(cuid())
+  name   String
+  domain String
 
-  organizationId  String
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  targetKeywords  String[]
-  competitors     String[]
+  targetKeywords String[]
+  competitors    String[]
 
-  gscPropertyUrl  String?  // GSC property URL
-  gaPropertyId    String?  // GA4 property ID
+  gscPropertyUrl String? // GSC property URL
+  gaPropertyId   String? // GA4 property ID
 
-  isDeleted       Boolean  @default(false)
-  deletedAt       DateTime?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  tasks Task[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([organizationId])
   @@map("projects")
 }
 
 model User {
-  id             String   @id @default(cuid())
-  email          String   @unique
-  name           String
-  passwordHash   String
-  avatar         String?
+  id           String  @id @default(cuid())
+  email        String  @unique
+  name         String
+  passwordHash String
+  avatar       String?
 
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  role           String   @default("seo") // admin, seo, account_manager, ai_assistant
+  role String @default("seo") // admin, seo, account_manager, ai_assistant
 
-  isAI           Boolean  @default(false)
-  aiModel        String?
-  isOnline       Boolean  @default(false)
-  lastSeenAt     DateTime?
+  isAI       Boolean   @default(false)
+  aiModel    String?
+  isOnline   Boolean   @default(false)
+  lastSeenAt DateTime?
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  chatMembers  ChatMember[]
-  messages     Message[]
+  chatMembers ChatMember[]
+  messages    Message[]
+
+  // Task Management relations
+  assignedTasks Task[]        @relation("AssignedTasks")
+  createdTasks  Task[]        @relation("CreatedTasks")
+  taskComments  Comment[]
+  timeEntries   TimeEntry[]
+  settings      UserSettings?
 
   @@map("users")
 }
 
 model Integration {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
-  provider       String   // "google", "ahrefs", "serpstat"
-  accessToken    String   @db.Text
-  refreshToken   String?  @db.Text
-  tokenExpiry    DateTime?
-  scopes         String[] // ["https://www.googleapis.com/auth/webmasters.readonly"]
-  
-  metadata       Json?    // { email: "user@gmail.com", connectedAt: "..." }
-  
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  
+
+  provider     String // "google", "ahrefs", "serpstat"
+  accessToken  String    @db.Text
+  refreshToken String?   @db.Text
+  tokenExpiry  DateTime?
+  scopes       String[] // ["https://www.googleapis.com/auth/webmasters.readonly"]
+
+  metadata Json? // { email: "user@gmail.com", connectedAt: "..." }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([organizationId, provider])
   @@map("integrations")
 }
+
 model Chat {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   name           String?
-  type           String   @default("group") // "direct" | "group"
+  type           String       @default("group") // "direct" | "group"
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  members        ChatMember[]
-  messages       Message[]
+  members  ChatMember[]
+  messages Message[]
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("chats")
 }
@@ -119,8 +149,8 @@ model ChatMember {
   userId String
   chatId String
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  chat   Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
 
   joinedAt   DateTime  @default(now())
   lastReadAt DateTime?
@@ -130,14 +160,14 @@ model ChatMember {
 }
 
 model Message {
-  id        String   @id @default(cuid())
-  chatId    String
-  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  chatId String
+  chat   Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
 
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
-  content   String   @db.Text
+  content String @db.Text
 
   isAIResponse Boolean @default(false)
   aiContext    Json?
@@ -147,4 +177,127 @@ model Message {
 
   @@index([chatId, createdAt])
   @@map("messages")
+}
+
+// Task Management Models
+model Task {
+  id          String  @id @default(cuid())
+  title       String
+  description String? @db.Text
+
+  status   TaskStatus   @default(backlog)
+  priority TaskPriority @default(medium)
+
+  // Relations
+  assignedToId String?
+  assignedTo   User?   @relation("AssignedTasks", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  createdById String
+  createdBy   User   @relation("CreatedTasks", fields: [createdById], references: [id], onDelete: Cascade)
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Scheduling
+  scheduledDate DateTime?
+  dueDate       DateTime?
+
+  // Time tracking
+  estimatedTime Float? // Hours
+  actualTime    Float? // Hours
+
+  // Tags
+  tags String[]
+
+  // Acceptance workflow
+  acceptedAt    DateTime?
+  declinedAt    DateTime?
+  declineReason String?
+
+  // Group tasks
+  groupTaskId String?
+  groupTask   Task?   @relation("GroupTasks", fields: [groupTaskId], references: [id], onDelete: SetNull)
+  subTasks    Task[]  @relation("GroupTasks")
+  isGroupTask Boolean @default(false)
+
+  // Recurring tasks
+  isRecurring      Boolean @default(false)
+  recurringPattern String? // e.g., "daily", "weekly", "monthly", or cron expression
+  parentTaskId     String?
+  parentTask       Task?   @relation("RecurringTasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  childTasks       Task[]  @relation("RecurringTasks")
+
+  // Timestamps
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Related models
+  comments    Comment[]
+  timeEntries TimeEntry[]
+
+  @@index([assignedToId, status])
+  @@index([scheduledDate])
+  @@index([projectId])
+  @@index([organizationId])
+  @@map("tasks")
+}
+
+model Comment {
+  id String @id @default(cuid())
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  content String @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
+  @@map("task_comments")
+}
+
+model TimeEntry {
+  id String @id @default(cuid())
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  startedAt DateTime
+  endedAt   DateTime?
+  duration  Float? // Duration in minutes
+
+  note String?
+
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
+  @@index([userId])
+  @@map("time_entries")
+}
+
+model UserSettings {
+  id String @id @default(cuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  workingHoursPerDay  Float   @default(8)
+  workingDays         Int[]   @default([1, 2, 3, 4, 5]) // 0=Sunday, 1=Monday, etc.
+  bufferTime          Float   @default(0.5) // Hours between tasks
+  timeTrackingEnabled Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_settings")
 }
