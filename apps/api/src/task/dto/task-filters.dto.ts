@@ -37,10 +37,12 @@ export class ScheduleQueryDto {
   userId?: string;
 
   @IsDateString()
-  dateFrom: string;
+  @IsOptional()
+  dateFrom?: string;
 
   @IsDateString()
-  dateTo: string;
+  @IsOptional()
+  dateTo?: string;
 }
 
 export class AcceptTaskDto {
