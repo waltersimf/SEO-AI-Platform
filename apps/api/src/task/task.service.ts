@@ -144,9 +144,9 @@ export class TaskService {
     if (dto.tags !== undefined) updateData.tags = dto.tags;
 
     // Auto-set completedAt when status changes to done
-    if (dto.status === TaskStatus.done) {
+    if ((dto.status as string) === 'done') {
       updateData.completedAt = new Date();
-    } else if (dto.status && dto.status !== TaskStatus.done) {
+    } else if (dto.status && (dto.status as string) !== 'done') {
       updateData.completedAt = null;
     }
 
