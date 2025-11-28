@@ -15,6 +15,8 @@ import {
   Folder,
   Tag,
   Loader2,
+  XCircle,
+  RotateCcw,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -99,7 +101,8 @@ export function TaskDetail({ task, currentUserId, onStatusChange }: TaskDetailPr
     }
   };
 
-  const renderStatusActions = () => {
+  // Render assignee-specific actions (can modify task status)
+  const renderAssigneeActions = () => {
     if (changingStatus) {
       return (
         <Button disabled>
@@ -121,7 +124,7 @@ export function TaskDetail({ task, currentUserId, onStatusChange }: TaskDetailPr
         );
       case "in_progress":
         return (
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button onClick={() => handleStatusChange("done")}>
               <CheckCircle className="mr-2 h-4 w-4" />
               Complete
@@ -134,7 +137,7 @@ export function TaskDetail({ task, currentUserId, onStatusChange }: TaskDetailPr
         );
       case "paused":
         return (
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button onClick={() => handleStatusChange("in_progress")}>
               <Play className="mr-2 h-4 w-4" />
               Resume
@@ -170,6 +173,102 @@ export function TaskDetail({ task, currentUserId, onStatusChange }: TaskDetailPr
     }
   };
 
+  // Render creator-only actions (read-only status view with optional cancel)
+  const renderCreatorActions = () => {
+    if (changingStatus) {
+      return (
+        <Button disabled>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Updating...
+        </Button>
+      );
+    }
+
+    switch (task.status) {
+      case "backlog":
+      case "scheduled":
+      case "todo":
+        return (
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Waiting for {task.assignedTo?.name || "assignee"} to start
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleStatusChange("wont_do")}
+              className="text-muted-foreground hover:text-destructive hover:border-destructive"
+            >
+              <XCircle className="mr-2 h-4 w-4" />
+              Cancel Task
+            </Button>
+          </div>
+        );
+      case "in_progress":
+        return (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {task.assignedTo?.name || "Assignee"} is working on this
+          </div>
+        );
+      case "paused":
+        return (
+          <div className="text-sm text-muted-foreground">
+            Task paused by {task.assignedTo?.name || "assignee"}
+          </div>
+        );
+      case "blocked":
+        return (
+          <div className="text-sm text-yellow-600">
+            Task is blocked - waiting for resolution
+          </div>
+        );
+      case "done":
+        return (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <CheckCircle className="h-5 w-5 text-green-500" />
+            Completed {formatDateTime(task.completedAt)}
+          </div>
+        );
+      case "wont_do":
+        return (
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              This task was cancelled
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleStatusChange("backlog")}
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Reopen
+            </Button>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  // Render actions based on user's role
+  const renderStatusActions = () => {
+    // If user is assignee (or both assignee and creator), show assignee actions
+    if (isAssignee) {
+      return renderAssigneeActions();
+    }
+    // If user is only creator, show read-only status with creator actions
+    if (isCreator) {
+      return renderCreatorActions();
+    }
+    // If user is neither, show read-only status
+    return (
+      <div className="text-sm text-muted-foreground">
+        Status: {statusLabels[task.status]}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Header with title and badges */}
@@ -193,7 +292,9 @@ export function TaskDetail({ task, currentUserId, onStatusChange }: TaskDetailPr
 
       {/* Status Actions */}
       <div className="p-4 rounded-lg bg-muted/50 border">
-        <h3 className="text-sm font-medium mb-3">Actions</h3>
+        <h3 className="text-sm font-medium mb-3">
+          {isAssignee ? "Your Actions" : isCreator ? "Task Status" : "Status"}
+        </h3>
         {renderStatusActions()}
       </div>
 
