@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,39 +21,57 @@ import {
 } from "@/components/ui/select";
 import { useOrganizationUsers } from "@/hooks/use-organization-users";
 import { useProjects } from "@/hooks/use-projects";
-import { createTask, CreateTaskData, TaskPriority } from "@/lib/api/tasks";
+import { createTask, updateTask, CreateTaskData, UpdateTaskData, TaskPriority, Task } from "@/lib/api/tasks";
 import { Loader2 } from "lucide-react";
 
 interface TaskFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess?: () => void;
+  onSuccess?: (task?: Task) => void;
+  task?: Task; // For edit mode
 }
 
-export function TaskForm({ open, onOpenChange, onSuccess }: TaskFormProps) {
+export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps) {
   const { users, loading: usersLoading } = useOrganizationUsers();
   const { projects, loading: projectsLoading } = useProjects();
+  const isEditMode = !!task;
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [projectId, setProjectId] = useState<string>("");
-  const [assignedToId, setAssignedToId] = useState<string>("");
-  const [priority, setPriority] = useState<TaskPriority>("medium");
-  const [dueDate, setDueDate] = useState("");
-  const [estimatedTime, setEstimatedTime] = useState("");
-  const [tags, setTags] = useState("");
+  const [title, setTitle] = useState(task?.title || "");
+  const [description, setDescription] = useState(task?.description || "");
+  const [projectId, setProjectId] = useState<string>(task?.projectId || "");
+  const [assignedToId, setAssignedToId] = useState<string>(task?.assignedToId || "");
+  const [priority, setPriority] = useState<TaskPriority>(task?.priority || "medium");
+  const [dueDate, setDueDate] = useState(task?.dueDate ? task.dueDate.split("T")[0] : "");
+  const [estimatedTime, setEstimatedTime] = useState(task?.estimatedTime?.toString() || "");
+  const [tags, setTags] = useState(task?.tags?.join(", ") || "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Update form when task prop changes
+  useEffect(() => {
+    if (task) {
+      setTitle(task.title);
+      setDescription(task.description || "");
+      setProjectId(task.projectId || "");
+      setAssignedToId(task.assignedToId || "");
+      setPriority(task.priority);
+      setDueDate(task.dueDate ? task.dueDate.split("T")[0] : "");
+      setEstimatedTime(task.estimatedTime?.toString() || "");
+      setTags(task.tags?.join(", ") || "");
+    }
+  }, [task]);
+
   const resetForm = () => {
-    setTitle("");
-    setDescription("");
-    setProjectId("");
-    setAssignedToId("");
-    setPriority("medium");
-    setDueDate("");
-    setEstimatedTime("");
-    setTags("");
+    if (!isEditMode) {
+      setTitle("");
+      setDescription("");
+      setProjectId("");
+      setAssignedToId("");
+      setPriority("medium");
+      setDueDate("");
+      setEstimatedTime("");
+      setTags("");
+    }
     setError(null);
   };
 
@@ -79,44 +97,65 @@ export function TaskForm({ open, onOpenChange, onSuccess }: TaskFormProps) {
     setSubmitting(true);
 
     try {
-      const data: CreateTaskData = {
-        title: title.trim(),
-        assignedToId,
-        priority,
-      };
+      const parsedTags = tags.trim()
+        ? tags.split(",").map((t) => t.trim()).filter((t) => t.length > 0)
+        : [];
 
-      if (description.trim()) {
-        data.description = description.trim();
-      }
+      if (isEditMode && task) {
+        // Update existing task
+        const updateData: UpdateTaskData = {
+          title: title.trim(),
+          description: description.trim() || undefined,
+          projectId: projectId && projectId !== "none" ? projectId : undefined,
+          assignedToId,
+          priority,
+          dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+          estimatedTime: estimatedTime ? parseFloat(estimatedTime) : undefined,
+          tags: parsedTags.length > 0 ? parsedTags : undefined,
+        };
 
-      if (projectId && projectId !== "none") {
-        data.projectId = projectId;
-      }
+        const updatedTask = await updateTask(task.id, updateData);
+        resetForm();
+        onOpenChange(false);
+        onSuccess?.(updatedTask);
+      } else {
+        // Create new task
+        const data: CreateTaskData = {
+          title: title.trim(),
+          assignedToId,
+          priority,
+        };
 
-      if (dueDate) {
-        data.dueDate = new Date(dueDate).toISOString();
-      }
-
-      if (estimatedTime) {
-        const hours = parseFloat(estimatedTime);
-        if (!isNaN(hours) && hours > 0) {
-          data.estimatedTime = hours;
+        if (description.trim()) {
+          data.description = description.trim();
         }
-      }
 
-      if (tags.trim()) {
-        data.tags = tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter((t) => t.length > 0);
-      }
+        if (projectId && projectId !== "none") {
+          data.projectId = projectId;
+        }
 
-      await createTask(data);
-      resetForm();
-      onOpenChange(false);
-      onSuccess?.();
+        if (dueDate) {
+          data.dueDate = new Date(dueDate).toISOString();
+        }
+
+        if (estimatedTime) {
+          const hours = parseFloat(estimatedTime);
+          if (!isNaN(hours) && hours > 0) {
+            data.estimatedTime = hours;
+          }
+        }
+
+        if (parsedTags.length > 0) {
+          data.tags = parsedTags;
+        }
+
+        const newTask = await createTask(data);
+        resetForm();
+        onOpenChange(false);
+        onSuccess?.(newTask);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create task");
+      setError(err instanceof Error ? err.message : isEditMode ? "Failed to update task" : "Failed to create task");
     } finally {
       setSubmitting(false);
     }
@@ -126,7 +165,7 @@ export function TaskForm({ open, onOpenChange, onSuccess }: TaskFormProps) {
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Create New Task</DialogTitle>
+          <DialogTitle>{isEditMode ? "Edit Task" : "Create New Task"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -287,7 +326,7 @@ export function TaskForm({ open, onOpenChange, onSuccess }: TaskFormProps) {
             </Button>
             <Button type="submit" disabled={submitting}>
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create Task
+              {isEditMode ? "Save Changes" : "Create Task"}
             </Button>
           </DialogFooter>
         </form>
