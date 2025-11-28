@@ -35,46 +35,7 @@ import { TaskStatus } from '@prisma/client';
 export class TaskController {
   constructor(private taskService: TaskService) {}
 
-  @Post()
-  async create(@Req() req, @Body() dto: CreateTaskDto) {
-    try {
-      if (!req.user || !req.user.organizationId) {
-        throw new BadRequestException('User not authenticated or missing organization');
-      }
-
-      const userId = req.user.id;
-      const organizationId = req.user.organizationId;
-
-      return this.taskService.createTask(dto, userId, organizationId);
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create task';
-      throw new InternalServerErrorException(errorMessage);
-    }
-  }
-
-  @Get()
-  async findAll(@Req() req, @Query() filters: TaskFiltersDto) {
-    try {
-      if (!req.user || !req.user.organizationId) {
-        throw new BadRequestException('User not authenticated or missing organization');
-      }
-
-      const organizationId = req.user.organizationId;
-
-      return this.taskService.getTasks({ ...filters, organizationId });
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch tasks';
-      throw new InternalServerErrorException(errorMessage);
-    }
-  }
+  // ==================== SPECIFIC ROUTES FIRST ====================
 
   @Get('schedule')
   async getSchedule(@Req() req, @Query() query: ScheduleQueryDto) {
@@ -164,6 +125,51 @@ export class TaskController {
       throw new InternalServerErrorException(errorMessage);
     }
   }
+
+  // ==================== ROOT ROUTES ====================
+
+  @Get()
+  async findAll(@Req() req, @Query() filters: TaskFiltersDto) {
+    try {
+      if (!req.user || !req.user.organizationId) {
+        throw new BadRequestException('User not authenticated or missing organization');
+      }
+
+      const organizationId = req.user.organizationId;
+
+      return this.taskService.getTasks({ ...filters, organizationId });
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch tasks';
+      throw new InternalServerErrorException(errorMessage);
+    }
+  }
+
+  @Post()
+  async create(@Req() req, @Body() dto: CreateTaskDto) {
+    try {
+      if (!req.user || !req.user.organizationId) {
+        throw new BadRequestException('User not authenticated or missing organization');
+      }
+
+      const userId = req.user.id;
+      const organizationId = req.user.organizationId;
+
+      return this.taskService.createTask(dto, userId, organizationId);
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create task';
+      throw new InternalServerErrorException(errorMessage);
+    }
+  }
+
+  // ==================== PARAMETERIZED ROUTES (MUST BE LAST) ====================
 
   @Get(':id')
   async findOne(@Req() req, @Param('id') id: string) {
