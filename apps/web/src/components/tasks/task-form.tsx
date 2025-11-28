@@ -89,7 +89,7 @@ export function TaskForm({ open, onOpenChange, onSuccess }: TaskFormProps) {
         data.description = description.trim();
       }
 
-      if (projectId) {
+      if (projectId && projectId !== "none") {
         data.projectId = projectId;
       }
 
@@ -177,7 +177,7 @@ export function TaskForm({ open, onOpenChange, onSuccess }: TaskFormProps) {
                   <SelectValue placeholder="Select project" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {projects.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
