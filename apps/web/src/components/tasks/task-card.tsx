@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Task, TaskPriority, TaskStatus } from "@/lib/api/tasks";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -8,6 +9,7 @@ interface TaskCardProps {
   task: Task;
   onClick?: () => void;
   showProject?: boolean;
+  linkToDetail?: boolean;
 }
 
 const priorityColors: Record<TaskPriority, string> = {
@@ -39,21 +41,15 @@ const statusLabels: Record<TaskStatus, string> = {
   wont_do: "Won't Do",
 };
 
-export function TaskCard({ task, onClick, showProject = true }: TaskCardProps) {
+export function TaskCard({ task, onClick, showProject = true, linkToDetail = true }: TaskCardProps) {
   const formatTime = (hours?: number) => {
     if (!hours) return null;
     if (hours < 1) return `${Math.round(hours * 60)}m`;
     return `${hours.toFixed(1)}h`;
   };
 
-  return (
-    <div
-      onClick={onClick}
-      className={cn(
-        "rounded-lg border bg-card p-4 transition-all hover:shadow-md",
-        onClick && "cursor-pointer hover:border-primary/50"
-      )}
-    >
+  const cardContent = (
+    <>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <h3 className="font-medium text-sm truncate">{task.title}</h3>
@@ -130,6 +126,25 @@ export function TaskCard({ task, onClick, showProject = true }: TaskCardProps) {
           )}
         </div>
       )}
+    </>
+  );
+
+  const cardClassName = cn(
+    "rounded-lg border bg-card p-4 transition-all hover:shadow-md block",
+    (onClick || linkToDetail) && "cursor-pointer hover:border-primary/50"
+  );
+
+  if (linkToDetail) {
+    return (
+      <Link href={`/dashboard/tasks/${task.id}`} className={cardClassName}>
+        {cardContent}
+      </Link>
+    );
+  }
+
+  return (
+    <div onClick={onClick} className={cardClassName}>
+      {cardContent}
     </div>
   );
 }

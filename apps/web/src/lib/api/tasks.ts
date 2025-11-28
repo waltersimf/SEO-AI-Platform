@@ -274,3 +274,55 @@ export async function scheduleTask(id: string, scheduledDate: string): Promise<T
 
   return handleResponse<Task>(response);
 }
+
+// Comment types
+export interface Comment {
+  id: string;
+  content: string;
+  taskId: string;
+  authorId: string;
+  author: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCommentData {
+  content: string;
+}
+
+// Comment API Functions
+export async function getComments(taskId: string): Promise<Comment[]> {
+  const response = await fetch(`${TASKS_API}/${taskId}/comments`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+    credentials: 'include',
+  });
+
+  return handleResponse<Comment[]>(response);
+}
+
+export async function addComment(taskId: string, data: CreateCommentData): Promise<Comment> {
+  const response = await fetch(`${TASKS_API}/${taskId}/comments`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+
+  return handleResponse<Comment>(response);
+}
+
+export async function deleteComment(taskId: string, commentId: string): Promise<{ success: boolean; message: string }> {
+  const response = await fetch(`${TASKS_API}/${taskId}/comments/${commentId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+    credentials: 'include',
+  });
+
+  return handleResponse(response);
+}
