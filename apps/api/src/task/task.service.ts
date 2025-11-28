@@ -363,4 +363,247 @@ export class TaskService {
       pending: backlog + blocked + paused,
     };
   }
+
+  // ==================== COMMENTS ====================
+
+  async addComment(taskId: string, organizationId: string, userId: string, content: string) {
+    // Verify task exists and user has access
+    await this.getTaskById(taskId, organizationId);
+
+    const comment = await this.prisma.comment.create({
+      data: {
+        taskId,
+        authorId: userId,
+        content,
+      },
+      include: {
+        author: {
+          select: { id: true, name: true, email: true, avatar: true },
+        },
+      },
+    });
+
+    return comment;
+  }
+
+  async getComments(taskId: string, organizationId: string) {
+    // Verify task exists and user has access
+    await this.getTaskById(taskId, organizationId);
+
+    const comments = await this.prisma.comment.findMany({
+      where: { taskId },
+      include: {
+        author: {
+          select: { id: true, name: true, email: true, avatar: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return comments;
+  }
+
+  async deleteComment(commentId: string, userId: string) {
+    const comment = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+    });
+
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+
+    if (comment.authorId !== userId) {
+      throw new ForbiddenException('You can only delete your own comments');
+    }
+
+    await this.prisma.comment.delete({
+      where: { id: commentId },
+    });
+
+    return {
+      success: true,
+      message: 'Comment deleted successfully',
+      commentId,
+    };
+  }
+
+  // ==================== TIME ENTRIES ====================
+
+  private async updateTaskActualTime(taskId: string) {
+    // Sum all completed time entries for this task
+    const result = await this.prisma.timeEntry.aggregate({
+      where: {
+        taskId,
+        endedAt: { not: null },
+      },
+      _sum: {
+        duration: true,
+      },
+    });
+
+    const totalMinutes = result._sum.duration || 0;
+    const totalHours = totalMinutes / 60;
+
+    await this.prisma.task.update({
+      where: { id: taskId },
+      data: { actualTime: totalHours },
+    });
+  }
+
+  async startTimer(taskId: string, organizationId: string, userId: string) {
+    // Verify task exists and user has access
+    await this.getTaskById(taskId, organizationId);
+
+    // Check if user already has an active timer
+    const activeTimer = await this.prisma.timeEntry.findFirst({
+      where: {
+        userId,
+        endedAt: null,
+      },
+    });
+
+    if (activeTimer) {
+      throw new ForbiddenException(
+        'You already have an active timer. Stop it before starting a new one.',
+      );
+    }
+
+    const timeEntry = await this.prisma.timeEntry.create({
+      data: {
+        taskId,
+        userId,
+        startedAt: new Date(),
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, avatar: true },
+        },
+        task: {
+          select: { id: true, title: true },
+        },
+      },
+    });
+
+    return timeEntry;
+  }
+
+  async stopTimer(taskId: string, organizationId: string, userId: string) {
+    // Verify task exists and user has access
+    await this.getTaskById(taskId, organizationId);
+
+    // Find active timer for this task and user
+    const activeTimer = await this.prisma.timeEntry.findFirst({
+      where: {
+        taskId,
+        userId,
+        endedAt: null,
+      },
+    });
+
+    if (!activeTimer) {
+      throw new NotFoundException('No active timer found for this task');
+    }
+
+    const endedAt = new Date();
+    const startedAt = new Date(activeTimer.startedAt);
+    // Calculate duration in minutes
+    const durationMs = endedAt.getTime() - startedAt.getTime();
+    const durationMinutes = durationMs / 60000;
+
+    const timeEntry = await this.prisma.timeEntry.update({
+      where: { id: activeTimer.id },
+      data: {
+        endedAt,
+        duration: durationMinutes,
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, avatar: true },
+        },
+        task: {
+          select: { id: true, title: true },
+        },
+      },
+    });
+
+    // Update task's actual time
+    await this.updateTaskActualTime(taskId);
+
+    return timeEntry;
+  }
+
+  async getTimeEntries(taskId: string, organizationId: string) {
+    // Verify task exists and user has access
+    await this.getTaskById(taskId, organizationId);
+
+    const timeEntries = await this.prisma.timeEntry.findMany({
+      where: { taskId },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, avatar: true },
+        },
+      },
+      orderBy: { startedAt: 'desc' },
+    });
+
+    return timeEntries;
+  }
+
+  async getActiveTimer(userId: string) {
+    const activeTimer = await this.prisma.timeEntry.findFirst({
+      where: {
+        userId,
+        endedAt: null,
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, avatar: true },
+        },
+        task: {
+          select: { id: true, title: true, status: true },
+        },
+      },
+    });
+
+    return activeTimer;
+  }
+
+  async addManualTimeEntry(
+    taskId: string,
+    organizationId: string,
+    userId: string,
+    duration: number,
+    note?: string,
+  ) {
+    // Verify task exists and user has access
+    await this.getTaskById(taskId, organizationId);
+
+    const now = new Date();
+    // For manual entries, set startedAt to now - duration, endedAt to now
+    const startedAt = new Date(now.getTime() - duration * 60000);
+
+    const timeEntry = await this.prisma.timeEntry.create({
+      data: {
+        taskId,
+        userId,
+        startedAt,
+        endedAt: now,
+        duration,
+        note,
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, avatar: true },
+        },
+        task: {
+          select: { id: true, title: true },
+        },
+      },
+    });
+
+    // Update task's actual time
+    await this.updateTaskActualTime(taskId);
+
+    return timeEntry;
+  }
 }
