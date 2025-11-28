@@ -15,7 +15,7 @@ import {
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Projects', href: '/dashboard/projects', icon: FolderKanban },
-  { name: 'Tasks', href: '/tasks', icon: CheckSquare, disabled: true },
+  { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare },
   { name: 'Chat', href: '/chat', icon: MessageSquare, disabled: true },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
