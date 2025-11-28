@@ -28,6 +28,7 @@ export default function TaskDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string>("");
+  const [userName, setUserName] = useState<string>("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -43,6 +44,7 @@ export default function TaskDetailPage() {
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
       setUserId(payload.sub);
+      setUserName(payload.name || "User");
     } catch (err) {
       console.error("Invalid token:", err);
       router.push("/auth/login");
@@ -154,7 +156,7 @@ export default function TaskDetailPage() {
 
         {/* Comments Section */}
         <div className="bg-card rounded-lg border p-6">
-          <TaskComments taskId={taskId} currentUserId={userId} />
+          <TaskComments taskId={taskId} currentUserId={userId} currentUserName={userName} />
         </div>
       </div>
 

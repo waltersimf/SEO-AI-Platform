@@ -19,9 +19,10 @@ import { Loader2, MessageSquare, Trash2, Send } from "lucide-react";
 interface TaskCommentsProps {
   taskId: string;
   currentUserId: string;
+  currentUserName?: string;
 }
 
-export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
+export function TaskComments({ taskId, currentUserId, currentUserName = "You" }: TaskCommentsProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -105,6 +106,14 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
     });
   };
 
+  const getUserInitials = (name: string) => {
+    const parts = name.split(" ");
+    if (parts.length >= 2) {
+      return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    }
+    return name.charAt(0).toUpperCase();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -126,40 +135,45 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm font-medium">
+      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
         <MessageSquare className="h-4 w-4" />
         Comments ({comments.length})
       </div>
 
       {/* Comments List */}
-      <div className="space-y-4">
+      <div className="space-y-1">
         {comments.length === 0 ? (
-          <div className="text-center py-6 text-muted-foreground text-sm">
+          <div className="text-center py-8 text-muted-foreground text-sm bg-muted/30 rounded-lg">
             No comments yet. Be the first to comment!
           </div>
         ) : (
-          comments.map((comment) => (
-            <div key={comment.id} className="flex gap-3 group">
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium shrink-0">
-                {comment.author.name.charAt(0).toUpperCase()}
+          comments.map((comment, index) => (
+            <div
+              key={comment.id}
+              className="flex gap-3 group p-3 rounded-lg hover:bg-muted/50 transition-colors"
+            >
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary shrink-0">
+                {getUserInitials(comment.author.name)}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-sm">{comment.author.name}</span>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="font-semibold text-sm text-foreground">
+                    {comment.author.name}
+                  </span>
                   <span className="text-xs text-muted-foreground">
                     {formatDateTime(comment.createdAt)}
                   </span>
                   {comment.authorId === currentUserId && (
                     <button
                       onClick={() => handleDeleteClick(comment.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity ml-auto p-1 hover:bg-destructive/10 rounded"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity ml-auto p-1.5 hover:bg-destructive/10 rounded-md"
                       title="Delete comment"
                     >
                       <Trash2 className="h-3.5 w-3.5 text-destructive" />
                     </button>
                   )}
                 </div>
-                <p className="text-sm whitespace-pre-wrap break-words">
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words leading-relaxed">
                   {comment.content}
                 </p>
               </div>
@@ -170,8 +184,8 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
 
       {/* Add Comment Form */}
       <form onSubmit={handleSubmit} className="flex gap-3 pt-4 border-t">
-        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium shrink-0">
-          ?
+        <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-xs font-semibold text-primary-foreground shrink-0">
+          {getUserInitials(currentUserName)}
         </div>
         <div className="flex-1 space-y-2">
           <Textarea
@@ -180,7 +194,7 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
             onChange={(e) => setNewComment(e.target.value)}
             rows={2}
             disabled={submitting}
-            className="resize-none"
+            className="resize-none bg-muted/30 border-muted focus:bg-background transition-colors"
           />
           <div className="flex justify-end">
             <Button type="submit" size="sm" disabled={!newComment.trim() || submitting}>
@@ -188,7 +202,7 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <>
-                  <Send className="h-4 w-4 mr-1" />
+                  <Send className="h-4 w-4 mr-1.5" />
                   Send
                 </>
               )}
