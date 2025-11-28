@@ -1,5 +1,8 @@
 import { API_URL } from '@/config/api';
 
+// Base URL for tasks API
+const TASKS_API = `${API_URL}/api/tasks`;
+
 // Types
 export type TaskStatus =
   | 'backlog'
@@ -139,7 +142,7 @@ export async function getTasks(filters?: TaskFilters): Promise<Task[]> {
     });
   }
 
-  const url = `${API_URL}/tasks${params.toString() ? `?${params.toString()}` : ''}`;
+  const url = `${TASKS_API}${params.toString() ? `?${params.toString()}` : ''}`;
   const response = await fetch(url, {
     method: 'GET',
     headers: getAuthHeaders(),
@@ -150,7 +153,7 @@ export async function getTasks(filters?: TaskFilters): Promise<Task[]> {
 }
 
 export async function getTaskById(id: string): Promise<Task> {
-  const response = await fetch(`${API_URL}/tasks/${id}`, {
+  const response = await fetch(`${TASKS_API}/${id}`, {
     method: 'GET',
     headers: getAuthHeaders(),
     credentials: 'include',
@@ -160,7 +163,7 @@ export async function getTaskById(id: string): Promise<Task> {
 }
 
 export async function createTask(data: CreateTaskData): Promise<Task> {
-  const response = await fetch(`${API_URL}/tasks`, {
+  const response = await fetch(TASKS_API, {
     method: 'POST',
     headers: getAuthHeaders(),
     credentials: 'include',
@@ -171,7 +174,7 @@ export async function createTask(data: CreateTaskData): Promise<Task> {
 }
 
 export async function updateTask(id: string, data: UpdateTaskData): Promise<Task> {
-  const response = await fetch(`${API_URL}/tasks/${id}`, {
+  const response = await fetch(`${TASKS_API}/${id}`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
     credentials: 'include',
@@ -182,7 +185,7 @@ export async function updateTask(id: string, data: UpdateTaskData): Promise<Task
 }
 
 export async function deleteTask(id: string): Promise<{ success: boolean; message: string }> {
-  const response = await fetch(`${API_URL}/tasks/${id}`, {
+  const response = await fetch(`${TASKS_API}/${id}`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
     credentials: 'include',
@@ -197,7 +200,7 @@ export async function getSchedule(dateFrom: string, dateTo: string, userId?: str
     params.append('userId', userId);
   }
 
-  const response = await fetch(`${API_URL}/tasks/schedule?${params.toString()}`, {
+  const response = await fetch(`${TASKS_API}/schedule?${params.toString()}`, {
     method: 'GET',
     headers: getAuthHeaders(),
     credentials: 'include',
@@ -208,7 +211,7 @@ export async function getSchedule(dateFrom: string, dateTo: string, userId?: str
 
 export async function getBacklog(userId?: string): Promise<Task[]> {
   const params = userId ? `?userId=${userId}` : '';
-  const response = await fetch(`${API_URL}/tasks/backlog${params}`, {
+  const response = await fetch(`${TASKS_API}/backlog${params}`, {
     method: 'GET',
     headers: getAuthHeaders(),
     credentials: 'include',
@@ -219,7 +222,7 @@ export async function getBacklog(userId?: string): Promise<Task[]> {
 
 export async function getTaskStats(userId?: string): Promise<TaskStats> {
   const params = userId ? `?userId=${userId}` : '';
-  const response = await fetch(`${API_URL}/tasks/stats${params}`, {
+  const response = await fetch(`${TASKS_API}/stats${params}`, {
     method: 'GET',
     headers: getAuthHeaders(),
     credentials: 'include',
@@ -229,7 +232,7 @@ export async function getTaskStats(userId?: string): Promise<TaskStats> {
 }
 
 export async function acceptTask(id: string, estimatedTime?: number): Promise<Task> {
-  const response = await fetch(`${API_URL}/tasks/${id}/accept`, {
+  const response = await fetch(`${TASKS_API}/${id}/accept`, {
     method: 'POST',
     headers: getAuthHeaders(),
     credentials: 'include',
@@ -240,7 +243,7 @@ export async function acceptTask(id: string, estimatedTime?: number): Promise<Ta
 }
 
 export async function declineTask(id: string, reason: string): Promise<Task> {
-  const response = await fetch(`${API_URL}/tasks/${id}/decline`, {
+  const response = await fetch(`${TASKS_API}/${id}/decline`, {
     method: 'POST',
     headers: getAuthHeaders(),
     credentials: 'include',
@@ -251,7 +254,7 @@ export async function declineTask(id: string, reason: string): Promise<Task> {
 }
 
 export async function changeTaskStatus(id: string, status: TaskStatus): Promise<Task> {
-  const response = await fetch(`${API_URL}/tasks/${id}/status`, {
+  const response = await fetch(`${TASKS_API}/${id}/status`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
     credentials: 'include',
@@ -262,7 +265,7 @@ export async function changeTaskStatus(id: string, status: TaskStatus): Promise<
 }
 
 export async function scheduleTask(id: string, scheduledDate: string): Promise<Task> {
-  const response = await fetch(`${API_URL}/tasks/${id}/schedule`, {
+  const response = await fetch(`${TASKS_API}/${id}/schedule`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
     credentials: 'include',
