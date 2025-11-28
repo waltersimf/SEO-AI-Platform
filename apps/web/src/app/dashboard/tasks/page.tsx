@@ -8,6 +8,7 @@ import { TaskTabs } from "@/components/tasks/task-tabs";
 import { ScheduleView } from "@/components/tasks/schedule-view";
 import { BacklogView } from "@/components/tasks/backlog-view";
 import { DoneView } from "@/components/tasks/done-view";
+import { TaskForm } from "@/components/tasks/task-form";
 import { Task, getTaskStats, TaskStats } from "@/lib/api/tasks";
 
 export default function TasksPage() {
@@ -20,6 +21,8 @@ export default function TasksPage() {
   const [filterUserId, setFilterUserId] = useState<string | undefined>(
     undefined
   );
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -66,8 +69,13 @@ export default function TasksPage() {
   };
 
   const handleCreateTask = () => {
-    // TODO: Open create task modal
-    console.log("Create task clicked");
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCreateSuccess = () => {
+    // Refresh stats and views
+    loadStats();
+    setRefreshKey((prev) => prev + 1);
   };
 
   if (!user) {
@@ -126,18 +134,24 @@ export default function TasksPage() {
             <div className="min-h-[400px]">
               {activeTab === "schedule" && (
                 <ScheduleView
+                  key={`schedule-${refreshKey}`}
                   userId={filterUserId}
                   onTaskClick={handleTaskClick}
                 />
               )}
               {activeTab === "backlog" && (
                 <BacklogView
+                  key={`backlog-${refreshKey}`}
                   userId={filterUserId}
                   onTaskClick={handleTaskClick}
                 />
               )}
               {activeTab === "done" && (
-                <DoneView userId={filterUserId} onTaskClick={handleTaskClick} />
+                <DoneView
+                  key={`done-${refreshKey}`}
+                  userId={filterUserId}
+                  onTaskClick={handleTaskClick}
+                />
               )}
             </div>
           </div>
@@ -152,6 +166,13 @@ export default function TasksPage() {
       >
         <Plus className="h-6 w-6" />
       </Button>
+
+      {/* Create Task Modal */}
+      <TaskForm
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        onSuccess={handleCreateSuccess}
+      />
     </div>
   );
 }
