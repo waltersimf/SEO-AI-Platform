@@ -11,6 +11,7 @@ import {
   Clock,
   Calendar,
   User,
+  UserPlus,
   Folder,
   Tag,
   Loader2,
@@ -19,6 +20,7 @@ import { useState } from "react";
 
 interface TaskDetailProps {
   task: Task;
+  currentUserId: string;
   onStatusChange?: (task: Task) => void;
 }
 
@@ -51,8 +53,12 @@ const statusLabels: Record<TaskStatus, string> = {
   wont_do: "Won't Do",
 };
 
-export function TaskDetail({ task, onStatusChange }: TaskDetailProps) {
+export function TaskDetail({ task, currentUserId, onStatusChange }: TaskDetailProps) {
   const [changingStatus, setChangingStatus] = useState(false);
+
+  // Determine relationship to task
+  const isAssignee = currentUserId === task.assignedToId;
+  const isCreator = currentUserId === task.createdById;
 
   const formatTime = (hours?: number) => {
     if (!hours) return "Not set";
@@ -193,28 +199,100 @@ export function TaskDetail({ task, onStatusChange }: TaskDetailProps) {
 
       {/* Task Details Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Assignee */}
-        <div className="p-4 rounded-lg border">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-            <User className="h-4 w-4" />
-            Assignee
-          </div>
-          {task.assignedTo ? (
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
-                {task.assignedTo.name.charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <div className="font-medium">{task.assignedTo.name}</div>
-                <div className="text-xs text-muted-foreground">
-                  {task.assignedTo.email}
+        {/* Conditional: Show Assignee if creator, Show Created by if assignee, Show both otherwise */}
+        {isAssignee ? (
+          // Current user is the assignee - show who created the task
+          <div className="p-4 rounded-lg border">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+              <UserPlus className="h-4 w-4" />
+              Created by
+            </div>
+            {task.createdBy ? (
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium text-blue-700">
+                  {task.createdBy.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div className="font-medium">{task.createdBy.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {task.createdBy.email}
+                  </div>
                 </div>
               </div>
+            ) : (
+              <div className="text-muted-foreground">Unknown</div>
+            )}
+          </div>
+        ) : isCreator ? (
+          // Current user is the creator - show who is assigned
+          <div className="p-4 rounded-lg border">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+              <User className="h-4 w-4" />
+              Assignee
             </div>
-          ) : (
-            <div className="text-muted-foreground">Unassigned</div>
-          )}
-        </div>
+            {task.assignedTo ? (
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
+                  {task.assignedTo.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div className="font-medium">{task.assignedTo.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {task.assignedTo.email}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-muted-foreground">Unassigned</div>
+            )}
+          </div>
+        ) : (
+          // Current user is neither - show both
+          <>
+            <div className="p-4 rounded-lg border">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                <User className="h-4 w-4" />
+                Assignee
+              </div>
+              {task.assignedTo ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
+                    {task.assignedTo.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="font-medium">{task.assignedTo.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {task.assignedTo.email}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-muted-foreground">Unassigned</div>
+              )}
+            </div>
+            <div className="p-4 rounded-lg border">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                <UserPlus className="h-4 w-4" />
+                Created by
+              </div>
+              {task.createdBy ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium text-blue-700">
+                    {task.createdBy.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="font-medium">{task.createdBy.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {task.createdBy.email}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-muted-foreground">Unknown</div>
+              )}
+            </div>
+          </>
+        )}
 
         {/* Project */}
         <div className="p-4 rounded-lg border">

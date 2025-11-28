@@ -149,7 +149,7 @@ export default function TaskDetailPage() {
 
         {/* Task Detail */}
         <div className="bg-card rounded-lg border p-6 mb-6">
-          <TaskDetail task={task} onStatusChange={handleStatusChange} />
+          <TaskDetail task={task} currentUserId={userId} onStatusChange={handleStatusChange} />
         </div>
 
         {/* Comments Section */}

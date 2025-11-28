@@ -89,7 +89,7 @@ export function TaskCard({ task, onClick, showProject = true, linkToDetail = tru
       </div>
 
       <div className="flex items-center justify-between mt-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {task.assignedTo && (
             <div className="flex items-center gap-1.5">
               <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
@@ -97,6 +97,17 @@ export function TaskCard({ task, onClick, showProject = true, linkToDetail = tru
               </div>
               <span className="text-xs text-muted-foreground">
                 {task.assignedTo.name}
+              </span>
+            </div>
+          )}
+          {task.createdBy && task.createdById !== task.assignedToId && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">from</span>
+              <div className="h-5 w-5 rounded-full bg-blue-100 flex items-center justify-center text-xs font-medium text-blue-700">
+                {task.createdBy.name.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {task.createdBy.name}
               </span>
             </div>
           )}
