@@ -5,9 +5,10 @@ import { ChatService } from './chat.service';
 import { ChatController } from './chat.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AiModule } from '../ai/ai.module';
+import { TaskModule } from '../task/task.module';
 
 @Module({
-  imports: [PrismaModule, AiModule],
+  imports: [PrismaModule, AiModule, TaskModule],
   controllers: [ChatController],
   providers: [
     ChatGateway,    // ✅ ChatGateway with AI integration
