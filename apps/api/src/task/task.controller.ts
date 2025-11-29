@@ -147,6 +147,56 @@ export class TaskController {
     }
   }
 
+  // ==================== AUTO-PLANNING ====================
+
+  @Post('auto-plan')
+  async generateAutoPlan(@Req() req) {
+    try {
+      if (!req.user || !req.user.organizationId) {
+        throw new BadRequestException('User not authenticated or missing organization');
+      }
+
+      const userId = req.user.id;
+      const organizationId = req.user.organizationId;
+
+      return this.taskService.generateAutoPlan(organizationId, userId);
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate auto-plan';
+      throw new InternalServerErrorException(errorMessage);
+    }
+  }
+
+  @Post('apply-plan')
+  async applyAutoPlan(
+    @Req() req,
+    @Body() body: { plan: Array<{ taskId: string; suggestedDate: string }> },
+  ) {
+    try {
+      if (!req.user || !req.user.organizationId) {
+        throw new BadRequestException('User not authenticated or missing organization');
+      }
+
+      const organizationId = req.user.organizationId;
+
+      if (!body.plan || !Array.isArray(body.plan)) {
+        throw new BadRequestException('Plan array is required');
+      }
+
+      return this.taskService.applyAutoPlan(organizationId, body.plan);
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      const errorMessage = error instanceof Error ? error.message : 'Failed to apply auto-plan';
+      throw new InternalServerErrorException(errorMessage);
+    }
+  }
+
   // ==================== ROOT ROUTES ====================
 
   @Get()
