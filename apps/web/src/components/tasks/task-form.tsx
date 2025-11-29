@@ -361,7 +361,8 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
               <Label htmlFor="scheduledTime">Time</Label>
               <Input
                 id="scheduledTime"
-                type="time"
+                type="text"
+                placeholder="HH:MM (e.g. 14:30)"
                 value={scheduledTime}
                 onChange={(e) => setScheduledTime(e.target.value)}
                 disabled={submitting}
