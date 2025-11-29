@@ -109,12 +109,23 @@ export function ChatBox({
 
   // Check if message has a task preview
   const hasTaskPreview = (message: Message): boolean => {
-    return !!(
+    const result = !!(
       message.aiContext?.taskPreview?.type === 'task_preview' &&
       message.aiContext?.taskPreview?.task &&
       !createdTaskIds.has(message.id) &&
       !dismissedPreviews.has(message.id)
     );
+    if (message.aiContext) {
+      console.log('hasTaskPreview check for message:', message.id, {
+        aiContext: message.aiContext,
+        type: message.aiContext?.taskPreview?.type,
+        hasTask: !!message.aiContext?.taskPreview?.task,
+        isCreated: createdTaskIds.has(message.id),
+        isDismissed: dismissedPreviews.has(message.id),
+        result,
+      });
+    }
+    return result;
   };
 
   // Helper function to render avatar content consistently
@@ -221,6 +232,8 @@ export function ChatBox({
     // Listen for new messages
     socket.on('receive_message', (message: Message) => {
       console.log('New message:', message);
+      console.log('Message aiContext:', message.aiContext);
+      console.log('Has taskPreview?:', message.aiContext?.taskPreview);
       setMessages((prev) => {
         // Check if message already exists to prevent duplicates
         const messageExists = prev.some(m => m.id === message.id);
