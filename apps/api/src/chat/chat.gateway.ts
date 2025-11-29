@@ -693,12 +693,16 @@ export class ChatGateway
           projectId,
           projectName: parseResult.task.projectName,
           dueDate: parseResult.task.dueDate,
+          scheduledTime: parseResult.task.scheduledTime,
           priority: parseResult.task.priority || 'medium',
           estimatedTime: parseResult.task.estimatedTime,
+          recurrenceRule: parseResult.task.recurrenceRule,
           organizationId: chat.organizationId,
         },
         status: 'pending', // Not created yet
       };
+
+      this.logger.log('📋 taskPreview object:', JSON.stringify(taskPreview));
 
       // Generate preview message
       const previewMessage = this.aiService.generateTaskPreviewMessage(

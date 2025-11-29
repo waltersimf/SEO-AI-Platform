@@ -18,8 +18,10 @@ interface TaskPreviewData {
     projectId?: string;
     projectName?: string;
     dueDate?: string;
+    scheduledTime?: string;
     priority?: 'low' | 'medium' | 'high' | 'critical';
     estimatedTime?: number;
+    recurrenceRule?: 'daily' | 'weekly' | 'monthly';
     organizationId: string;
   };
   status: 'pending' | 'created';
