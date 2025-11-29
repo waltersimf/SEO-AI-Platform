@@ -535,6 +535,13 @@ export class ChatGateway
         return;
       }
 
+      // Check if this is a task creation request
+      if (this.aiService.hasTaskCreationIntent(lastMessage.content)) {
+        this.logger.log('Task creation intent detected, parsing task...');
+        await this.handleTaskCreationIntent(chatId, lastMessage.content, context);
+        return;
+      }
+
       // Generate AI response with full conversation context
       const aiResponse = await this.aiService.generateResponse(lastMessage.content, context);
 
@@ -563,6 +570,163 @@ export class ChatGateway
       this.logger.log(`AI message ${aiMessage.id} delivered to room ${chatId}`);
     } catch (error) {
       this.logger.error('Error generating AI response:', error);
+    }
+  }
+
+  /**
+   * Handle task creation intent - parse and send task preview
+   */
+  private async handleTaskCreationIntent(
+    chatId: string,
+    message: string,
+    context: any,
+  ) {
+    try {
+      // Get chat to find organization
+      const chat = await this.prisma.chat.findUnique({
+        where: { id: chatId },
+        include: {
+          members: {
+            include: {
+              user: {
+                select: { id: true, name: true, isAI: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (!chat) {
+        this.logger.warn('Chat not found for task creation');
+        return;
+      }
+
+      // Get projects for the organization
+      const projects = await this.prisma.project.findMany({
+        where: {
+          organizationId: chat.organizationId,
+          isDeleted: false,
+        },
+        select: { id: true, name: true },
+      });
+
+      // Get all organization users as potential assignees
+      const orgUsers = await this.prisma.user.findMany({
+        where: { organizationId: chat.organizationId },
+        select: { id: true, name: true, isAI: true },
+      });
+
+      // Parse task from message
+      const parseResult = await this.aiService.parseTaskFromMessage(
+        message,
+        context,
+        orgUsers,
+        projects,
+      );
+
+      if (!parseResult.isTaskRequest || !parseResult.task) {
+        // Not a valid task request, generate normal response
+        this.logger.log('Not a valid task request, generating normal response');
+        const aiResponse = await this.aiService.generateResponse(message, context);
+        const aiModel = this.configService.get<string>('AI_MODEL') || 'claude-sonnet-4-20250514';
+
+        const aiMessage = await this.chatService.createAIMessage(
+          chatId,
+          this.aiUserId!,
+          aiResponse,
+          aiModel,
+          context,
+        );
+
+        this.server.to(chatId).emit('receive_message', aiMessage);
+        this.server.emit('refresh_chat_list', { chatId, timestamp: new Date() });
+        return;
+      }
+
+      // Resolve assignee ID from name
+      let assigneeId: string | undefined;
+      if (parseResult.task.assigneeName) {
+        const assigneeName = parseResult.task.assigneeName.toLowerCase();
+
+        // Check if "me" or self-reference - find the message author
+        if (assigneeName === 'me' || assigneeName === 'myself' || assigneeName === 'мені' || assigneeName === 'мне') {
+          // Find the human user who sent the message (last non-AI message author)
+          const lastUserMessage = context.conversationHistory
+            .filter((m: any) => m.role === 'user')
+            .pop();
+
+          if (lastUserMessage) {
+            const author = orgUsers.find(
+              u => u.name.toLowerCase() === lastUserMessage.authorName?.toLowerCase()
+            );
+            if (author) assigneeId = author.id;
+          }
+        } else {
+          // Match by name
+          const assignee = orgUsers.find(
+            u => u.name.toLowerCase().includes(assigneeName) ||
+                 assigneeName.includes(u.name.toLowerCase())
+          );
+          if (assignee) assigneeId = assignee.id;
+        }
+      }
+
+      // Resolve project ID from name
+      let projectId: string | undefined;
+      if (parseResult.task.projectName) {
+        const projectName = parseResult.task.projectName.toLowerCase();
+        const project = projects.find(
+          p => p.name.toLowerCase().includes(projectName) ||
+               projectName.includes(p.name.toLowerCase())
+        );
+        if (project) projectId = project.id;
+      }
+
+      // Create task preview with resolved IDs
+      const taskPreview = {
+        type: 'task_preview',
+        task: {
+          title: parseResult.task.title,
+          description: parseResult.task.description,
+          assigneeId,
+          assigneeName: parseResult.task.assigneeName,
+          projectId,
+          projectName: parseResult.task.projectName,
+          dueDate: parseResult.task.dueDate,
+          priority: parseResult.task.priority || 'medium',
+          estimatedTime: parseResult.task.estimatedTime,
+          organizationId: chat.organizationId,
+        },
+        status: 'pending', // Not created yet
+      };
+
+      // Generate preview message
+      const previewMessage = this.aiService.generateTaskPreviewMessage(
+        parseResult.task,
+        message.match(/[а-яА-ЯіІїЇєЄ]/) ? 'uk' : 'en',
+      );
+
+      const aiModel = this.configService.get<string>('AI_MODEL') || 'claude-sonnet-4-20250514';
+
+      // Save AI message with task preview in aiContext
+      const aiMessage = await this.chatService.createAIMessage(
+        chatId,
+        this.aiUserId!,
+        previewMessage,
+        aiModel,
+        { ...context, taskPreview },
+      );
+
+      // Broadcast AI response with task preview
+      this.server.to(chatId).emit('receive_message', {
+        ...aiMessage,
+        aiContext: { taskPreview },
+      });
+
+      this.logger.log('📋 Task preview sent to chat');
+      this.server.emit('refresh_chat_list', { chatId, timestamp: new Date() });
+    } catch (error) {
+      this.logger.error('Error handling task creation intent:', error);
     }
   }
 }
