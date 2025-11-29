@@ -838,6 +838,7 @@ export class TaskService {
   async generateAutoPlan(organizationId: string, userId: string) {
     const HOURS_PER_DAY = 8;
     const DEFAULT_TASK_HOURS = 1;
+    const WEEKS_TO_PLAN = 3; // Plan across 3 weeks
 
     // Get backlog tasks (unscheduled, not done/declined)
     const backlogTasks = await this.prisma.task.findMany({
@@ -861,30 +862,79 @@ export class TaskService {
       return {
         plan: [],
         summary: {},
+        weeks: [],
         message: 'No tasks to schedule',
       };
     }
 
-    // Get start of current week (Monday)
+    // Helper to check if a day is weekend (Sat=6, Sun=0)
+    const isWeekend = (date: Date) => {
+      const day = date.getDay();
+      return day === 0 || day === 6;
+    };
+
+    // Helper to get Monday of a week for a given date
+    const getMondayOfWeek = (date: Date) => {
+      const d = new Date(date);
+      const day = d.getDay();
+      const diff = day === 0 ? -6 : 1 - day; // If Sunday, go back 6 days, otherwise go to Monday
+      d.setDate(d.getDate() + diff);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    };
+
+    // Find the starting date (tomorrow, or next Monday if tomorrow is weekend)
     const today = new Date();
-    const dayOfWeek = today.getDay();
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-    monday.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
 
-    // Get end of week (Sunday)
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
+    let startDate = new Date(today);
+    startDate.setDate(today.getDate() + 1); // Start from tomorrow
 
-    // Get already scheduled tasks for the week
+    // If tomorrow is weekend, skip to Monday
+    while (isWeekend(startDate)) {
+      startDate.setDate(startDate.getDate() + 1);
+    }
+
+    // Generate all business days for the next WEEKS_TO_PLAN weeks
+    const businessDays: Date[] = [];
+    const weeks: Array<{ weekStart: string; weekEnd: string; label: string }> = [];
+    let currentDate = new Date(startDate);
+    let weeksAdded = 0;
+    let lastWeekMonday: Date | null = null;
+
+    while (weeksAdded < WEEKS_TO_PLAN) {
+      if (!isWeekend(currentDate)) {
+        businessDays.push(new Date(currentDate));
+
+        // Track weeks for grouping
+        const monday = getMondayOfWeek(currentDate);
+        if (!lastWeekMonday || monday.getTime() !== lastWeekMonday.getTime()) {
+          const friday = new Date(monday);
+          friday.setDate(monday.getDate() + 4);
+          weeks.push({
+            weekStart: monday.toISOString().split('T')[0],
+            weekEnd: friday.toISOString().split('T')[0],
+            label: `Week of ${monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+          });
+          lastWeekMonday = monday;
+          weeksAdded++;
+        }
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // Get the date range for fetching existing scheduled tasks
+    const planStartDate = businessDays[0];
+    const planEndDate = businessDays[businessDays.length - 1];
+
+    // Get already scheduled tasks for this period
     const scheduledTasks = await this.prisma.task.findMany({
       where: {
         organizationId,
         assignedToId: userId,
         scheduledDate: {
-          gte: monday,
-          lte: sunday,
+          gte: planStartDate,
+          lte: planEndDate,
         },
         status: {
           notIn: [TaskStatus.done, TaskStatus.declined, TaskStatus.wont_do],
@@ -894,12 +944,9 @@ export class TaskService {
 
     // Calculate existing capacity per day
     const dayCapacity: Record<string, number> = {};
-    const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
-    // Initialize all days with full capacity
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(monday);
-      date.setDate(monday.getDate() + i);
+    // Initialize business days with full capacity
+    for (const date of businessDays) {
       const dateKey = date.toISOString().split('T')[0];
       dayCapacity[dateKey] = HOURS_PER_DAY;
     }
@@ -924,33 +971,23 @@ export class TaskService {
       dueDate: string | null;
     }> = [];
 
-    const summary: Record<string, number> = {};
-    for (const dayName of dayNames) {
-      summary[dayName] = 0;
-    }
+    // Summary by date
+    const summaryByDate: Record<string, number> = {};
 
     for (const task of backlogTasks) {
       const taskHours = task.estimatedTime || DEFAULT_TASK_HOURS;
 
       // Find first day with available capacity
-      let scheduled = false;
-      for (let i = 0; i < 7; i++) {
-        const date = new Date(monday);
-        date.setDate(monday.getDate() + i);
+      for (const date of businessDays) {
         const dateKey = date.toISOString().split('T')[0];
 
-        // Skip past days
-        if (date < today) {
-          date.setHours(0, 0, 0, 0);
-          const todayStart = new Date(today);
-          todayStart.setHours(0, 0, 0, 0);
-          if (date < todayStart) continue;
-        }
-
         // Check if task has a due date and this day is after it
-        if (task.dueDate && date > task.dueDate) {
-          // Try to fit it earlier, but for now skip
-          continue;
+        if (task.dueDate) {
+          const dueDate = new Date(task.dueDate);
+          dueDate.setHours(23, 59, 59, 999);
+          if (date > dueDate) {
+            continue;
+          }
         }
 
         // Check capacity
@@ -967,27 +1004,19 @@ export class TaskService {
           });
 
           // Update summary
-          const dayIndex = Math.floor((date.getTime() - monday.getTime()) / (24 * 60 * 60 * 1000));
-          if (dayIndex >= 0 && dayIndex < 7) {
-            summary[dayNames[dayIndex]] += taskHours;
-          }
+          summaryByDate[dateKey] = (summaryByDate[dateKey] || 0) + taskHours;
 
-          scheduled = true;
-          break;
+          break; // Task scheduled, move to next task
         }
-      }
-
-      // If couldn't schedule this week, add to overflow (optional)
-      if (!scheduled) {
-        // Could add to next week or mark as overflow
       }
     }
 
     return {
       plan,
-      summary,
-      weekStart: monday.toISOString().split('T')[0],
-      weekEnd: sunday.toISOString().split('T')[0],
+      summaryByDate,
+      weeks,
+      planStart: planStartDate.toISOString().split('T')[0],
+      planEnd: planEndDate.toISOString().split('T')[0],
       totalTasksPlanned: plan.length,
       totalTasksInBacklog: backlogTasks.length,
     };
