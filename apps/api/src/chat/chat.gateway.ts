@@ -16,6 +16,7 @@ import { CreateMessageDto } from './dto/create-message.dto';
 import { AiService } from '../ai/ai.service';
 import { AiContextService } from '../ai/ai-context.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { TaskService } from '../task/task.service';
 
 interface ConnectedClient {
   socketId: string;
@@ -49,6 +50,7 @@ export class ChatGateway
     private aiContextService: AiContextService,
     private prisma: PrismaService,
     private configService: ConfigService,
+    private taskService: TaskService,
   ) {}
 
   async onModuleInit() {
@@ -535,6 +537,13 @@ export class ChatGateway
         return;
       }
 
+      // Check if this is an auto-plan request
+      if (this.aiService.hasAutoPlanIntent(lastMessage.content)) {
+        this.logger.log('Auto-plan intent detected, generating plan...');
+        await this.handleAutoPlanIntent(chatId, lastMessage.content, context);
+        return;
+      }
+
       // Check if this is a task creation request
       if (this.aiService.hasTaskCreationIntent(lastMessage.content)) {
         this.logger.log('Task creation intent detected, parsing task...');
@@ -740,6 +749,212 @@ export class ChatGateway
       this.server.emit('refresh_chat_list', { chatId, timestamp: new Date() });
     } catch (error) {
       this.logger.error('Error handling task creation intent:', error);
+    }
+  }
+
+  /**
+   * Handle auto-plan intent - generate and send plan preview
+   */
+  private async handleAutoPlanIntent(
+    chatId: string,
+    message: string,
+    _context: any,
+  ) {
+    try {
+      // Get chat to find organization and user
+      const chat = await this.prisma.chat.findUnique({
+        where: { id: chatId },
+        include: {
+          members: {
+            include: {
+              user: {
+                select: { id: true, name: true, isAI: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (!chat) {
+        this.logger.warn('Chat not found for auto-plan');
+        return;
+      }
+
+      // Find the human user who sent the message
+      const humanMember = chat.members.find(m => !m.user.isAI);
+      if (!humanMember) {
+        this.logger.warn('No human user found in chat');
+        return;
+      }
+
+      const userId = humanMember.userId;
+      const userName = humanMember.user.name;
+
+      this.logger.log(`📅 Generating auto-plan for user ${userName} (${userId})`);
+
+      // Generate the plan using TaskService
+      const planResult = await this.taskService.generateAutoPlan(
+        chat.organizationId,
+        userId,
+      );
+
+      this.logger.log(`📅 Plan generated: ${planResult.totalTasksPlanned} tasks planned`);
+
+      // Detect language for response message
+      const isUkrainian = message.match(/[а-яА-ЯіІїЇєЄ]/);
+
+      // Create auto-plan preview
+      const autoPlanPreview = {
+        type: 'auto_plan_preview',
+        plan: planResult.plan,
+        weeks: planResult.weeks,
+        summaryByDate: planResult.summaryByDate,
+        planStart: planResult.planStart,
+        planEnd: planResult.planEnd,
+        totalTasksPlanned: planResult.totalTasksPlanned,
+        totalTasksInBacklog: planResult.totalTasksInBacklog,
+        unscheduledTasks: planResult.unscheduledTasks || [],
+        status: 'pending', // Not applied yet
+      };
+
+      // Generate preview message based on plan result
+      let previewMessage: string;
+
+      if (planResult.totalTasksPlanned === 0) {
+        previewMessage = isUkrainian
+          ? '📅 У вас немає задач для планування. Додайте задачі до беклогу, щоб я міг їх розпланувати.'
+          : '📅 You have no tasks to plan. Add tasks to your backlog so I can schedule them.';
+      } else {
+        const totalHours = Object.values(planResult.summaryByDate || {}).reduce(
+          (sum: number, h) => sum + (h as number),
+          0,
+        );
+
+        if (isUkrainian) {
+          previewMessage = `📅 **План на ${planResult.weeks?.length || 0} тижні**\n\n`;
+          previewMessage += `📋 Заплановано: **${planResult.totalTasksPlanned}** з ${planResult.totalTasksInBacklog} задач\n`;
+          previewMessage += `⏱️ Загальний час: **${totalHours}** годин\n\n`;
+
+          if (planResult.weeks) {
+            for (const week of planResult.weeks) {
+              previewMessage += `**${week.label}**\n`;
+            }
+          }
+
+          if (planResult.unscheduledTasks && planResult.unscheduledTasks.length > 0) {
+            previewMessage += `\n⚠️ ${planResult.unscheduledTasks.length} задач не вдалося запланувати`;
+          }
+        } else {
+          previewMessage = `📅 **Plan for ${planResult.weeks?.length || 0} weeks**\n\n`;
+          previewMessage += `📋 Scheduled: **${planResult.totalTasksPlanned}** of ${planResult.totalTasksInBacklog} tasks\n`;
+          previewMessage += `⏱️ Total time: **${totalHours}** hours\n\n`;
+
+          if (planResult.weeks) {
+            for (const week of planResult.weeks) {
+              previewMessage += `**${week.label}**\n`;
+            }
+          }
+
+          if (planResult.unscheduledTasks && planResult.unscheduledTasks.length > 0) {
+            previewMessage += `\n⚠️ ${planResult.unscheduledTasks.length} tasks could not be scheduled`;
+          }
+        }
+      }
+
+      const aiModel = this.configService.get<string>('AI_MODEL') || 'claude-sonnet-4-20250514';
+
+      // Save AI message with auto-plan preview in aiContext
+      const aiContextToSave = { autoPlanPreview };
+      this.logger.log('📅 Saving aiContext to DB:', JSON.stringify(aiContextToSave));
+
+      const aiMessage = await this.chatService.createAIMessage(
+        chatId,
+        this.aiUserId!,
+        previewMessage,
+        aiModel,
+        aiContextToSave,
+      );
+
+      this.logger.log('📅 Created AI message with id:', aiMessage.id);
+
+      // Broadcast AI response with auto-plan preview
+      const messageWithPreview = {
+        ...aiMessage,
+        aiContext: aiContextToSave,
+      };
+
+      this.server.to(chatId).emit('receive_message', messageWithPreview);
+      this.logger.log('📅 Auto-plan preview sent to chat');
+      this.server.emit('refresh_chat_list', { chatId, timestamp: new Date() });
+    } catch (error) {
+      this.logger.error('Error handling auto-plan intent:', error);
+    }
+  }
+
+  @SubscribeMessage('confirm_auto_plan_applied')
+  async handleAutoPlanApplied(
+    @ConnectedSocket() _client: Socket,
+    @MessageBody()
+    payload: {
+      chatId: string;
+      messageId?: string;
+      tasksApplied: number;
+    },
+  ) {
+    const { chatId, messageId, tasksApplied } = payload;
+
+    if (!this.aiUserId) {
+      this.logger.warn('AI user not available for auto-plan confirmation');
+      return;
+    }
+
+    try {
+      // Update the original message to mark auto-plan as applied
+      if (messageId) {
+        const originalMessage = await this.prisma.message.findUnique({
+          where: { id: messageId },
+        });
+
+        if (originalMessage?.aiContext) {
+          const aiContext = originalMessage.aiContext as any;
+          if (aiContext.autoPlanPreview) {
+            const updatedAiContext = {
+              ...aiContext,
+              autoPlanPreview: {
+                ...aiContext.autoPlanPreview,
+                status: 'applied',
+              },
+            };
+
+            await this.prisma.message.update({
+              where: { id: messageId },
+              data: { aiContext: updatedAiContext },
+            });
+
+            this.logger.log(`📅 Updated message ${messageId} autoPlanPreview status to 'applied'`);
+          }
+        }
+      }
+
+      // Generate confirmation message
+      const confirmationMessage = `✅ План застосовано!\n\n📋 **${tasksApplied}** задач заплановано на найближчі тижні.\n\nПерегляньте календар задач, щоб побачити розклад.`;
+
+      const aiModel = this.configService.get<string>('AI_MODEL') || 'claude-sonnet-4-20250514';
+
+      const aiMessage = await this.chatService.createAIMessage(
+        chatId,
+        this.aiUserId,
+        confirmationMessage,
+        aiModel,
+        {},
+      );
+
+      this.server.to(chatId).emit('receive_message', aiMessage);
+      this.server.emit('refresh_chat_list', { chatId, timestamp: new Date() });
+
+      this.logger.log('✅ Auto-plan confirmation sent');
+    } catch (error) {
+      this.logger.error('Error sending auto-plan confirmation:', error);
     }
   }
 

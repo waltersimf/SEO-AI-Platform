@@ -161,6 +161,30 @@ Always maintain a friendly and supportive tone.`;
   }
 
   /**
+   * Detect if the user message contains an auto-plan intent
+   */
+  hasAutoPlanIntent(message: string): boolean {
+    const lowerMessage = message.toLowerCase();
+    const autoPlanKeywords = [
+      // Ukrainian
+      'розплануй', 'розпланувати', 'заплануй', 'запланувати',
+      'розподіли задачі', 'розкидай задачі', 'сплануй мої задачі',
+      'сплануй задачі', 'сплануй тиждень', 'розплануй тиждень',
+      // Russian
+      'распланируй', 'распланировать', 'запланируй', 'запланировать',
+      'распредели задачи', 'раскидай задачи', 'спланируй задачи',
+      'спланируй неделю', 'распланируй неделю',
+      // English
+      'auto-plan', 'autoplan', 'auto plan',
+      'schedule my tasks', 'plan my week', 'plan my backlog',
+      'plan my tasks', 'schedule backlog', 'schedule my week',
+      'auto schedule', 'autoschedule', 'auto-schedule',
+    ];
+
+    return autoPlanKeywords.some(keyword => lowerMessage.includes(keyword));
+  }
+
+  /**
    * Parse a message to extract task data using Claude AI
    */
   async parseTaskFromMessage(
