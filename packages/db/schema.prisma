@@ -220,9 +220,7 @@ model Task {
   declineReason String?
 
   // Group tasks
-  groupTaskId String?
-  groupTask   Task?   @relation("GroupTasks", fields: [groupTaskId], references: [id], onDelete: SetNull)
-  subTasks    Task[]  @relation("GroupTasks")
+  groupTaskId String? // Shared ID to link grouped tasks, no relation
   isGroupTask Boolean @default(false)
 
   // Recurring tasks
