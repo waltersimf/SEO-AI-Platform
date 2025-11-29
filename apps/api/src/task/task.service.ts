@@ -26,23 +26,20 @@ export class TaskService {
   };
 
   async createTask(dto: CreateTaskDto, userId: string, organizationId: string) {
-    // Debug logging
-    console.log('=== TASK CREATION DEBUG ===');
+    // FORCED logging at very start
+    console.log('');
+    console.log('!!! TASK SERVICE CREATE TASK CALLED !!!');
     console.log('dto.assignedToId:', dto.assignedToId);
     console.log('userId (creator):', userId);
-    console.log('isAssignedToOther:', dto.assignedToId && dto.assignedToId !== userId);
-    console.log('initialStatus:', (dto.assignedToId && dto.assignedToId !== userId)
-      ? 'pending_acceptance'
-      : 'backlog');
-    console.log('========================');
-
-    // Determine initial status:
-    // - If assigned to someone else → pending_acceptance
-    // - If self-assigned or unassigned → backlog
     const isAssignedToOther = dto.assignedToId && dto.assignedToId !== userId;
+    console.log('isAssignedToOther:', isAssignedToOther);
     const initialStatus = isAssignedToOther
       ? TaskStatus.pending_acceptance
       : TaskStatus.backlog;
+    console.log('initialStatus:', initialStatus);
+    console.log('TaskStatus.pending_acceptance:', TaskStatus.pending_acceptance);
+    console.log('!!! END DEBUG !!!');
+    console.log('');
 
     const task = await this.prisma.task.create({
       data: {
@@ -60,6 +57,8 @@ export class TaskService {
       },
       include: this.taskInclude,
     });
+
+    console.log('!!! TASK CREATED WITH STATUS:', task.status, '!!!');
 
     return task;
   }
