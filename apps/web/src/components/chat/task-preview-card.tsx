@@ -62,10 +62,9 @@ export function TaskPreviewCard({
           description: taskData.description,
           assignedToId: taskData.assigneeId,
           projectId: taskData.projectId,
-          scheduledDate: taskData.dueDate,
+          dueDate: taskData.dueDate,
           priority: taskData.priority || 'medium',
           estimatedTime: taskData.estimatedTime,
-          status: 'backlog',
         }),
       });
 
