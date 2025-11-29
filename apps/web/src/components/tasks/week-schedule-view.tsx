@@ -461,7 +461,7 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
     setAutoPlanLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${API_URL}/tasks/auto-plan`, {
+      const response = await fetch(`${API_URL}/api/tasks/auto-plan`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -489,7 +489,7 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
     setAutoPlanApplying(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${API_URL}/tasks/apply-plan`, {
+      const response = await fetch(`${API_URL}/api/tasks/apply-plan`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
