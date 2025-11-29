@@ -57,4 +57,17 @@ export class CreateTaskDto {
   @IsString({ each: true })
   @IsOptional()
   tags?: string[];
+
+  // Recurring task fields
+  @IsBoolean()
+  @IsOptional()
+  isRecurring?: boolean;
+
+  @IsString()
+  @IsOptional()
+  recurrenceRule?: string; // "daily", "weekly", "monthly"
+
+  @IsDateString()
+  @IsOptional()
+  recurrenceEnd?: string;
 }

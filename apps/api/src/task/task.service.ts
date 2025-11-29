@@ -51,6 +51,10 @@ export class TaskService {
         dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
         estimatedTime: dto.estimatedTime,
         tags: dto.tags || [],
+        // Recurring task fields
+        isRecurring: dto.isRecurring || false,
+        recurrenceRule: dto.recurrenceRule,
+        recurrenceEnd: dto.recurrenceEnd ? new Date(dto.recurrenceEnd) : null,
       },
       include: this.taskInclude,
     });
@@ -206,7 +210,7 @@ export class TaskService {
   }
 
   async updateTask(id: string, organizationId: string, dto: UpdateTaskDto) {
-    await this.getTaskById(id, organizationId);
+    const existingTask = await this.getTaskById(id, organizationId);
 
     const updateData: any = {};
 
@@ -238,7 +242,96 @@ export class TaskService {
     // Emit real-time event
     this.eventsGateway.emitTaskUpdated(organizationId, task);
 
+    // Auto-create next occurrence for recurring tasks when marked as done
+    if ((dto.status as string) === 'done' && existingTask.isRecurring && existingTask.recurrenceRule) {
+      await this.createNextRecurringTask(existingTask, organizationId);
+    }
+
     return task;
+  }
+
+  /**
+   * Calculate next scheduled date based on recurrence rule
+   */
+  private calculateNextDate(baseDate: Date | null, rule: string): Date {
+    const date = baseDate ? new Date(baseDate) : new Date();
+
+    switch (rule) {
+      case 'daily':
+        date.setDate(date.getDate() + 1);
+        break;
+      case 'weekly':
+        date.setDate(date.getDate() + 7);
+        break;
+      case 'monthly':
+        date.setMonth(date.getMonth() + 1);
+        break;
+      default:
+        date.setDate(date.getDate() + 1); // Default to daily
+    }
+
+    return date;
+  }
+
+  /**
+   * Create the next occurrence of a recurring task
+   */
+  private async createNextRecurringTask(parentTask: any, organizationId: string) {
+    // Check if recurrence has ended
+    if (parentTask.recurrenceEnd && new Date() > new Date(parentTask.recurrenceEnd)) {
+      console.log(`Recurring task ${parentTask.id} has reached its end date, not creating next occurrence`);
+      return null;
+    }
+
+    // Calculate next scheduled date
+    const nextScheduledDate = this.calculateNextDate(
+      parentTask.scheduledDate,
+      parentTask.recurrenceRule,
+    );
+
+    // Check if next date is past recurrence end
+    if (parentTask.recurrenceEnd && nextScheduledDate > new Date(parentTask.recurrenceEnd)) {
+      console.log(`Next occurrence date is past recurrence end, not creating`);
+      return null;
+    }
+
+    // Determine initial status (same logic as createTask)
+    const isAssignedToOther = parentTask.assignedToId && parentTask.assignedToId !== parentTask.createdById;
+    const initialStatus = isAssignedToOther
+      ? TaskStatus.pending_acceptance
+      : TaskStatus.backlog;
+
+    // Create the next occurrence
+    const nextTask = await this.prisma.task.create({
+      data: {
+        title: parentTask.title,
+        description: parentTask.description,
+        projectId: parentTask.projectId,
+        assignedToId: parentTask.assignedToId,
+        createdById: parentTask.createdById,
+        organizationId,
+        status: initialStatus,
+        priority: parentTask.priority,
+        scheduledDate: nextScheduledDate,
+        dueDate: parentTask.dueDate ? this.calculateNextDate(parentTask.dueDate, parentTask.recurrenceRule) : null,
+        estimatedTime: parentTask.estimatedTime,
+        tags: parentTask.tags || [],
+        // Recurring task fields - carry forward
+        isRecurring: true,
+        recurrenceRule: parentTask.recurrenceRule,
+        recurrenceEnd: parentTask.recurrenceEnd,
+        // Link to original parent (first task in series)
+        parentTaskId: parentTask.parentTaskId || parentTask.id,
+      },
+      include: this.taskInclude,
+    });
+
+    console.log(`Created next recurring task ${nextTask.id} for parent ${parentTask.id}`);
+
+    // Emit real-time event for the new task
+    this.eventsGateway.emitTaskCreated(organizationId, nextTask);
+
+    return nextTask;
   }
 
   async deleteTask(id: string, organizationId: string) {

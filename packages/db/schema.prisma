@@ -224,11 +224,12 @@ model Task {
   isGroupTask Boolean @default(false)
 
   // Recurring tasks
-  isRecurring      Boolean @default(false)
-  recurringPattern String? // e.g., "daily", "weekly", "monthly", or cron expression
+  isRecurring      Boolean   @default(false)
+  recurrenceRule   String?   // "daily", "weekly", "monthly"
+  recurrenceEnd    DateTime? // When the recurrence should stop
   parentTaskId     String?
-  parentTask       Task?   @relation("RecurringTasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
-  childTasks       Task[]  @relation("RecurringTasks")
+  parentTask       Task?     @relation("RecurringTasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  childTasks       Task[]    @relation("RecurringTasks")
 
   // Timestamps
   completedAt DateTime?
