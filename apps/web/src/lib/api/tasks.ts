@@ -5,6 +5,7 @@ const TASKS_API = `${API_URL}/api/tasks`;
 
 // Types
 export type TaskStatus =
+  | 'pending_acceptance'
   | 'backlog'
   | 'scheduled'
   | 'todo'
@@ -12,6 +13,7 @@ export type TaskStatus =
   | 'blocked'
   | 'paused'
   | 'done'
+  | 'declined'
   | 'wont_do';
 
 export type TaskPriority = 'low' | 'medium' | 'high' | 'critical';

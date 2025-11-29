@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -53,6 +53,7 @@ import { PendingTasksBanner } from "./pending-tasks-banner";
 import { TaskAcceptanceModal } from "./task-acceptance-modal";
 import { useOrganizationUsers } from "@/hooks/use-organization-users";
 import { useProjects } from "@/hooks/use-projects";
+import { useTaskSocket } from "@/hooks/use-task-socket";
 
 interface WeekScheduleViewProps {
   userId?: string;
@@ -100,6 +101,7 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [currentUserName, setCurrentUserName] = useState<string>("");
+  const [organizationId, setOrganizationId] = useState<string>("");
 
   // Task acceptance modal state
   const [acceptanceTask, setAcceptanceTask] = useState<Task | null>(null);
@@ -169,11 +171,94 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
         const payload = JSON.parse(atob(token.split(".")[1]));
         setCurrentUserId(payload.sub);
         setCurrentUserName(payload.name || "User");
+        setOrganizationId(payload.organizationId || "");
       } catch (err) {
         console.error("Invalid token:", err);
       }
     }
   }, []);
+
+  // Socket event handlers for real-time updates
+  const handleSocketTaskCreated = useCallback((task: Task) => {
+    console.log("📥 Task created via socket:", task.title);
+    // Add to backlog or scheduled based on status
+    if (task.scheduledDate) {
+      const dateKey = task.scheduledDate.split("T")[0];
+      setScheduledTasks((prev) => ({
+        ...prev,
+        [dateKey]: [...(prev[dateKey] || []), task],
+      }));
+    } else {
+      setBacklogTasks((prev) => [task, ...prev]);
+    }
+    // Refresh pending banner if task is pending acceptance for current user
+    if (task.status === "pending_acceptance" && task.assignedToId === currentUserId) {
+      setPendingRefreshKey((prev) => prev + 1);
+    }
+  }, [currentUserId]);
+
+  const handleSocketTaskUpdated = useCallback((task: Task) => {
+    console.log("📥 Task updated via socket:", task.title);
+    // Update in scheduled tasks
+    setScheduledTasks((prev) => {
+      const newScheduled = { ...prev };
+      // Remove from old date if exists
+      Object.keys(newScheduled).forEach((date) => {
+        newScheduled[date] = newScheduled[date].filter((t) => t.id !== task.id);
+      });
+      // Add to new date if scheduled
+      if (task.scheduledDate) {
+        const dateKey = task.scheduledDate.split("T")[0];
+        newScheduled[dateKey] = [...(newScheduled[dateKey] || []), task];
+      }
+      return newScheduled;
+    });
+    // Update in backlog
+    setBacklogTasks((prev) => {
+      const filtered = prev.filter((t) => t.id !== task.id);
+      // Add to backlog if not scheduled and status is backlog/todo
+      if (!task.scheduledDate && ["backlog", "todo"].includes(task.status)) {
+        return [task, ...filtered];
+      }
+      return filtered;
+    });
+  }, []);
+
+  const handleSocketTaskDeleted = useCallback((data: { taskId: string }) => {
+    console.log("📥 Task deleted via socket:", data.taskId);
+    // Remove from scheduled tasks
+    setScheduledTasks((prev) => {
+      const newScheduled = { ...prev };
+      Object.keys(newScheduled).forEach((date) => {
+        newScheduled[date] = newScheduled[date].filter((t) => t.id !== data.taskId);
+      });
+      return newScheduled;
+    });
+    // Remove from backlog
+    setBacklogTasks((prev) => prev.filter((t) => t.id !== data.taskId));
+  }, []);
+
+  const handleSocketTaskStatusChanged = useCallback((task: Task) => {
+    console.log("📥 Task status changed via socket:", task.title, task.status);
+    handleSocketTaskUpdated(task);
+    // Refresh pending banner
+    setPendingRefreshKey((prev) => prev + 1);
+  }, [handleSocketTaskUpdated]);
+
+  // Setup socket listeners
+  const { joinOrganization } = useTaskSocket({
+    onTaskCreated: handleSocketTaskCreated,
+    onTaskUpdated: handleSocketTaskUpdated,
+    onTaskDeleted: handleSocketTaskDeleted,
+    onTaskStatusChanged: handleSocketTaskStatusChanged,
+  });
+
+  // Join organization room for real-time updates
+  useEffect(() => {
+    if (organizationId && currentUserId) {
+      joinOrganization(organizationId, currentUserId);
+    }
+  }, [organizationId, currentUserId, joinOrganization]);
 
   // Load data
   useEffect(() => {
