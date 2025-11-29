@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -79,40 +80,73 @@ export function AutoPlanModal({
   onApply,
   isApplying,
 }: AutoPlanModalProps) {
-  if (!planData) return null;
+  const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
 
-  const weeks = planData.weeks || [];
+  const weeks = planData?.weeks || [];
 
   // Group tasks by week, then by date
-  const tasksByWeekAndDate: Record<string, Record<string, PlannedTask[]>> = {};
-  for (const week of weeks) {
-    tasksByWeekAndDate[week.weekStart] = {};
-  }
+  const tasksByWeekAndDate = useMemo(() => {
+    const result: Record<string, Record<string, PlannedTask[]>> = {};
+    if (!planData) return result;
 
-  for (const task of planData.plan) {
-    const week = getWeekForDate(task.suggestedDate, weeks);
-    if (week) {
-      if (!tasksByWeekAndDate[week.weekStart]) {
-        tasksByWeekAndDate[week.weekStart] = {};
-      }
-      if (!tasksByWeekAndDate[week.weekStart][task.suggestedDate]) {
-        tasksByWeekAndDate[week.weekStart][task.suggestedDate] = [];
-      }
-      tasksByWeekAndDate[week.weekStart][task.suggestedDate].push(task);
+    for (const week of weeks) {
+      result[week.weekStart] = {};
     }
-  }
+
+    for (const task of planData.plan) {
+      const week = getWeekForDate(task.suggestedDate, weeks);
+      if (week) {
+        if (!result[week.weekStart]) {
+          result[week.weekStart] = {};
+        }
+        if (!result[week.weekStart][task.suggestedDate]) {
+          result[week.weekStart][task.suggestedDate] = [];
+        }
+        result[week.weekStart][task.suggestedDate].push(task);
+      }
+    }
+
+    return result;
+  }, [planData, weeks]);
 
   // Calculate hours per week
-  const hoursPerWeek: Record<string, number> = {};
-  for (const week of weeks) {
-    hoursPerWeek[week.weekStart] = 0;
-    const weekDates = tasksByWeekAndDate[week.weekStart] || {};
-    for (const tasks of Object.values(weekDates)) {
-      hoursPerWeek[week.weekStart] += tasks.reduce((sum, t) => sum + t.estimatedTime, 0);
+  const hoursPerWeek = useMemo(() => {
+    const result: Record<string, number> = {};
+    for (const week of weeks) {
+      result[week.weekStart] = 0;
+      const weekDates = tasksByWeekAndDate[week.weekStart] || {};
+      for (const tasks of Object.values(weekDates)) {
+        result[week.weekStart] += tasks.reduce((sum, t) => sum + t.estimatedTime, 0);
+      }
     }
-  }
+    return result;
+  }, [weeks, tasksByWeekAndDate]);
+
+  // Find first week with tasks
+  const firstWeekWithTasks = useMemo(() => {
+    for (const week of weeks) {
+      if (hoursPerWeek[week.weekStart] > 0) {
+        return week.weekStart;
+      }
+    }
+    return weeks[0]?.weekStart || null;
+  }, [weeks, hoursPerWeek]);
+
+  // Set default selected week when modal opens or data changes
+  useEffect(() => {
+    if (isOpen && firstWeekWithTasks) {
+      setSelectedWeek(firstWeekWithTasks);
+    }
+  }, [isOpen, firstWeekWithTasks]);
+
+  if (!planData) return null;
 
   const hasNoPlan = planData.plan.length === 0;
+
+  // Get current week's data
+  const currentWeek = weeks.find((w) => w.weekStart === selectedWeek);
+  const currentWeekDates = selectedWeek ? tasksByWeekAndDate[selectedWeek] || {} : {};
+  const sortedDates = Object.keys(currentWeekDates).sort();
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -136,89 +170,90 @@ export function AutoPlanModal({
           </div>
         ) : (
           <>
-            {/* Week Summary */}
+            {/* Week Selector Buttons */}
             <div className="flex flex-wrap gap-2 pb-4 border-b">
               {weeks.map((week) => (
-                <div
+                <button
                   key={week.weekStart}
+                  onClick={() => setSelectedWeek(week.weekStart)}
                   className={cn(
-                    "px-3 py-1 rounded-md text-sm",
-                    hoursPerWeek[week.weekStart] > 0
-                      ? "bg-primary/10 text-primary"
-                      : "bg-muted text-muted-foreground"
+                    "px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
+                    selectedWeek === week.weekStart
+                      ? "bg-primary text-primary-foreground"
+                      : hoursPerWeek[week.weekStart] > 0
+                        ? "bg-muted hover:bg-muted/80 text-foreground"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
                   )}
                 >
-                  <span className="font-medium">{week.label}</span>:{" "}
-                  <span>{hoursPerWeek[week.weekStart]}h</span>
-                </div>
+                  {week.label}: {hoursPerWeek[week.weekStart]}h
+                </button>
               ))}
             </div>
 
-            {/* Tasks by week and day */}
-            <div className="flex-1 overflow-y-auto space-y-6 py-4">
-              {weeks.map((week) => {
-                const weekDates = tasksByWeekAndDate[week.weekStart] || {};
-                const sortedDates = Object.keys(weekDates).sort();
-
-                if (sortedDates.length === 0) return null;
-
-                return (
-                  <div key={week.weekStart} className="space-y-3">
-                    {/* Week Header */}
-                    <h2 className="font-semibold text-sm flex items-center gap-2 sticky top-0 bg-background py-1">
+            {/* Tasks for selected week */}
+            <div className="flex-1 overflow-y-auto py-4">
+              {currentWeek && sortedDates.length > 0 ? (
+                <div className="space-y-4">
+                  {/* Week Header */}
+                  <div className="flex items-center justify-between">
+                    <h2 className="font-semibold flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-primary" />
-                      {week.label}
-                      <Badge variant="secondary" className="ml-auto text-xs">
-                        {hoursPerWeek[week.weekStart]}h total
-                      </Badge>
+                      {currentWeek.label}
                     </h2>
-
-                    {/* Days in this week */}
-                    <div className="space-y-3 pl-2">
-                      {sortedDates.map((date) => (
-                        <div key={date} className="space-y-2">
-                          <h3 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
-                            {formatDate(date)}
-                            <span className="text-xs">
-                              ({weekDates[date].reduce((sum, t) => sum + t.estimatedTime, 0)}h)
-                            </span>
-                          </h3>
-                          <div className="space-y-2 pl-4">
-                            {weekDates[date].map((task) => (
-                              <div
-                                key={task.taskId}
-                                className="flex items-center gap-3 p-2 rounded-md bg-muted/50"
-                              >
-                                <div
-                                  className={cn(
-                                    "w-2 h-2 rounded-full flex-shrink-0",
-                                    priorityColors[task.priority] || "bg-gray-500"
-                                  )}
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium truncate">{task.taskTitle}</p>
-                                  {task.dueDate && (
-                                    <p className="text-xs text-muted-foreground">
-                                      Due: {formatDate(task.dueDate)}
-                                    </p>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
-                                  <Clock className="h-3 w-3" />
-                                  {task.estimatedTime}h
-                                </div>
-                                <Badge variant="outline" className="text-xs capitalize flex-shrink-0">
-                                  {task.priority}
-                                </Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <Badge variant="secondary">
+                      {hoursPerWeek[selectedWeek!]}h total
+                    </Badge>
                   </div>
-                );
-              })}
+
+                  {/* Days in selected week */}
+                  <div className="space-y-4">
+                    {sortedDates.map((date) => (
+                      <div key={date} className="space-y-2">
+                        <h3 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
+                          {formatDate(date)}
+                          <span className="text-xs">
+                            ({currentWeekDates[date].reduce((sum, t) => sum + t.estimatedTime, 0)}h)
+                          </span>
+                        </h3>
+                        <div className="space-y-2 pl-4">
+                          {currentWeekDates[date].map((task) => (
+                            <div
+                              key={task.taskId}
+                              className="flex items-center gap-3 p-2 rounded-md bg-muted/50"
+                            >
+                              <div
+                                className={cn(
+                                  "w-2 h-2 rounded-full flex-shrink-0",
+                                  priorityColors[task.priority] || "bg-gray-500"
+                                )}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{task.taskTitle}</p>
+                                {task.dueDate && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Due: {formatDate(task.dueDate)}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
+                                <Clock className="h-3 w-3" />
+                                {task.estimatedTime}h
+                              </div>
+                              <Badge variant="outline" className="text-xs capitalize flex-shrink-0">
+                                {task.priority}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="py-8 text-center text-muted-foreground">
+                  <p>No tasks scheduled for this week</p>
+                </div>
+              )}
             </div>
           </>
         )}
