@@ -738,13 +738,15 @@ export class ChatGateway
     @MessageBody()
     payload: {
       chatId: string;
+      messageId?: string; // The message with task preview to update
+      taskId?: string; // The created task ID
       taskTitle: string;
       assigneeName?: string;
       taskCount?: number;
       isGroupTask?: boolean;
     },
   ) {
-    const { chatId, taskTitle, assigneeName, taskCount, isGroupTask } = payload;
+    const { chatId, messageId, taskId, taskTitle, assigneeName, taskCount, isGroupTask } = payload;
 
     if (!this.aiUserId) {
       this.logger.warn('AI user not available for task confirmation');
@@ -752,6 +754,35 @@ export class ChatGateway
     }
 
     try {
+      // Update the original message to mark task preview as created
+      if (messageId) {
+        const originalMessage = await this.prisma.message.findUnique({
+          where: { id: messageId },
+        });
+
+        if (originalMessage?.aiContext) {
+          const aiContext = originalMessage.aiContext as any;
+          if (aiContext.taskPreview) {
+            // Update the task preview status to 'created' and add taskId
+            const updatedAiContext = {
+              ...aiContext,
+              taskPreview: {
+                ...aiContext.taskPreview,
+                status: 'created',
+                taskId: taskId,
+              },
+            };
+
+            await this.prisma.message.update({
+              where: { id: messageId },
+              data: { aiContext: updatedAiContext },
+            });
+
+            this.logger.log(`📋 Updated message ${messageId} taskPreview status to 'created'`);
+          }
+        }
+      }
+
       // Generate confirmation message
       let confirmationMessage: string;
 

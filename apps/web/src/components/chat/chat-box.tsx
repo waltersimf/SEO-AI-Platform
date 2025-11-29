@@ -86,14 +86,16 @@ export function ChatBox({
     taskCount?: number;
     isGroupTask?: boolean;
   }) => {
-    // Mark the preview as created so it hides
+    // Mark the preview as created so it hides immediately
     setCreatedTaskIds(prev => new Set(prev).add(messageId));
 
-    // Emit socket event for AI to send confirmation message
+    // Emit socket event for AI to send confirmation message AND update the message status
     const socket = socketRef.current;
     if (socket) {
       socket.emit('confirm_task_created', {
         chatId,
+        messageId, // Pass messageId to update the message in DB
+        taskId: info.taskId, // Pass taskId to store in taskPreview
         taskTitle: info.title,
         assigneeName: info.assigneeName,
         taskCount: info.taskCount,
@@ -109,18 +111,25 @@ export function ChatBox({
 
   // Check if message has a task preview
   const hasTaskPreview = (message: Message): boolean => {
+    const taskPreview = message.aiContext?.taskPreview;
+    // Check both: persisted status from DB AND local state (for immediate hide)
+    const isCreatedInDB = taskPreview?.status === 'created';
+    const isCreatedLocally = createdTaskIds.has(message.id);
+
     const result = !!(
-      message.aiContext?.taskPreview?.type === 'task_preview' &&
-      message.aiContext?.taskPreview?.task &&
-      !createdTaskIds.has(message.id) &&
+      taskPreview?.type === 'task_preview' &&
+      taskPreview?.task &&
+      !isCreatedInDB && // Check persisted status
+      !isCreatedLocally && // Check local state
       !dismissedPreviews.has(message.id)
     );
     if (message.aiContext) {
       console.log('hasTaskPreview check for message:', message.id, {
-        aiContext: message.aiContext,
-        type: message.aiContext?.taskPreview?.type,
-        hasTask: !!message.aiContext?.taskPreview?.task,
-        isCreated: createdTaskIds.has(message.id),
+        type: taskPreview?.type,
+        status: taskPreview?.status,
+        hasTask: !!taskPreview?.task,
+        isCreatedInDB,
+        isCreatedLocally,
         isDismissed: dismissedPreviews.has(message.id),
         result,
       });
