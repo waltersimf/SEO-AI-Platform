@@ -1,9 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle, Calendar, Clock, User, Folder, AlertTriangle, Pencil, X } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Loader2,
+  CheckCircle,
+  AlertTriangle,
+  X,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import { API_URL } from '@/config/api';
 import { cn } from '@/lib/utils';
 
@@ -23,29 +39,80 @@ interface TaskPreviewData {
 interface TaskPreviewCardProps {
   taskData: TaskPreviewData;
   onTaskCreated?: (taskId: string) => void;
-  onEdit?: (taskData: TaskPreviewData) => void;
   onDismiss?: () => void;
 }
 
-const priorityColors: Record<string, string> = {
-  low: 'bg-green-100 text-green-700 border-green-300',
-  medium: 'bg-yellow-100 text-yellow-700 border-yellow-300',
-  high: 'bg-orange-100 text-orange-700 border-orange-300',
-  critical: 'bg-red-100 text-red-700 border-red-300',
-};
+interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  isAI?: boolean;
+}
+
+const priorityOptions = [
+  { value: 'low', label: 'Low', color: 'bg-green-100 text-green-700' },
+  { value: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-700' },
+  { value: 'high', label: 'High', color: 'bg-orange-100 text-orange-700' },
+  { value: 'critical', label: 'Critical', color: 'bg-red-100 text-red-700' },
+];
 
 export function TaskPreviewCard({
   taskData,
   onTaskCreated,
-  onEdit,
   onDismiss,
 }: TaskPreviewCardProps) {
+  // Editable state
+  const [title, setTitle] = useState(taskData.title);
+  const [description, setDescription] = useState(taskData.description || '');
+  const [assigneeId, setAssigneeId] = useState(taskData.assigneeId || '');
+  const [dueDate, setDueDate] = useState(taskData.dueDate || '');
+  const [priority, setPriority] = useState<string>(taskData.priority || 'medium');
+  const [estimatedTime, setEstimatedTime] = useState<string>(
+    taskData.estimatedTime?.toString() || ''
+  );
+
+  // UI state
   const [isCreating, setIsCreating] = useState(false);
   const [isCreated, setIsCreated] = useState(false);
   const [createdTaskId, setCreatedTaskId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showDescription, setShowDescription] = useState(!!taskData.description);
+
+  // Team members state
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
+
+  // Fetch team members
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/users/organization`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const members = await response.json();
+          setTeamMembers(members.filter((m: TeamMember) => !m.isAI));
+        }
+      } catch (err) {
+        console.error('Failed to fetch team members:', err);
+      } finally {
+        setLoadingMembers(false);
+      }
+    };
+
+    fetchTeamMembers();
+  }, []);
 
   const handleCreateTask = async () => {
+    if (!title.trim()) {
+      setError('Title is required');
+      return;
+    }
+
     setIsCreating(true);
     setError(null);
 
@@ -58,13 +125,13 @@ export function TaskPreviewCard({
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          title: taskData.title,
-          description: taskData.description,
-          assignedToId: taskData.assigneeId,
-          projectId: taskData.projectId,
-          dueDate: taskData.dueDate,
-          priority: taskData.priority || 'medium',
-          estimatedTime: taskData.estimatedTime,
+          title: title.trim(),
+          description: description.trim() || undefined,
+          assignedToId: assigneeId || undefined,
+          projectId: taskData.projectId || undefined,
+          dueDate: dueDate || undefined,
+          priority: priority,
+          estimatedTime: estimatedTime ? parseFloat(estimatedTime) : undefined,
         }),
       });
 
@@ -84,15 +151,6 @@ export function TaskPreviewCard({
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
   if (isCreated && createdTaskId) {
     return (
       <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-2">
@@ -110,17 +168,19 @@ export function TaskPreviewCard({
     );
   }
 
+  const selectedPriority = priorityOptions.find((p) => p.value === priority);
+
   return (
     <div className="bg-card border rounded-lg p-4 mt-2 shadow-sm">
       {/* Header */}
-      <div className="flex items-start justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-xs">
             Task Preview
           </Badge>
-          {taskData.priority && (
-            <Badge className={cn('text-xs', priorityColors[taskData.priority])}>
-              {taskData.priority}
+          {selectedPriority && (
+            <Badge className={cn('text-xs', selectedPriority.color)}>
+              {selectedPriority.label}
             </Badge>
           )}
         </div>
@@ -135,41 +195,125 @@ export function TaskPreviewCard({
         )}
       </div>
 
-      {/* Title */}
-      <h4 className="font-semibold text-foreground mb-2">{taskData.title}</h4>
+      {/* Title Input */}
+      <div className="mb-4">
+        <Label htmlFor="task-title" className="text-xs text-muted-foreground mb-1 block">
+          Title
+        </Label>
+        <Input
+          id="task-title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Task title"
+          className="font-medium"
+        />
+      </div>
 
-      {/* Description */}
-      {taskData.description && (
-        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-          {taskData.description}
-        </p>
-      )}
+      {/* Two Column Layout */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        {/* Assignee */}
+        <div>
+          <Label htmlFor="task-assignee" className="text-xs text-muted-foreground mb-1 block">
+            Assignee
+          </Label>
+          <Select value={assigneeId} onValueChange={setAssigneeId}>
+            <SelectTrigger id="task-assignee" className="h-9">
+              <SelectValue placeholder={loadingMembers ? 'Loading...' : 'Unassigned'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Unassigned</SelectItem>
+              {teamMembers.map((member) => (
+                <SelectItem key={member.id} value={member.id}>
+                  {member.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-      {/* Meta info */}
-      <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mb-4">
-        {taskData.assigneeName && (
-          <div className="flex items-center gap-1">
-            <User className="h-3.5 w-3.5" />
-            <span>{taskData.assigneeName}</span>
-          </div>
-        )}
-        {taskData.projectName && (
-          <div className="flex items-center gap-1">
-            <Folder className="h-3.5 w-3.5" />
-            <span>{taskData.projectName}</span>
-          </div>
-        )}
-        {taskData.dueDate && (
-          <div className="flex items-center gap-1">
-            <Calendar className="h-3.5 w-3.5" />
-            <span>{formatDate(taskData.dueDate)}</span>
-          </div>
-        )}
-        {taskData.estimatedTime && (
-          <div className="flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5" />
-            <span>{taskData.estimatedTime}h</span>
-          </div>
+        {/* Due Date */}
+        <div>
+          <Label htmlFor="task-duedate" className="text-xs text-muted-foreground mb-1 block">
+            Due Date
+          </Label>
+          <Input
+            id="task-duedate"
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="h-9"
+          />
+        </div>
+
+        {/* Estimated Time */}
+        <div>
+          <Label htmlFor="task-estimate" className="text-xs text-muted-foreground mb-1 block">
+            Est. Time (hours)
+          </Label>
+          <Input
+            id="task-estimate"
+            type="number"
+            min="0"
+            step="0.5"
+            value={estimatedTime}
+            onChange={(e) => setEstimatedTime(e.target.value)}
+            placeholder="0"
+            className="h-9"
+          />
+        </div>
+
+        {/* Priority */}
+        <div>
+          <Label htmlFor="task-priority" className="text-xs text-muted-foreground mb-1 block">
+            Priority
+          </Label>
+          <Select value={priority} onValueChange={setPriority}>
+            <SelectTrigger id="task-priority" className="h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {priorityOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  <span className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        'w-2 h-2 rounded-full',
+                        option.value === 'low' && 'bg-green-500',
+                        option.value === 'medium' && 'bg-yellow-500',
+                        option.value === 'high' && 'bg-orange-500',
+                        option.value === 'critical' && 'bg-red-500'
+                      )}
+                    />
+                    {option.label}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Collapsible Description */}
+      <div className="mb-4">
+        <button
+          type="button"
+          onClick={() => setShowDescription(!showDescription)}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {showDescription ? (
+            <ChevronUp className="h-3 w-3" />
+          ) : (
+            <ChevronDown className="h-3 w-3" />
+          )}
+          Description (optional)
+        </button>
+        {showDescription && (
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Add task description..."
+            className="mt-2 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+          />
         )}
       </div>
 
@@ -185,7 +329,7 @@ export function TaskPreviewCard({
       <div className="flex items-center gap-2">
         <Button
           onClick={handleCreateTask}
-          disabled={isCreating}
+          disabled={isCreating || !title.trim()}
           size="sm"
           className="flex-1"
         >
@@ -201,17 +345,6 @@ export function TaskPreviewCard({
             </>
           )}
         </Button>
-        {onEdit && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onEdit(taskData)}
-            disabled={isCreating}
-          >
-            <Pencil className="h-4 w-4 mr-1" />
-            Edit
-          </Button>
-        )}
         {onDismiss && (
           <Button
             variant="ghost"
