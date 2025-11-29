@@ -858,11 +858,14 @@ export class TaskService {
       ],
     });
 
+    console.log(`[Auto-Plan] Found ${backlogTasks.length} backlog tasks for user ${userId}`);
+
     if (backlogTasks.length === 0) {
       return {
         plan: [],
         summary: {},
         weeks: [],
+        unscheduledTasks: [],
         message: 'No tasks to schedule',
       };
     }
@@ -923,6 +926,9 @@ export class TaskService {
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
+    console.log(`[Auto-Plan] Generated ${businessDays.length} business days across ${weeks.length} weeks`);
+    console.log(`[Auto-Plan] Total capacity: ${businessDays.length * HOURS_PER_DAY}h`);
+
     // Get the date range for fetching existing scheduled tasks
     const planStartDate = businessDays[0];
     const planEndDate = businessDays[businessDays.length - 1];
@@ -941,6 +947,8 @@ export class TaskService {
         },
       },
     });
+
+    console.log(`[Auto-Plan] Found ${scheduledTasks.length} already scheduled tasks in this period`);
 
     // Calculate existing capacity per day
     const dayCapacity: Record<string, number> = {};
@@ -971,11 +979,21 @@ export class TaskService {
       dueDate: string | null;
     }> = [];
 
+    // Track unscheduled tasks and reasons
+    const unscheduledTasks: Array<{
+      taskId: string;
+      taskTitle: string;
+      estimatedTime: number;
+      reason: string;
+    }> = [];
+
     // Summary by date
     const summaryByDate: Record<string, number> = {};
 
     for (const task of backlogTasks) {
       const taskHours = task.estimatedTime || DEFAULT_TASK_HOURS;
+      let scheduled = false;
+      let skipReason = '';
 
       // Find first day with available capacity
       for (const date of businessDays) {
@@ -986,6 +1004,7 @@ export class TaskService {
           const dueDate = new Date(task.dueDate);
           dueDate.setHours(23, 59, 59, 999);
           if (date > dueDate) {
+            // This specific day is past due date, try next day
             continue;
           }
         }
@@ -1006,10 +1025,44 @@ export class TaskService {
           // Update summary
           summaryByDate[dateKey] = (summaryByDate[dateKey] || 0) + taskHours;
 
+          console.log(`[Auto-Plan] ✓ Scheduled "${task.title}" (${taskHours}h) on ${dateKey}`);
+          scheduled = true;
           break; // Task scheduled, move to next task
         }
       }
+
+      // If task couldn't be scheduled, track why
+      if (!scheduled) {
+        // Find out why - check remaining capacity
+        const remainingCapacity = Object.values(dayCapacity).reduce((sum, cap) => sum + Math.max(0, cap), 0);
+        const maxDayCapacity = Math.max(...Object.values(dayCapacity));
+
+        if (task.dueDate) {
+          const dueDate = new Date(task.dueDate);
+          const availableDaysBeforeDue = businessDays.filter(d => d <= dueDate).length;
+          if (availableDaysBeforeDue === 0) {
+            skipReason = `Due date (${task.dueDate.toISOString().split('T')[0]}) is before planning window`;
+          } else {
+            skipReason = `No day with ${taskHours}h capacity before due date. Max available: ${maxDayCapacity}h`;
+          }
+        } else if (maxDayCapacity < taskHours) {
+          skipReason = `No day has ${taskHours}h capacity. Max available in any day: ${maxDayCapacity}h`;
+        } else {
+          skipReason = `Insufficient total capacity. Remaining: ${remainingCapacity}h, needed: ${taskHours}h`;
+        }
+
+        console.log(`[Auto-Plan] ✗ Could not schedule "${task.title}" (${taskHours}h) - ${skipReason}`);
+
+        unscheduledTasks.push({
+          taskId: task.id,
+          taskTitle: task.title,
+          estimatedTime: taskHours,
+          reason: skipReason,
+        });
+      }
     }
+
+    console.log(`[Auto-Plan] Summary: ${plan.length}/${backlogTasks.length} tasks scheduled, ${unscheduledTasks.length} could not be scheduled`);
 
     return {
       plan,
@@ -1019,6 +1072,7 @@ export class TaskService {
       planEnd: planEndDate.toISOString().split('T')[0],
       totalTasksPlanned: plan.length,
       totalTasksInBacklog: backlogTasks.length,
+      unscheduledTasks,
     };
   }
 
