@@ -68,6 +68,7 @@ export function TaskPreviewCard({
   const [description, setDescription] = useState(taskData.description || '');
   const [assigneeId, setAssigneeId] = useState(taskData.assigneeId || 'unassigned');
   const [assignToAll, setAssignToAll] = useState(false);
+  const [includeSelf, setIncludeSelf] = useState(true);
   const [dueDate, setDueDate] = useState(taskData.dueDate || '');
   const [priority, setPriority] = useState<string>(taskData.priority || 'medium');
   const [estimatedTime, setEstimatedTime] = useState<string>(
@@ -133,7 +134,7 @@ export function TaskPreviewCard({
           description: description.trim() || undefined,
           // If assignToAll is checked, don't send assignedToId
           ...(assignToAll
-            ? { assignToAll: true }
+            ? { assignToAll: true, includeSelf }
             : { assignedToId: assigneeId && assigneeId !== 'unassigned' ? assigneeId : undefined }
           ),
           projectId: taskData.projectId || undefined,
@@ -241,24 +242,43 @@ export function TaskPreviewCard({
       </div>
 
       {/* Assign to all checkbox */}
-      <div className="flex items-center gap-2 mb-4 p-3 bg-muted/50 rounded-lg">
-        <Checkbox
-          id="assign-to-all"
-          checked={assignToAll}
-          onCheckedChange={(checked) => setAssignToAll(checked === true)}
-        />
-        <Label
-          htmlFor="assign-to-all"
-          className="flex items-center gap-2 text-sm cursor-pointer"
-        >
-          <Users className="h-4 w-4" />
-          Assign to all team members
-          {teamMembers.length > 0 && (
-            <span className="text-xs text-muted-foreground">
-              ({teamMembers.length} members)
-            </span>
-          )}
-        </Label>
+      <div className="mb-4 p-3 bg-muted/50 rounded-lg space-y-2">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="assign-to-all"
+            checked={assignToAll}
+            onCheckedChange={(checked) => setAssignToAll(checked === true)}
+          />
+          <Label
+            htmlFor="assign-to-all"
+            className="flex items-center gap-2 text-sm cursor-pointer"
+          >
+            <Users className="h-4 w-4" />
+            Assign to all team members
+            {teamMembers.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                ({includeSelf ? teamMembers.length : teamMembers.length - 1} member{(includeSelf ? teamMembers.length : teamMembers.length - 1) !== 1 ? 's' : ''}{!includeSelf && ', excluding you'})
+              </span>
+            )}
+          </Label>
+        </div>
+
+        {/* Include myself checkbox - only show when assignToAll is checked */}
+        {assignToAll && (
+          <div className="flex items-center gap-2 ml-6">
+            <Checkbox
+              id="include-self"
+              checked={includeSelf}
+              onCheckedChange={(checked) => setIncludeSelf(checked === true)}
+            />
+            <Label
+              htmlFor="include-self"
+              className="text-sm cursor-pointer text-muted-foreground"
+            >
+              Include myself
+            </Label>
+          </div>
+        )}
       </div>
 
       {/* Two Column Layout */}

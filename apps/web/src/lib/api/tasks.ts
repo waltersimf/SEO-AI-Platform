@@ -72,6 +72,7 @@ export interface CreateTaskData {
   projectId?: string;
   assignedToId?: string;
   assignToAll?: boolean;
+  includeSelf?: boolean; // For group tasks - whether to include creator
   priority?: TaskPriority;
   dueDate?: string;
   estimatedTime?: number;

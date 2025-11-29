@@ -37,6 +37,10 @@ export class CreateTaskDto {
   @IsOptional()
   assignToAll?: boolean;
 
+  @IsBoolean()
+  @IsOptional()
+  includeSelf?: boolean; // Default true - whether to include creator in group tasks
+
   @IsEnum(TaskPriorityDto)
   @IsOptional()
   priority?: TaskPriorityDto = TaskPriorityDto.medium;
