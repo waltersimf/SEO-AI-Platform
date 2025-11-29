@@ -700,6 +700,13 @@ export class ChatGateway
         status: 'pending', // Not created yet
       };
 
+      // Debug logging for task preview
+      console.log('=== CHAT GATEWAY TASK PREVIEW ===');
+      console.log('Parsed assigneeName:', parseResult.task.assigneeName);
+      console.log('Resolved assigneeId:', assigneeId);
+      console.log('Task title:', parseResult.task.title);
+      console.log('================================');
+
       // Generate preview message
       const previewMessage = this.aiService.generateTaskPreviewMessage(
         parseResult.task,
