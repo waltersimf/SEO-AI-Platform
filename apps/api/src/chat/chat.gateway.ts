@@ -729,4 +729,56 @@ export class ChatGateway
       this.logger.error('Error handling task creation intent:', error);
     }
   }
+
+  @SubscribeMessage('confirm_task_created')
+  async handleTaskCreatedConfirmation(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    payload: {
+      chatId: string;
+      taskTitle: string;
+      assigneeName?: string;
+      taskCount?: number;
+      isGroupTask?: boolean;
+    },
+  ) {
+    const { chatId, taskTitle, assigneeName, taskCount, isGroupTask } = payload;
+
+    if (!this.aiUserId) {
+      this.logger.warn('AI user not available for task confirmation');
+      return;
+    }
+
+    try {
+      // Generate confirmation message
+      let confirmationMessage: string;
+
+      if (isGroupTask && taskCount && taskCount > 1) {
+        confirmationMessage = `✅ Створено ${taskCount} задач для всіх учасників команди!\n\n📋 **${taskTitle}**\n\nКожен учасник отримає це завдання і повинен буде підтвердити участь.`;
+      } else if (assigneeName) {
+        confirmationMessage = `✅ Задачу створено!\n\n📋 **${taskTitle}**\n👤 Призначено: ${assigneeName}\n\nЗавдання очікує підтвердження від виконавця.`;
+      } else {
+        confirmationMessage = `✅ Задачу створено!\n\n📋 **${taskTitle}**\n\nЗавдання додано до беклогу.`;
+      }
+
+      const aiModel = this.configService.get<string>('AI_MODEL') || 'claude-sonnet-4-20250514';
+
+      // Create AI confirmation message
+      const aiMessage = await this.chatService.createAIMessage(
+        chatId,
+        this.aiUserId,
+        confirmationMessage,
+        aiModel,
+        {},
+      );
+
+      // Broadcast to chat
+      this.server.to(chatId).emit('receive_message', aiMessage);
+      this.server.emit('refresh_chat_list', { chatId, timestamp: new Date() });
+
+      this.logger.log('✅ Task creation confirmation sent');
+    } catch (error) {
+      this.logger.error('Error sending task confirmation:', error);
+    }
+  }
 }

@@ -38,9 +38,17 @@ interface TaskPreviewData {
   organizationId: string;
 }
 
+interface TaskCreatedInfo {
+  taskId: string;
+  title: string;
+  assigneeName?: string;
+  taskCount?: number;
+  isGroupTask?: boolean;
+}
+
 interface TaskPreviewCardProps {
   taskData: TaskPreviewData;
-  onTaskCreated?: (taskId: string) => void;
+  onTaskCreated?: (info: TaskCreatedInfo) => void;
   onDismiss?: () => void;
 }
 
@@ -151,7 +159,11 @@ export function TaskPreviewCard({
       const result = await response.json();
 
       // Handle group task response (multiple tasks created)
-      if (assignToAll && result.tasks) {
+      const isGroupTask = assignToAll && result.tasks;
+      const taskCount = isGroupTask ? result.count : 1;
+      const taskId = isGroupTask ? result.groupTaskId : result.id;
+
+      if (isGroupTask) {
         setCreatedTaskCount(result.count);
         setCreatedTaskId(result.groupTaskId);
       } else {
@@ -160,7 +172,17 @@ export function TaskPreviewCard({
       }
 
       setIsCreated(true);
-      onTaskCreated?.(assignToAll ? result.groupTaskId : result.id);
+
+      // Get assignee name for the confirmation message
+      const assignee = teamMembers.find((m) => m.id === assigneeId);
+
+      onTaskCreated?.({
+        taskId,
+        title: title.trim(),
+        assigneeName: isGroupTask ? undefined : assignee?.name,
+        taskCount,
+        isGroupTask,
+      });
     } catch (err) {
       console.error('Error creating task:', err);
       setError(err instanceof Error ? err.message : 'Failed to create task');
