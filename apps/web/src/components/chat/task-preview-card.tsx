@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Loader2,
   CheckCircle,
@@ -19,6 +20,7 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  Users,
 } from 'lucide-react';
 import { API_URL } from '@/config/api';
 import { cn } from '@/lib/utils';
@@ -65,6 +67,7 @@ export function TaskPreviewCard({
   const [title, setTitle] = useState(taskData.title);
   const [description, setDescription] = useState(taskData.description || '');
   const [assigneeId, setAssigneeId] = useState(taskData.assigneeId || 'unassigned');
+  const [assignToAll, setAssignToAll] = useState(false);
   const [dueDate, setDueDate] = useState(taskData.dueDate || '');
   const [priority, setPriority] = useState<string>(taskData.priority || 'medium');
   const [estimatedTime, setEstimatedTime] = useState<string>(
@@ -75,6 +78,7 @@ export function TaskPreviewCard({
   const [isCreating, setIsCreating] = useState(false);
   const [isCreated, setIsCreated] = useState(false);
   const [createdTaskId, setCreatedTaskId] = useState<string | null>(null);
+  const [createdTaskCount, setCreatedTaskCount] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [showDescription, setShowDescription] = useState(!!taskData.description);
 
@@ -127,7 +131,11 @@ export function TaskPreviewCard({
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim() || undefined,
-          assignedToId: assigneeId && assigneeId !== 'unassigned' ? assigneeId : undefined,
+          // If assignToAll is checked, don't send assignedToId
+          ...(assignToAll
+            ? { assignToAll: true }
+            : { assignedToId: assigneeId && assigneeId !== 'unassigned' ? assigneeId : undefined }
+          ),
           projectId: taskData.projectId || undefined,
           dueDate: dueDate || undefined,
           priority: priority,
@@ -139,10 +147,19 @@ export function TaskPreviewCard({
         throw new Error('Failed to create task');
       }
 
-      const createdTask = await response.json();
-      setCreatedTaskId(createdTask.id);
+      const result = await response.json();
+
+      // Handle group task response (multiple tasks created)
+      if (assignToAll && result.tasks) {
+        setCreatedTaskCount(result.count);
+        setCreatedTaskId(result.groupTaskId);
+      } else {
+        setCreatedTaskId(result.id);
+        setCreatedTaskCount(1);
+      }
+
       setIsCreated(true);
-      onTaskCreated?.(createdTask.id);
+      onTaskCreated?.(assignToAll ? result.groupTaskId : result.id);
     } catch (err) {
       console.error('Error creating task:', err);
       setError(err instanceof Error ? err.message : 'Failed to create task');
@@ -156,14 +173,28 @@ export function TaskPreviewCard({
       <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-2">
         <div className="flex items-center gap-2 text-green-700">
           <CheckCircle className="h-5 w-5" />
-          <span className="font-medium">Task created successfully!</span>
+          <span className="font-medium">
+            {createdTaskCount > 1
+              ? `${createdTaskCount} tasks created for all team members!`
+              : 'Task created successfully!'}
+          </span>
         </div>
-        <a
-          href={`/dashboard/tasks/${createdTaskId}`}
-          className="inline-flex items-center gap-1 mt-2 text-sm text-green-600 hover:text-green-700 underline"
-        >
-          View Task
-        </a>
+        {createdTaskCount === 1 && (
+          <a
+            href={`/dashboard/tasks/${createdTaskId}`}
+            className="inline-flex items-center gap-1 mt-2 text-sm text-green-600 hover:text-green-700 underline"
+          >
+            View Task
+          </a>
+        )}
+        {createdTaskCount > 1 && (
+          <a
+            href="/dashboard/tasks"
+            className="inline-flex items-center gap-1 mt-2 text-sm text-green-600 hover:text-green-700 underline"
+          >
+            View Tasks
+          </a>
+        )}
       </div>
     );
   }
@@ -209,14 +240,35 @@ export function TaskPreviewCard({
         />
       </div>
 
+      {/* Assign to all checkbox */}
+      <div className="flex items-center gap-2 mb-4 p-3 bg-muted/50 rounded-lg">
+        <Checkbox
+          id="assign-to-all"
+          checked={assignToAll}
+          onCheckedChange={(checked) => setAssignToAll(checked === true)}
+        />
+        <Label
+          htmlFor="assign-to-all"
+          className="flex items-center gap-2 text-sm cursor-pointer"
+        >
+          <Users className="h-4 w-4" />
+          Assign to all team members
+          {teamMembers.length > 0 && (
+            <span className="text-xs text-muted-foreground">
+              ({teamMembers.length} members)
+            </span>
+          )}
+        </Label>
+      </div>
+
       {/* Two Column Layout */}
       <div className="grid grid-cols-2 gap-3 mb-4">
         {/* Assignee */}
-        <div>
+        <div className={cn(assignToAll && 'opacity-50 pointer-events-none')}>
           <Label htmlFor="task-assignee" className="text-xs text-muted-foreground mb-1 block">
             Assignee
           </Label>
-          <Select value={assigneeId} onValueChange={setAssigneeId}>
+          <Select value={assigneeId} onValueChange={setAssigneeId} disabled={assignToAll}>
             <SelectTrigger id="task-assignee" className="h-9">
               <SelectValue placeholder={loadingMembers ? 'Loading...' : 'Unassigned'} />
             </SelectTrigger>
