@@ -718,10 +718,12 @@ export class ChatGateway
       );
 
       // Broadcast AI response with task preview
-      this.server.to(chatId).emit('receive_message', {
+      const messageWithPreview = {
         ...aiMessage,
         aiContext: { taskPreview },
-      });
+      };
+      this.logger.log('📋 Emitting task preview message:', JSON.stringify(messageWithPreview, null, 2));
+      this.server.to(chatId).emit('receive_message', messageWithPreview);
 
       this.logger.log('📋 Task preview sent to chat');
       this.server.emit('refresh_chat_list', { chatId, timestamp: new Date() });
