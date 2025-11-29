@@ -26,6 +26,16 @@ export class TaskService {
   };
 
   async createTask(dto: CreateTaskDto, userId: string, organizationId: string) {
+    // Debug logging
+    console.log('=== TASK CREATION DEBUG ===');
+    console.log('dto.assignedToId:', dto.assignedToId);
+    console.log('userId (creator):', userId);
+    console.log('isAssignedToOther:', dto.assignedToId && dto.assignedToId !== userId);
+    console.log('initialStatus:', (dto.assignedToId && dto.assignedToId !== userId)
+      ? 'pending_acceptance'
+      : 'backlog');
+    console.log('========================');
+
     // Determine initial status:
     // - If assigned to someone else → pending_acceptance
     // - If self-assigned or unassigned → backlog
