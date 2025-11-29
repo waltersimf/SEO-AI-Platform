@@ -1,8 +1,8 @@
-# 📦 CHANGELOG
+# 📦 CHANGELOG - v0.6 UPDATE
 
-**Версія документу:** 6.0  
-**Останнє оновлення:** 27.11.2025  
-**Поточна версія:** v0.5 ✅ **COMPLETE**
+**Версія документу:** 7.0  
+**Останнє оновлення:** 29.11.2025  
+**Поточна версія:** v0.6 🔄 **IN PROGRESS** (~80%)
 
 ---
 
@@ -14,6 +14,323 @@
 - [v0.3 - Chat Infrastructure](#v03---chat-infrastructure)
 - [Наступні кроки](#-наступні-кроки)
 - [Історія версій](#-історія-версій)
+
+---
+
+## v0.6 - Tasks & Backlog
+
+**Дата початку:** 28.11.2025  
+**Статус:** 🔄 **IN PROGRESS** (~80%)  
+**Мета:** Повноцінний task management з AI інтеграцією
+
+---
+
+### 🎯 Що ЗРОБЛЕНО ✅
+
+#### 1. Week Calendar View ✅
+
+**Функціонал:**
+- 5 колонок (Пн-Пт) з датами
+- Progress bars з годинами (X.Xh / 8h)
+- Overload detection (червоний колір якщо >8h)
+- Кольорові бордери по priority (red=critical/high, yellow=medium, green=low)
+- Assignee капсом + години + аватарки
+- Навігація по тижнях (< > стрілки + Today кнопка)
+- "Drop tasks here" placeholder для пустих днів
+
+**Файли:**
+- `apps/web/src/components/tasks/week-schedule-view.tsx`
+- `apps/web/src/components/tasks/week-schedule-cards.tsx`
+
+---
+
+#### 2. Drag & Drop ✅
+
+**Функціонал:**
+- Backlog → День (встановлює scheduledDate)
+- День → День (оновлює scheduledDate)
+- День → Backlog (очищає scheduledDate)
+- Real-time update через PATCH /api/tasks/:id
+
+**Бібліотека:** @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities
+
+---
+
+#### 3. Backlog Grid ✅
+
+**Функціонал:**
+- Grid layout: 4 картки в ряд
+- Priority badges (critical, high, medium, low)
+- Assignee + години + аватарка
+- Search backlog
+- "Add to Backlog" placeholder
+
+---
+
+#### 4. Task Filters ✅
+
+**Функціонал:**
+- Filters popover (кнопка справа вгорі)
+- Priority checkboxes (low, medium, high, critical)
+- Assignee dropdown
+- Project dropdown
+- Tags selection
+- "Apply Filters" кнопка
+- Фільтрує і week grid, і backlog
+
+---
+
+#### 5. Task Detail Modal ✅
+
+**Функціонал:**
+- Slide-over panel справа (замість окремої сторінки)
+- Показує всі деталі задачі
+- Edit / Delete кнопки
+- Comments section
+- Не втрачається контекст week view
+- Окрема сторінка /dashboard/tasks/[id] як fallback
+
+**Файли:**
+- `apps/web/src/components/tasks/task-detail-modal.tsx`
+
+---
+
+#### 6. AI Task Creation з Chat ✅ 🌟 KILLER FEATURE
+
+**Функціонал:**
+- Користувач пише в чат природною мовою: "постав задачу на @Biba оптимізувати Core Web Vitals, дедлайн понеділок, 4 години"
+- AI парсить: title, assignee, dueDate, priority, estimatedTime, description
+- Показує Task Preview Card з усіма деталями
+- **EDITABLE preview** - можна змінити будь-яке поле перед створенням!
+- Кнопки: "Create Task" / "Cancel"
+- Після створення - повідомлення з посиланням на задачу
+- AI дає рекомендації по виконанню
+
+**Підтримує різні формати:**
+```
+✅ "постав задачу на @Biba оптимізувати Core Web Vitals, дедлайн понеділок, 4 години"
+✅ "створи таск для Івана - перевірити 404 помилки"
+✅ "задача на мене: написати контент, пріоритет high"
+✅ "create task for George - technical audit, deadline friday, 6 hours"
+```
+
+**Файли:**
+- `apps/api/src/ai/ai.service.ts` - parseTaskFromMessage(), hasTaskCreationIntent()
+- `apps/api/src/chat/chat.gateway.ts` - handleTaskCreationIntent()
+- `apps/web/src/components/chat/task-preview-card.tsx` - editable preview UI
+
+---
+
+#### 7. Tabs з Counters ✅
+
+- Schedule tab показує кількість scheduled tasks
+- Done tab показує кількість completed tasks
+
+---
+
+#### 8. Seed Script для тестових даних ✅
+
+**Location:** `packages/db/seed-tasks.ts`
+
+**Команда:** `npm run seed:tasks`
+
+Створює 20 тестових SEO-задач з:
+- Random titles (Fix 404, Keyword research, Technical audit, etc.)
+- Random estimatedTime (0.5 - 8 hours)
+- Random priority (low, medium, high, critical)
+- Random status (backlog, scheduled)
+- Random assignees
+- Tags
+
+---
+
+### ❌ Що НЕ ЗРОБЛЕНО
+
+#### З ROADMAP:
+
+| Feature | Статус | Пріоритет |
+|---------|--------|-----------|
+| Task attachments | ❌ | 🟢 Low |
+| Task history | ❌ | 🟢 Low |
+
+#### З TechDoc:
+
+| Feature | Статус | Пріоритет |
+|---------|--------|-----------|
+| **Acceptance workflow** | ❌ 🔴 BLOCKED | 🔴 High |
+| Group tasks | ❌ | 🟡 Medium |
+| Recurring tasks | ❌ | 🟡 Medium |
+| AI планування (auto-розподіл) | ❌ | 🟡 Medium |
+| Time Tracking UI | ❌ | 🟡 Medium |
+
+---
+
+### 🔴 ПОТОЧНА ПРОБЛЕМА: Acceptance Workflow
+
+#### Очікувана поведінка (з TechDoc):
+
+```
+1. Хтось створює задачу НА МЕНЕ (assignedToId ≠ createdById)
+   → status = "pending_acceptance"
+   
+2. Я (assignee) бачу banner: "You have X tasks waiting for acceptance"
+
+3. Відкриваю modal:
+   - Task details
+   - Input: "Скільки часу займе?" (години)
+   - [Accept] → status = "backlog", встановлює estimatedTime
+   - [Decline] → status = "declined", вводжу причину
+
+4. Якщо самому собі (assignedToId === createdById)
+   → status = "backlog" (одразу, без acceptance)
+```
+
+#### Фактична поведінка:
+
+```
+Задача створюється через AI Chat на іншого користувача
+→ status = "backlog" (неправильно!)
+→ Має бути "pending_acceptance"
+```
+
+#### Де код вже є:
+
+**1. Prisma Schema (packages/db/schema.prisma:14-25):**
+```prisma
+enum TaskStatus {
+  pending_acceptance  // ✅ Є
+  backlog
+  scheduled
+  todo
+  in_progress
+  blocked
+  paused
+  done
+  declined           // ✅ Є
+  wont_do
+}
+```
+
+**2. Task Service (apps/api/src/task/task.service.ts:28-35):**
+```typescript
+async createTask(dto: CreateTaskDto, userId: string, organizationId: string) {
+  // ✅ Логіка є
+  const isAssignedToOther = dto.assignedToId && dto.assignedToId !== userId;
+  const initialStatus = isAssignedToOther
+    ? TaskStatus.pending_acceptance
+    : TaskStatus.backlog;
+  // ... task creation with initialStatus
+}
+```
+
+**3. Accept/Decline Endpoints:**
+- `POST /api/tasks/:id/accept` - { estimatedTime: number }
+- `POST /api/tasks/:id/decline` - { reason: string }
+
+**4. Frontend Components:**
+- `pending-tasks-banner.tsx` - banner для assignee
+- `task-acceptance-modal.tsx` - Accept/Decline UI
+
+#### Проблема:
+
+Код в backend **має правильну логіку**, але вона **не працює** при створенні через AI Chat. 
+
+**Можливі причини:**
+1. AI task creation йде через інший code path (task-preview-card.tsx → POST /api/tasks)
+2. userId (createdById) не передається правильно
+3. Логіка isAssignedToOther повертає false коли має бути true
+
+#### Що треба зробити:
+
+```
+DEBUG: Додати логування в task.service.ts create method:
+- console.log dto.assignedToId
+- console.log userId (createdById)
+- console.log isAssignedToOther
+- console.log initialStatus
+
+Знайти чому умова не виконується.
+```
+
+---
+
+### 📊 v0.6 Statistics (поточні)
+
+- **Час роботи:** 2 дні
+- **Features completed:** 7/12 (58%)
+- **Killer feature:** AI Task Creation ✅
+- **Main blocker:** Acceptance Workflow bug
+
+---
+
+### 📁 Нові/Змінені файли
+
+**Backend:**
+- `apps/api/src/task/task.service.ts` - acceptance logic
+- `apps/api/src/task/task.controller.ts` - accept/decline endpoints
+- `apps/api/src/ai/ai.service.ts` - task parsing
+- `apps/api/src/chat/chat.gateway.ts` - task creation intent
+
+**Frontend:**
+- `apps/web/src/components/tasks/week-schedule-view.tsx` - main view
+- `apps/web/src/components/tasks/week-schedule-cards.tsx` - draggable cards
+- `apps/web/src/components/tasks/task-detail-modal.tsx` - slide-over panel
+- `apps/web/src/components/tasks/pending-tasks-banner.tsx` - acceptance banner
+- `apps/web/src/components/tasks/task-acceptance-modal.tsx` - accept/decline UI
+- `apps/web/src/components/chat/task-preview-card.tsx` - editable AI preview
+
+**Database:**
+- `packages/db/schema.prisma` - TaskStatus enum updated
+- `packages/db/seed-tasks.ts` - test data script
+
+---
+
+### 🎯 Наступні кроки (для нового чату)
+
+**PRIORITY 1: Fix Acceptance Workflow Bug**
+```
+1. Додати debug logging в task.service.ts
+2. Знайти чому isAssignedToOther = false
+3. Виправити
+4. Протестувати: створити задачу на Biba через AI Chat
+5. Перевірити що status = pending_acceptance
+6. Залогінитись як Biba - побачити banner
+```
+
+**PRIORITY 2: Доробити решту v0.6**
+- Group tasks
+- Recurring tasks  
+- Time Tracking UI
+- AI auto-planning
+- Task attachments
+- Task history
+
+---
+
+### 💡 Корисні команди
+
+```powershell
+# Запуск проекту
+cd C:\Projects\SEO-AI-Platform
+pnpm dev
+
+# Prisma Studio (перегляд бази)
+cd packages/db
+npx prisma studio
+
+# Seed тестових тасків
+cd packages/db
+npm run seed:tasks
+
+# Встановлення залежностей
+pnpm add @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities --filter web
+```
+
+---
+
+**Last Updated:** 29.11.2025  
+**Current Status:** v0.6 IN PROGRESS (~80%)  
+**Blocker:** Acceptance Workflow - status не встановлюється в pending_acceptance
 
 ---
 
