@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { IntegrationsModule } from './integrations/integrations.module';
@@ -10,6 +11,8 @@ import { AiModule } from './ai/ai.module';
 import { ProjectsModule } from './projects/projects.module';
 import { TaskModule } from './task/task.module';
 import { EventsModule } from './events/events.module';
+import { SettingsModule } from './settings/settings.module';
+import { SchedulerModule } from './scheduler/scheduler.module';
 
 @Module({
   imports: [
@@ -17,6 +20,7 @@ import { EventsModule } from './events/events.module';
       isGlobal: true,
       envFilePath: '../../.env',
     }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     EventsModule,
     AuthModule,
@@ -27,6 +31,8 @@ import { EventsModule } from './events/events.module';
     AiModule,
     ProjectsModule,
     TaskModule,
+    SettingsModule,
+    SchedulerModule,
   ],
 })
 export class AppModule {}

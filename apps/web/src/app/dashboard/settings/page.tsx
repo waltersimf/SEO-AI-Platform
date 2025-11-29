@@ -4,6 +4,16 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { TimePicker } from '@/components/ui/time-picker';
 import {
   CheckCircle2,
   XCircle,
@@ -15,6 +25,8 @@ import {
   BarChart3,
   ExternalLink,
   X,
+  Calendar,
+  Clock,
 } from 'lucide-react';
 import { API_URL } from '@/config/api';
 
@@ -25,6 +37,17 @@ interface GoogleIntegration {
     email?: string;
     name?: string;
   };
+}
+
+interface AutoPlanSettings {
+  enabled: boolean;
+  frequency: 'daily' | 'weekly';
+  dayOfWeek: number;
+  time: string;
+  notifyBeforeApply: boolean;
+  autoApply: boolean;
+  lastRunAt?: string;
+  nextRunAt?: string;
 }
 
 interface DriveFile {
@@ -42,6 +65,18 @@ export default function SettingsPage() {
   const [driveFiles, setDriveFiles] = useState<DriveFile[]>([]);
   const [showFilesModal, setShowFilesModal] = useState(false);
 
+  // Auto-plan settings state
+  const [autoPlanSettings, setAutoPlanSettings] = useState<AutoPlanSettings>({
+    enabled: false,
+    frequency: 'weekly',
+    dayOfWeek: 1,
+    time: '08:00',
+    notifyBeforeApply: true,
+    autoApply: false,
+  });
+  const [autoPlanLoading, setAutoPlanLoading] = useState(false);
+  const [autoPlanSaving, setAutoPlanSaving] = useState(false);
+
   const router = useRouter();
 
   useEffect(() => {
@@ -51,6 +86,7 @@ export default function SettingsPage() {
       return;
     }
     checkGoogleConnection(token);
+    fetchAutoPlanSettings(token);
   }, [router]);
 
   const checkGoogleConnection = async (token: string) => {
@@ -72,6 +108,78 @@ export default function SettingsPage() {
       setGoogleIntegration(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAutoPlanSettings = async (token: string) => {
+    setAutoPlanLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/settings/auto-plan`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAutoPlanSettings({
+          enabled: data.enabled,
+          frequency: data.frequency,
+          dayOfWeek: data.dayOfWeek,
+          time: data.time,
+          notifyBeforeApply: data.notifyBeforeApply,
+          autoApply: data.autoApply,
+          lastRunAt: data.lastRunAt,
+          nextRunAt: data.nextRunAt,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching auto-plan settings:', error);
+    } finally {
+      setAutoPlanLoading(false);
+    }
+  };
+
+  const updateAutoPlanSettings = async (updates: Partial<AutoPlanSettings>) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const newSettings = { ...autoPlanSettings, ...updates };
+    setAutoPlanSettings(newSettings);
+    setAutoPlanSaving(true);
+
+    try {
+      const response = await fetch(`${API_URL}/api/settings/auto-plan`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newSettings),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAutoPlanSettings({
+          enabled: data.enabled,
+          frequency: data.frequency,
+          dayOfWeek: data.dayOfWeek,
+          time: data.time,
+          notifyBeforeApply: data.notifyBeforeApply,
+          autoApply: data.autoApply,
+          lastRunAt: data.lastRunAt,
+          nextRunAt: data.nextRunAt,
+        });
+        setActionResult({ type: 'success', message: 'Auto-plan settings saved' });
+      } else {
+        throw new Error('Failed to save settings');
+      }
+    } catch (error) {
+      console.error('Error saving auto-plan settings:', error);
+      setActionResult({ type: 'error', message: 'Failed to save auto-plan settings' });
+    } finally {
+      setAutoPlanSaving(false);
+      setTimeout(() => setActionResult(null), 3000);
     }
   };
 
@@ -198,6 +306,20 @@ export default function SettingsPage() {
 
   const hasScope = (scope: string) => {
     return googleIntegration?.scopes?.some(s => s.includes(scope)) || false;
+  };
+
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  const formatNextRunTime = (dateStr?: string) => {
+    if (!dateStr) return 'Not scheduled';
+    const date = new Date(dateStr);
+    return date.toLocaleString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   if (loading) {
@@ -469,6 +591,167 @@ export default function SettingsPage() {
                       )}
                     </div>
                   </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Auto-Planning Settings Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <Calendar className="h-6 w-6 text-purple-600" />
+                  Auto-Planning
+                </CardTitle>
+                <CardDescription>
+                  Automatically schedule your backlog tasks on a recurring basis
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {autoPlanLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <>
+                    {/* Enable Toggle */}
+                    <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="auto-plan-enabled" className="text-base font-medium">
+                          Enable scheduled auto-planning
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Automatically run auto-plan at specified times
+                        </p>
+                      </div>
+                      <Switch
+                        id="auto-plan-enabled"
+                        checked={autoPlanSettings.enabled}
+                        onCheckedChange={(checked) => updateAutoPlanSettings({ enabled: checked })}
+                        disabled={autoPlanSaving}
+                      />
+                    </div>
+
+                    {/* Settings Grid */}
+                    <div className={`grid gap-6 md:grid-cols-2 ${!autoPlanSettings.enabled ? 'opacity-50 pointer-events-none' : ''}`}>
+                      {/* Frequency */}
+                      <div className="space-y-2">
+                        <Label htmlFor="frequency">Frequency</Label>
+                        <Select
+                          value={autoPlanSettings.frequency}
+                          onValueChange={(value: 'daily' | 'weekly') => updateAutoPlanSettings({ frequency: value })}
+                          disabled={autoPlanSaving || !autoPlanSettings.enabled}
+                        >
+                          <SelectTrigger id="frequency">
+                            <SelectValue placeholder="Select frequency" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="daily">Daily</SelectItem>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Day of Week (only for weekly) */}
+                      {autoPlanSettings.frequency === 'weekly' && (
+                        <div className="space-y-2">
+                          <Label htmlFor="dayOfWeek">Day of Week</Label>
+                          <Select
+                            value={autoPlanSettings.dayOfWeek.toString()}
+                            onValueChange={(value) => updateAutoPlanSettings({ dayOfWeek: parseInt(value) })}
+                            disabled={autoPlanSaving || !autoPlanSettings.enabled}
+                          >
+                            <SelectTrigger id="dayOfWeek">
+                              <SelectValue placeholder="Select day" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {dayNames.map((day, index) => (
+                                <SelectItem key={index} value={index.toString()}>
+                                  {day}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {/* Time */}
+                      <div className="space-y-2">
+                        <Label>Time</Label>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          <TimePicker
+                            value={autoPlanSettings.time}
+                            onChange={(value) => updateAutoPlanSettings({ time: value })}
+                            disabled={autoPlanSaving || !autoPlanSettings.enabled}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Behavior Settings */}
+                    <div className="space-y-4 pt-4 border-t">
+                      <h4 className="text-sm font-medium text-muted-foreground">Behavior</h4>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="notify-before" className="text-sm font-medium">
+                            Preview before applying
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            Send preview to AI chat before applying the plan
+                          </p>
+                        </div>
+                        <Switch
+                          id="notify-before"
+                          checked={autoPlanSettings.notifyBeforeApply}
+                          onCheckedChange={(checked) => updateAutoPlanSettings({ notifyBeforeApply: checked })}
+                          disabled={autoPlanSaving || !autoPlanSettings.enabled}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="auto-apply" className="text-sm font-medium">
+                            Apply automatically
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            Apply the plan without manual confirmation
+                          </p>
+                        </div>
+                        <Switch
+                          id="auto-apply"
+                          checked={autoPlanSettings.autoApply}
+                          onCheckedChange={(checked) => updateAutoPlanSettings({ autoApply: checked })}
+                          disabled={autoPlanSaving || !autoPlanSettings.enabled}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Next Run Info */}
+                    {autoPlanSettings.enabled && (
+                      <div className="p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                        <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
+                          <Calendar className="h-4 w-4" />
+                          <span className="text-sm font-medium">
+                            Next scheduled run: {formatNextRunTime(autoPlanSettings.nextRunAt)}
+                          </span>
+                        </div>
+                        {autoPlanSettings.lastRunAt && (
+                          <p className="text-xs text-purple-600 dark:text-purple-400 mt-1 ml-6">
+                            Last run: {formatNextRunTime(autoPlanSettings.lastRunAt)}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Saving indicator */}
+                    {autoPlanSaving && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Saving...
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>

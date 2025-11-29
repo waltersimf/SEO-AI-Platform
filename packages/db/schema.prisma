@@ -38,10 +38,11 @@ model Organization {
   plan        String @default("free")
   maxProjects Int    @default(5)
 
-  users        User[]
-  integrations Integration[]
-  projects     Project[]
-  tasks        Task[]
+  users            User[]
+  integrations     Integration[]
+  projects         Project[]
+  tasks            Task[]
+  autoPlanSettings AutoPlanSettings?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -302,4 +303,26 @@ model UserSettings {
   updatedAt DateTime @updatedAt
 
   @@map("user_settings")
+}
+
+model AutoPlanSettings {
+  id             String       @id @default(cuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  enabled   Boolean @default(false)
+  frequency String  @default("weekly") // "daily", "weekly"
+  dayOfWeek Int     @default(1) // 0=Sunday, 1=Monday, etc.
+  time      String  @default("08:00") // HH:MM format
+
+  notifyBeforeApply Boolean @default(true) // Send preview to chat first
+  autoApply         Boolean @default(false) // Apply automatically without confirmation
+
+  lastRunAt DateTime? // Track when auto-plan last ran
+  nextRunAt DateTime? // Track when auto-plan should run next
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("auto_plan_settings")
 }
