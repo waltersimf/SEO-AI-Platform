@@ -79,10 +79,27 @@ export function ChatBox({
   const previousMessageCount = useRef(0);
 
   // Handle task creation from preview
-  const handleTaskCreated = (messageId: string, _taskId: string) => {
+  const handleTaskCreated = (messageId: string, info: {
+    taskId: string;
+    title: string;
+    assigneeName?: string;
+    taskCount?: number;
+    isGroupTask?: boolean;
+  }) => {
     // Mark the preview as created so it hides
     setCreatedTaskIds(prev => new Set(prev).add(messageId));
-    // Note: No need to send a message - the task-preview-card shows a success message
+
+    // Emit socket event for AI to send confirmation message
+    const socket = socketRef.current;
+    if (socket) {
+      socket.emit('confirm_task_created', {
+        chatId,
+        taskTitle: info.title,
+        assigneeName: info.assigneeName,
+        taskCount: info.taskCount,
+        isGroupTask: info.isGroupTask,
+      });
+    }
   };
 
   // Handle dismissing a task preview
@@ -472,7 +489,7 @@ export function ChatBox({
               {hasTaskPreview(message) && message.aiContext?.taskPreview?.task && (
                 <TaskPreviewCard
                   taskData={message.aiContext.taskPreview.task}
-                  onTaskCreated={(taskId) => handleTaskCreated(message.id, taskId)}
+                  onTaskCreated={(info) => handleTaskCreated(message.id, info)}
                   onDismiss={() => handleDismissPreview(message.id)}
                 />
               )}
