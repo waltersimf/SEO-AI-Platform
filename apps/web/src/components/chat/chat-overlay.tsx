@@ -58,11 +58,11 @@ export function ChatOverlay({
       {/* WINDOW CONTAINER */}
       <div
         className={cn(
-          "fixed inset-x-0 bottom-[90px] z-50 flex justify-center pl-64 pr-4 pointer-events-none transition-all duration-300 ease-out",
+          "fixed left-64 right-0 bottom-[90px] z-50 px-6 pointer-events-none transition-all duration-300 ease-out",
           isOpen ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
         )}
       >
-        <div className={cn("w-full max-w-6xl", isOpen && "pointer-events-auto")}>
+        <div className={cn("w-full", isOpen && "pointer-events-auto")}>
           <div 
             className="bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col w-full overflow-hidden"
             style={{ height: WINDOW_HEIGHT }}
