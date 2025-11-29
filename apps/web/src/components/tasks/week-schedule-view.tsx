@@ -706,7 +706,7 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
             const dateKey = formatDateKey(day);
             const tasks = filteredScheduledTasks[dateKey] || [];
             const totalHours = getDayHours(dateKey);
-            const isOverloaded = totalHours > HOURS_PER_DAY;
+            const isOverloaded = totalHours >= HOURS_PER_DAY;
             const fillPercent = Math.min((totalHours / HOURS_PER_DAY) * 100, 100);
 
             return (
