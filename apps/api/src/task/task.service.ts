@@ -832,4 +832,205 @@ export class TaskService {
 
     return timeEntry;
   }
+
+  // ==================== AUTO-PLANNING ====================
+
+  async generateAutoPlan(organizationId: string, userId: string) {
+    const HOURS_PER_DAY = 8;
+    const DEFAULT_TASK_HOURS = 1;
+
+    // Get backlog tasks (unscheduled, not done/declined)
+    const backlogTasks = await this.prisma.task.findMany({
+      where: {
+        organizationId,
+        assignedToId: userId,
+        scheduledDate: null,
+        status: {
+          in: [TaskStatus.backlog, TaskStatus.todo, TaskStatus.scheduled],
+        },
+      },
+      include: this.taskInclude,
+      orderBy: [
+        { priority: 'desc' }, // critical > high > medium > low
+        { dueDate: 'asc' },   // closest due date first
+        { createdAt: 'asc' }, // oldest first
+      ],
+    });
+
+    if (backlogTasks.length === 0) {
+      return {
+        plan: [],
+        summary: {},
+        message: 'No tasks to schedule',
+      };
+    }
+
+    // Get start of current week (Monday)
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    monday.setHours(0, 0, 0, 0);
+
+    // Get end of week (Sunday)
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    // Get already scheduled tasks for the week
+    const scheduledTasks = await this.prisma.task.findMany({
+      where: {
+        organizationId,
+        assignedToId: userId,
+        scheduledDate: {
+          gte: monday,
+          lte: sunday,
+        },
+        status: {
+          notIn: [TaskStatus.done, TaskStatus.declined, TaskStatus.wont_do],
+        },
+      },
+    });
+
+    // Calculate existing capacity per day
+    const dayCapacity: Record<string, number> = {};
+    const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+    // Initialize all days with full capacity
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + i);
+      const dateKey = date.toISOString().split('T')[0];
+      dayCapacity[dateKey] = HOURS_PER_DAY;
+    }
+
+    // Subtract existing scheduled tasks
+    for (const task of scheduledTasks) {
+      if (task.scheduledDate) {
+        const dateKey = task.scheduledDate.toISOString().split('T')[0];
+        if (dayCapacity[dateKey] !== undefined) {
+          dayCapacity[dateKey] -= task.estimatedTime || DEFAULT_TASK_HOURS;
+        }
+      }
+    }
+
+    // Plan tasks
+    const plan: Array<{
+      taskId: string;
+      taskTitle: string;
+      suggestedDate: string;
+      estimatedTime: number;
+      priority: string;
+      dueDate: string | null;
+    }> = [];
+
+    const summary: Record<string, number> = {};
+    for (const dayName of dayNames) {
+      summary[dayName] = 0;
+    }
+
+    for (const task of backlogTasks) {
+      const taskHours = task.estimatedTime || DEFAULT_TASK_HOURS;
+
+      // Find first day with available capacity
+      let scheduled = false;
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(monday);
+        date.setDate(monday.getDate() + i);
+        const dateKey = date.toISOString().split('T')[0];
+
+        // Skip past days
+        if (date < today) {
+          date.setHours(0, 0, 0, 0);
+          const todayStart = new Date(today);
+          todayStart.setHours(0, 0, 0, 0);
+          if (date < todayStart) continue;
+        }
+
+        // Check if task has a due date and this day is after it
+        if (task.dueDate && date > task.dueDate) {
+          // Try to fit it earlier, but for now skip
+          continue;
+        }
+
+        // Check capacity
+        if (dayCapacity[dateKey] >= taskHours) {
+          dayCapacity[dateKey] -= taskHours;
+
+          plan.push({
+            taskId: task.id,
+            taskTitle: task.title,
+            suggestedDate: dateKey,
+            estimatedTime: taskHours,
+            priority: task.priority,
+            dueDate: task.dueDate ? task.dueDate.toISOString().split('T')[0] : null,
+          });
+
+          // Update summary
+          const dayIndex = Math.floor((date.getTime() - monday.getTime()) / (24 * 60 * 60 * 1000));
+          if (dayIndex >= 0 && dayIndex < 7) {
+            summary[dayNames[dayIndex]] += taskHours;
+          }
+
+          scheduled = true;
+          break;
+        }
+      }
+
+      // If couldn't schedule this week, add to overflow (optional)
+      if (!scheduled) {
+        // Could add to next week or mark as overflow
+      }
+    }
+
+    return {
+      plan,
+      summary,
+      weekStart: monday.toISOString().split('T')[0],
+      weekEnd: sunday.toISOString().split('T')[0],
+      totalTasksPlanned: plan.length,
+      totalTasksInBacklog: backlogTasks.length,
+    };
+  }
+
+  async applyAutoPlan(
+    organizationId: string,
+    plan: Array<{ taskId: string; suggestedDate: string }>,
+  ) {
+    const results = [];
+
+    for (const item of plan) {
+      try {
+        const task = await this.prisma.task.update({
+          where: { id: item.taskId },
+          data: {
+            scheduledDate: new Date(item.suggestedDate),
+            status: TaskStatus.scheduled,
+          },
+          include: this.taskInclude,
+        });
+
+        // Emit real-time event
+        this.eventsGateway.emitTaskUpdated(organizationId, task);
+
+        results.push({
+          taskId: item.taskId,
+          success: true,
+        });
+      } catch (error) {
+        results.push({
+          taskId: item.taskId,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return {
+      success: true,
+      results,
+      applied: results.filter((r) => r.success).length,
+      failed: results.filter((r) => !r.success).length,
+    };
+  }
 }

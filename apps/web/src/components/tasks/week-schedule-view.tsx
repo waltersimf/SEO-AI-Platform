@@ -38,6 +38,8 @@ import {
   Search,
   Filter,
   X,
+  Bot,
+  Loader2,
 } from "lucide-react";
 import {
   Task,
@@ -51,7 +53,9 @@ import { DraggableTaskCard, DroppableDay, BacklogCard } from "./week-schedule-ca
 import { TaskDetailModal } from "./task-detail-modal";
 import { PendingTasksBanner } from "./pending-tasks-banner";
 import { TaskAcceptanceModal } from "./task-acceptance-modal";
+import { AutoPlanModal } from "./auto-plan-modal";
 import { useOrganizationUsers } from "@/hooks/use-organization-users";
+import { API_URL } from "@/config/api";
 import { useProjects } from "@/hooks/use-projects";
 import { useTaskSocket } from "@/hooks/use-task-socket";
 
@@ -107,6 +111,12 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
   const [acceptanceTask, setAcceptanceTask] = useState<Task | null>(null);
   const [acceptanceModalOpen, setAcceptanceModalOpen] = useState(false);
   const [pendingRefreshKey, setPendingRefreshKey] = useState(0);
+
+  // Auto-plan modal state
+  const [autoPlanModalOpen, setAutoPlanModalOpen] = useState(false);
+  const [autoPlanData, setAutoPlanData] = useState<any>(null);
+  const [autoPlanLoading, setAutoPlanLoading] = useState(false);
+  const [autoPlanApplying, setAutoPlanApplying] = useState(false);
 
   // Fetch users and projects for filters
   const { users } = useOrganizationUsers();
@@ -446,6 +456,63 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
     setPendingRefreshKey((prev) => prev + 1);
   };
 
+  // Auto-plan handlers
+  const handleGenerateAutoPlan = async () => {
+    setAutoPlanLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_URL}/tasks/auto-plan`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate auto-plan");
+      }
+
+      const data = await response.json();
+      setAutoPlanData(data);
+      setAutoPlanModalOpen(true);
+    } catch (error) {
+      console.error("Failed to generate auto-plan:", error);
+    } finally {
+      setAutoPlanLoading(false);
+    }
+  };
+
+  const handleApplyAutoPlan = async () => {
+    if (!autoPlanData?.plan) return;
+
+    setAutoPlanApplying(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_URL}/tasks/apply-plan`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ plan: autoPlanData.plan }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to apply auto-plan");
+      }
+
+      // Refresh data after applying plan
+      await loadData();
+      setAutoPlanModalOpen(false);
+      setAutoPlanData(null);
+    } catch (error) {
+      console.error("Failed to apply auto-plan:", error);
+    } finally {
+      setAutoPlanApplying(false);
+    }
+  };
+
   // Drag handlers
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
@@ -561,19 +628,35 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
             </Button>
           </div>
 
-          {/* Filters Popover */}
-          <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
-                Filters
-                {activeFilterCount > 0 && (
-                  <Badge variant="secondary" className="ml-2 h-5 px-1.5">
-                    {activeFilterCount}
-                  </Badge>
-                )}
-              </Button>
-            </PopoverTrigger>
+          <div className="flex items-center gap-2">
+            {/* Auto-plan Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGenerateAutoPlan}
+              disabled={autoPlanLoading}
+            >
+              {autoPlanLoading ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Bot className="h-4 w-4 mr-2" />
+              )}
+              Auto-plan
+            </Button>
+
+            {/* Filters Popover */}
+            <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filters
+                  {activeFilterCount > 0 && (
+                    <Badge variant="secondary" className="ml-2 h-5 px-1.5">
+                      {activeFilterCount}
+                    </Badge>
+                  )}
+                </Button>
+              </PopoverTrigger>
             <PopoverContent className="w-80" align="end">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -862,6 +945,18 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
         onOpenChange={setAcceptanceModalOpen}
         onTaskAccepted={handleTaskAccepted}
         onTaskDeclined={handleTaskDeclined}
+      />
+
+      {/* Auto-Plan Modal */}
+      <AutoPlanModal
+        isOpen={autoPlanModalOpen}
+        onClose={() => {
+          setAutoPlanModalOpen(false);
+          setAutoPlanData(null);
+        }}
+        planData={autoPlanData}
+        onApply={handleApplyAutoPlan}
+        isApplying={autoPlanApplying}
       />
     </DndContext>
   );
