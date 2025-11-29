@@ -179,6 +179,11 @@ export class TaskController {
       const userId = req.user.id;
       const organizationId = req.user.organizationId;
 
+      // If assignToAll is true, create group task for all team members
+      if (dto.assignToAll) {
+        return this.taskService.createGroupTask(dto, userId, organizationId);
+      }
+
       return this.taskService.createTask(dto, userId, organizationId);
     } catch (error) {
       if (error instanceof BadRequestException) {

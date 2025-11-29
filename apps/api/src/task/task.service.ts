@@ -61,6 +61,65 @@ export class TaskService {
     return task;
   }
 
+  async createGroupTask(dto: CreateTaskDto, userId: string, organizationId: string) {
+    // Fetch all organization members (excluding AI users)
+    const members = await this.prisma.user.findMany({
+      where: {
+        organizationId,
+        isAI: false,
+      },
+      select: { id: true, name: true },
+    });
+
+    if (members.length === 0) {
+      throw new NotFoundException('No team members found in organization');
+    }
+
+    // Generate a unique groupTaskId
+    const groupTaskId = `group_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Create a task for each member
+    const createdTasks = [];
+
+    for (const member of members) {
+      // Determine initial status based on assignee
+      const isAssignedToOther = member.id !== userId;
+      const initialStatus = isAssignedToOther
+        ? TaskStatus.pending_acceptance
+        : TaskStatus.backlog;
+
+      const task = await this.prisma.task.create({
+        data: {
+          title: dto.title,
+          description: dto.description,
+          projectId: dto.projectId,
+          assignedToId: member.id,
+          createdById: userId,
+          organizationId,
+          status: initialStatus,
+          priority: dto.priority as any,
+          dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+          estimatedTime: dto.estimatedTime,
+          tags: dto.tags || [],
+          groupTaskId,
+          isGroupTask: true,
+        },
+        include: this.taskInclude,
+      });
+
+      createdTasks.push(task);
+
+      // Emit real-time event for each task
+      this.eventsGateway.emitTaskCreated(organizationId, task);
+    }
+
+    return {
+      groupTaskId,
+      tasks: createdTasks,
+      count: createdTasks.length,
+    };
+  }
+
   async getTasks(filters: TaskFiltersDto & { organizationId: string }) {
     const where: any = {
       organizationId: filters.organizationId,

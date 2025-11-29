@@ -70,7 +70,8 @@ export interface CreateTaskData {
   title: string;
   description?: string;
   projectId?: string;
-  assignedToId: string;
+  assignedToId?: string;
+  assignToAll?: boolean;
   priority?: TaskPriority;
   dueDate?: string;
   estimatedTime?: number;

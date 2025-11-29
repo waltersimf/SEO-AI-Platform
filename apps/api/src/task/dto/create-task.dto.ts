@@ -6,6 +6,7 @@ import {
   IsNumber,
   IsDateString,
   MinLength,
+  IsBoolean,
 } from 'class-validator';
 
 export enum TaskPriorityDto {
@@ -29,7 +30,12 @@ export class CreateTaskDto {
   projectId?: string;
 
   @IsString()
-  assignedToId: string;
+  @IsOptional()
+  assignedToId?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  assignToAll?: boolean;
 
   @IsEnum(TaskPriorityDto)
   @IsOptional()
