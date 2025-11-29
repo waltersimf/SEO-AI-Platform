@@ -214,6 +214,16 @@ export function ChatBox({
 
         if (response.ok) {
           const history = await response.json();
+          console.log('📜 Loaded message history, count:', history.length);
+          // Log messages with aiContext
+          const msgsWithAiContext = history.filter((m: Message) => m.aiContext);
+          if (msgsWithAiContext.length > 0) {
+            console.log('📋 Messages with aiContext from history:', msgsWithAiContext.map((m: Message) => ({
+              id: m.id,
+              aiContext: m.aiContext,
+              hasTaskPreview: !!(m.aiContext as any)?.taskPreview,
+            })));
+          }
           // Ensure isAI flag is set for AI Assistant messages (API might not include it)
           const processedHistory = history.map((msg: Message) => ({
             ...msg,

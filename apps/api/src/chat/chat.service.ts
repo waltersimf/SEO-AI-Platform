@@ -83,17 +83,36 @@ export class ChatService {
     try {
       const messages = await this.prisma.message.findMany({
         where: { chatId },
-        include: {
+        select: {
+          id: true,
+          chatId: true,
+          authorId: true,
+          content: true,
+          isAIResponse: true,
+          aiContext: true, // Explicitly include aiContext
+          aiModel: true,
+          createdAt: true,
           author: {
             select: {
               id: true,
               name: true,
+              avatar: true,
+              isAI: true,
             },
           },
         },
         orderBy: { createdAt: 'asc' },
         take: limit,
       });
+
+      // Log messages with aiContext for debugging
+      const messagesWithAiContext = messages.filter(m => m.aiContext);
+      if (messagesWithAiContext.length > 0) {
+        console.log('📋 Messages with aiContext:', messagesWithAiContext.map(m => ({
+          id: m.id,
+          aiContext: m.aiContext,
+        })));
+      }
 
       return messages;
     } catch (error) {
