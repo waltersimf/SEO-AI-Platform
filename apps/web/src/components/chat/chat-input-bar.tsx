@@ -19,8 +19,6 @@ interface ChatInputBarProps {
   unreadChats?: Array<{id: string, name: string, unreadCount: number, lastMessage?: string, isAi?: boolean}>;
 }
 
-const SIDEBAR_WIDTH = 256;
-
 // Default AI Assistant contact for empty state
 const AI_ASSISTANT_CONTACT: Contact = {
   id: 'ai-assistant',
@@ -162,12 +160,11 @@ export function ChatInputBar({
 
   return (
     <div
-      className="fixed bottom-0 right-0 z-40 bg-transparent pointer-events-none"
-      style={{ left: SIDEBAR_WIDTH }}
+      className="fixed bottom-0 left-64 right-0 z-40 bg-transparent pointer-events-none"
     >
-      <div className="w-full pl-8 pr-12 py-4 pointer-events-auto">
+      <div className="w-full px-6 py-4 pointer-events-auto">
         <div
-          className="max-w-6xl mx-auto bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden"
+          className="w-full bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden"
           onClick={handleBarClick}
         >
 
