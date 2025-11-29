@@ -79,18 +79,10 @@ export function ChatBox({
   const previousMessageCount = useRef(0);
 
   // Handle task creation from preview
-  const handleTaskCreated = (messageId: string, taskId: string) => {
+  const handleTaskCreated = (messageId: string, _taskId: string) => {
+    // Mark the preview as created so it hides
     setCreatedTaskIds(prev => new Set(prev).add(messageId));
-
-    // Send confirmation message via socket
-    const socket = socketRef.current;
-    if (socket) {
-      socket.emit('send_message', {
-        chatId,
-        authorId: userId,
-        content: `Task created! View it here: /dashboard/tasks/${taskId}`,
-      });
-    }
+    // Note: No need to send a message - the task-preview-card shows a success message
   };
 
   // Handle dismissing a task preview
