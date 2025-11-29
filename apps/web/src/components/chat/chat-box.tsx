@@ -4,8 +4,26 @@ import { useEffect, useState, useRef } from 'react';
 import { initSocket, getSocket } from '../chat/socket';
 import { Send } from 'lucide-react';
 import { TypingIndicator } from './typing-indicator';
+import { TaskPreviewCard } from './task-preview-card';
 import { API_URL } from '@/config/api';
 import ReactMarkdown from 'react-markdown';
+
+interface TaskPreviewData {
+  type: 'task_preview';
+  task: {
+    title: string;
+    description?: string;
+    assigneeId?: string;
+    assigneeName?: string;
+    projectId?: string;
+    projectName?: string;
+    dueDate?: string;
+    priority?: 'low' | 'medium' | 'high' | 'critical';
+    estimatedTime?: number;
+    organizationId: string;
+  };
+  status: 'pending' | 'created';
+}
 
 interface Message {
   id: string;
@@ -14,10 +32,12 @@ interface Message {
     id: string;
     name: string;
     avatar?: string;
-    // ⭐ ЗМІНА: Поле isAI має бути тут, але ми його перевірятимемо у хелпері
-    isAI?: boolean; 
+    isAI?: boolean;
   };
   createdAt: string;
+  aiContext?: {
+    taskPreview?: TaskPreviewData;
+  };
 }
 
 interface OrganizationUser {
@@ -48,6 +68,8 @@ export function ChatBox({
   const [mentionSearchQuery, setMentionSearchQuery] = useState('');
   const [mentionSelectedIndex, setMentionSelectedIndex] = useState(0);
   const [mentionStartPos, setMentionStartPos] = useState(0);
+  const [createdTaskIds, setCreatedTaskIds] = useState<Set<string>>(new Set());
+  const [dismissedPreviews, setDismissedPreviews] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -55,6 +77,36 @@ export function ChatBox({
   const inputRef = useRef<HTMLInputElement>(null);
   const isInitialLoad = useRef(true);
   const previousMessageCount = useRef(0);
+
+  // Handle task creation from preview
+  const handleTaskCreated = (messageId: string, taskId: string) => {
+    setCreatedTaskIds(prev => new Set(prev).add(messageId));
+
+    // Send confirmation message via socket
+    const socket = socketRef.current;
+    if (socket) {
+      socket.emit('send_message', {
+        chatId,
+        authorId: userId,
+        content: `Task created! View it here: /dashboard/tasks/${taskId}`,
+      });
+    }
+  };
+
+  // Handle dismissing a task preview
+  const handleDismissPreview = (messageId: string) => {
+    setDismissedPreviews(prev => new Set(prev).add(messageId));
+  };
+
+  // Check if message has a task preview
+  const hasTaskPreview = (message: Message): boolean => {
+    return !!(
+      message.aiContext?.taskPreview?.type === 'task_preview' &&
+      message.aiContext?.taskPreview?.task &&
+      !createdTaskIds.has(message.id) &&
+      !dismissedPreviews.has(message.id)
+    );
+  };
 
   // Helper function to render avatar content consistently
   const renderAvatarContent = (user: { name: string; avatar?: string; isAI?: boolean }) => {
@@ -422,6 +474,15 @@ export function ChatBox({
                 </div>
               ) : (
                 <p className="text-sm">{message.content}</p>
+              )}
+
+              {/* Task Preview Card */}
+              {hasTaskPreview(message) && message.aiContext?.taskPreview?.task && (
+                <TaskPreviewCard
+                  taskData={message.aiContext.taskPreview.task}
+                  onTaskCreated={(taskId) => handleTaskCreated(message.id, taskId)}
+                  onDismiss={() => handleDismissPreview(message.id)}
+                />
               )}
             </div>
 
