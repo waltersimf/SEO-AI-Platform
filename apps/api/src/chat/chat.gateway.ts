@@ -732,7 +732,7 @@ export class ChatGateway
 
   @SubscribeMessage('confirm_task_created')
   async handleTaskCreatedConfirmation(
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() _client: Socket,
     @MessageBody()
     payload: {
       chatId: string;
