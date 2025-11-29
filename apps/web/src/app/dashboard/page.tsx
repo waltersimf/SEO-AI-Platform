@@ -46,8 +46,8 @@ export default function DashboardPage() {
     <div className="h-screen bg-background flex flex-col">
       {/* Main Content - Add padding bottom for input bar */}
       <div className="flex-1 overflow-auto pb-20">
-        <div className="p-8">
-          <div className="max-w-6xl mx-auto space-y-8">
+        <div className="p-6">
+          <div className="space-y-8">
             {/* Welcome Section */}
             <div>
               <h1 className="text-4xl font-bold tracking-tight">
