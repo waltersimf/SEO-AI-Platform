@@ -498,10 +498,10 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
 
     // Determine target
     if (targetId === "backlog") {
-      // Move to backlog
+      // Move to backlog - use null to explicitly clear scheduledDate
       if (sourceDate) {
         try {
-          await updateTask(taskId, { scheduledDate: undefined, status: "backlog" });
+          await updateTask(taskId, { scheduledDate: null, status: "backlog" });
           loadData();
         } catch (error) {
           console.error("Failed to move to backlog:", error);

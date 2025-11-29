@@ -84,8 +84,8 @@ export interface UpdateTaskData {
   assignedToId?: string;
   priority?: TaskPriority;
   status?: TaskStatus;
-  dueDate?: string;
-  scheduledDate?: string;
+  dueDate?: string | null;
+  scheduledDate?: string | null;
   estimatedTime?: number;
   actualTime?: number;
   tags?: string[];
