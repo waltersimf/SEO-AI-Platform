@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import Link from "next/link";
 import {
   DndContext,
   DragOverlay,
@@ -16,6 +15,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
   ChevronLeft,
@@ -24,6 +37,7 @@ import {
   Plus,
   Search,
   Filter,
+  X,
 } from "lucide-react";
 import {
   Task,
@@ -34,6 +48,9 @@ import {
   updateTask,
 } from "@/lib/api/tasks";
 import { DraggableTaskCard, DroppableDay, BacklogCard } from "./week-schedule-cards";
+import { TaskDetailModal } from "./task-detail-modal";
+import { useOrganizationUsers } from "@/hooks/use-organization-users";
+import { useProjects } from "@/hooks/use-projects";
 
 interface WeekScheduleViewProps {
   userId?: string;
@@ -43,11 +60,18 @@ interface WeekScheduleViewProps {
 const HOURS_PER_DAY = 8;
 const COLUMN_MIN_HEIGHT = 400;
 
-const priorityColors: Record<TaskPriority, string> = {
-  low: "border-l-green-500",
-  medium: "border-l-yellow-500",
-  high: "border-l-orange-500",
-  critical: "border-l-red-500",
+interface TaskFilters {
+  priorities: TaskPriority[];
+  assigneeId: string | null;
+  projectId: string | null;
+  tags: string[];
+}
+
+const emptyFilters: TaskFilters = {
+  priorities: [],
+  assigneeId: null,
+  projectId: null,
+  tags: [],
 };
 
 export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps) {
@@ -64,6 +88,30 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
   const [backlogSearch, setBacklogSearch] = useState("");
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+
+  // Filter state
+  const [filters, setFilters] = useState<TaskFilters>(emptyFilters);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Task detail modal state
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [currentUserName, setCurrentUserName] = useState<string>("");
+
+  // Fetch users and projects for filters
+  const { users } = useOrganizationUsers();
+  const { projects } = useProjects();
+
+  // Extract all unique tags from tasks
+  const allTags = useMemo(() => {
+    const tags = new Set<string>();
+    Object.values(scheduledTasks).forEach((tasks) => {
+      tasks.forEach((task) => task.tags?.forEach((tag) => tags.add(tag)));
+    });
+    backlogTasks.forEach((task) => task.tags?.forEach((tag) => tags.add(tag)));
+    return Array.from(tags).sort();
+  }, [scheduledTasks, backlogTasks]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -105,6 +153,20 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
       date.getFullYear() === today.getFullYear()
     );
   };
+
+  // Get current user info from token
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        setCurrentUserId(payload.sub);
+        setCurrentUserName(payload.name || "User");
+      } catch (err) {
+        console.error("Invalid token:", err);
+      }
+    }
+  }, []);
 
   // Load data
   useEffect(() => {
@@ -151,22 +213,128 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
     setCurrentWeekStart(new Date(today.setDate(diff)));
   };
 
-  // Calculate day hours
+  // Filter tasks
+  const filterTask = (task: Task): boolean => {
+    // Priority filter
+    if (filters.priorities.length > 0 && !filters.priorities.includes(task.priority)) {
+      return false;
+    }
+    // Assignee filter
+    if (filters.assigneeId && task.assignedToId !== filters.assigneeId) {
+      return false;
+    }
+    // Project filter
+    if (filters.projectId && task.projectId !== filters.projectId) {
+      return false;
+    }
+    // Tags filter
+    if (filters.tags.length > 0) {
+      const taskTags = task.tags || [];
+      if (!filters.tags.some((tag) => taskTags.includes(tag))) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Apply filters to scheduled tasks
+  const filteredScheduledTasks = useMemo(() => {
+    const result: Record<string, Task[]> = {};
+    Object.entries(scheduledTasks).forEach(([date, tasks]) => {
+      result[date] = tasks.filter(filterTask);
+    });
+    return result;
+  }, [scheduledTasks, filters]);
+
+  // Calculate day hours (using filtered tasks)
   const getDayHours = (dateKey: string) => {
-    const tasks = scheduledTasks[dateKey] || [];
+    const tasks = filteredScheduledTasks[dateKey] || [];
     return tasks.reduce((sum, task) => sum + (task.estimatedTime || 0), 0);
   };
 
-  // Filter backlog
+  // Filter backlog with search and filters
   const filteredBacklog = useMemo(() => {
-    if (!backlogSearch.trim()) return backlogTasks;
-    const search = backlogSearch.toLowerCase();
-    return backlogTasks.filter(
-      (task) =>
-        task.title.toLowerCase().includes(search) ||
-        task.description?.toLowerCase().includes(search)
+    let result = backlogTasks.filter(filterTask);
+    if (backlogSearch.trim()) {
+      const search = backlogSearch.toLowerCase();
+      result = result.filter(
+        (task) =>
+          task.title.toLowerCase().includes(search) ||
+          task.description?.toLowerCase().includes(search)
+      );
+    }
+    return result;
+  }, [backlogTasks, backlogSearch, filters]);
+
+  // Count active filters
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.priorities.length > 0) count++;
+    if (filters.assigneeId) count++;
+    if (filters.projectId) count++;
+    if (filters.tags.length > 0) count++;
+    return count;
+  }, [filters]);
+
+  // Filter handlers
+  const togglePriority = (priority: TaskPriority) => {
+    setFilters((prev) => ({
+      ...prev,
+      priorities: prev.priorities.includes(priority)
+        ? prev.priorities.filter((p) => p !== priority)
+        : [...prev.priorities, priority],
+    }));
+  };
+
+  const toggleTag = (tag: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      tags: prev.tags.includes(tag)
+        ? prev.tags.filter((t) => t !== tag)
+        : [...prev.tags, tag],
+    }));
+  };
+
+  const clearFilters = () => {
+    setFilters(emptyFilters);
+  };
+
+  // Task click handler
+  const handleTaskClick = (task: Task) => {
+    setSelectedTaskId(task.id);
+    setDetailModalOpen(true);
+  };
+
+  // Task update/delete handlers
+  const handleTaskUpdated = (updatedTask: Task) => {
+    // Update in scheduled tasks
+    setScheduledTasks((prev) => {
+      const newScheduled = { ...prev };
+      Object.keys(newScheduled).forEach((date) => {
+        newScheduled[date] = newScheduled[date].map((t) =>
+          t.id === updatedTask.id ? updatedTask : t
+        );
+      });
+      return newScheduled;
+    });
+    // Update in backlog
+    setBacklogTasks((prev) =>
+      prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
     );
-  }, [backlogTasks, backlogSearch]);
+  };
+
+  const handleTaskDeleted = (taskId: string) => {
+    // Remove from scheduled tasks
+    setScheduledTasks((prev) => {
+      const newScheduled = { ...prev };
+      Object.keys(newScheduled).forEach((date) => {
+        newScheduled[date] = newScheduled[date].filter((t) => t.id !== taskId);
+      });
+      return newScheduled;
+    });
+    // Remove from backlog
+    setBacklogTasks((prev) => prev.filter((t) => t.id !== taskId));
+  };
 
   // Drag handlers
   const handleDragStart = (event: DragStartEvent) => {
@@ -276,17 +444,151 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
               Today
             </Button>
           </div>
-          <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
-          </Button>
+
+          {/* Filters Popover */}
+          <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-2" />
+                Filters
+                {activeFilterCount > 0 && (
+                  <Badge variant="secondary" className="ml-2 h-5 px-1.5">
+                    {activeFilterCount}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80" align="end">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium">Filters</h4>
+                  {activeFilterCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearFilters}
+                      className="h-auto py-1 px-2 text-xs"
+                    >
+                      Clear all
+                    </Button>
+                  )}
+                </div>
+
+                {/* Priority Filter */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Priority</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["low", "medium", "high", "critical"] as TaskPriority[]).map(
+                      (priority) => (
+                        <div key={priority} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`priority-${priority}`}
+                            checked={filters.priorities.includes(priority)}
+                            onCheckedChange={() => togglePriority(priority)}
+                          />
+                          <Label
+                            htmlFor={`priority-${priority}`}
+                            className="text-sm capitalize cursor-pointer"
+                          >
+                            {priority}
+                          </Label>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+
+                {/* Assignee Filter */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Assignee</Label>
+                  <Select
+                    value={filters.assigneeId || "all"}
+                    onValueChange={(value) =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        assigneeId: value === "all" ? null : value,
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All assignees" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All assignees</SelectItem>
+                      {users.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.name} {user.isAI && "(AI)"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Project Filter */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Project</Label>
+                  <Select
+                    value={filters.projectId || "all"}
+                    onValueChange={(value) =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        projectId: value === "all" ? null : value,
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All projects" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All projects</SelectItem>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Tags Filter */}
+                {allTags.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Tags</Label>
+                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                      {allTags.map((tag) => (
+                        <Badge
+                          key={tag}
+                          variant={filters.tags.includes(tag) ? "default" : "outline"}
+                          className="cursor-pointer"
+                          onClick={() => toggleTag(tag)}
+                        >
+                          {tag}
+                          {filters.tags.includes(tag) && (
+                            <X className="h-3 w-3 ml-1" />
+                          )}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Apply Button */}
+                <Button
+                  className="w-full"
+                  onClick={() => setFiltersOpen(false)}
+                >
+                  Apply Filters
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Week Grid */}
         <div className="grid grid-cols-5 gap-3">
           {weekDays.map((day) => {
             const dateKey = formatDateKey(day);
-            const tasks = scheduledTasks[dateKey] || [];
+            const tasks = filteredScheduledTasks[dateKey] || [];
             const totalHours = getDayHours(dateKey);
             const isOverloaded = totalHours > HOURS_PER_DAY;
             const fillPercent = Math.min((totalHours / HOURS_PER_DAY) * 100, 100);
@@ -344,6 +646,7 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
                       key={task.id}
                       task={task}
                       columnHeight={COLUMN_MIN_HEIGHT}
+                      onTaskClick={handleTaskClick}
                     />
                   ))}
                   {tasks.length === 0 && (
@@ -383,7 +686,11 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
           <DroppableDay id="backlog" isOver={overId === "backlog"} isBacklog>
             <div className="grid grid-cols-4 gap-3 p-2 min-h-[150px]">
               {filteredBacklog.map((task) => (
-                <BacklogCard key={task.id} task={task} />
+                <BacklogCard
+                  key={task.id}
+                  task={task}
+                  onTaskClick={handleTaskClick}
+                />
               ))}
               {filteredBacklog.length === 0 && backlogSearch && (
                 <div className="col-span-4 py-8 text-center text-muted-foreground text-sm">
@@ -420,6 +727,17 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
           </div>
         )}
       </DragOverlay>
+
+      {/* Task Detail Modal */}
+      <TaskDetailModal
+        taskId={selectedTaskId}
+        open={detailModalOpen}
+        onOpenChange={setDetailModalOpen}
+        currentUserId={currentUserId}
+        currentUserName={currentUserName}
+        onTaskUpdated={handleTaskUpdated}
+        onTaskDeleted={handleTaskDeleted}
+      />
     </DndContext>
   );
 }
