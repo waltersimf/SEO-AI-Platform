@@ -63,13 +63,19 @@ export class TaskService {
 
   async createGroupTask(dto: CreateTaskDto, userId: string, organizationId: string) {
     // Fetch all organization members (excluding AI users)
-    const members = await this.prisma.user.findMany({
+    let members = await this.prisma.user.findMany({
       where: {
         organizationId,
         isAI: false,
       },
       select: { id: true, name: true },
     });
+
+    // Filter out creator if includeSelf is false
+    const includeSelf = dto.includeSelf !== false; // Default to true
+    if (!includeSelf) {
+      members = members.filter((m) => m.id !== userId);
+    }
 
     if (members.length === 0) {
       throw new NotFoundException('No team members found in organization');
@@ -82,11 +88,9 @@ export class TaskService {
     const createdTasks = [];
 
     for (const member of members) {
-      // Determine initial status based on assignee
-      const isAssignedToOther = member.id !== userId;
-      const initialStatus = isAssignedToOther
-        ? TaskStatus.pending_acceptance
-        : TaskStatus.backlog;
+      // For group tasks, all members get pending_acceptance status
+      // so everyone confirms their participation (including creator if included)
+      const initialStatus = TaskStatus.pending_acceptance;
 
       const task = await this.prisma.task.create({
         data: {
