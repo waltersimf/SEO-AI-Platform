@@ -5,6 +5,7 @@ import { initSocket, getSocket } from '../chat/socket';
 import { Send } from 'lucide-react';
 import { TypingIndicator } from './typing-indicator';
 import { TaskPreviewCard } from './task-preview-card';
+import { AutoPlanPreviewCard } from './auto-plan-preview-card';
 import { API_URL } from '@/config/api';
 import ReactMarkdown from 'react-markdown';
 
@@ -27,6 +28,35 @@ interface TaskPreviewData {
   status: 'pending' | 'created';
 }
 
+interface AutoPlanPreviewData {
+  type: 'auto_plan_preview';
+  plan: Array<{
+    taskId: string;
+    taskTitle: string;
+    suggestedDate: string;
+    estimatedTime: number;
+    priority: string;
+    dueDate: string | null;
+  }>;
+  weeks: Array<{
+    weekStart: string;
+    weekEnd: string;
+    label: string;
+  }>;
+  summaryByDate: Record<string, number>;
+  planStart: string;
+  planEnd: string;
+  totalTasksPlanned: number;
+  totalTasksInBacklog: number;
+  unscheduledTasks: Array<{
+    taskId: string;
+    taskTitle: string;
+    estimatedTime: number;
+    reason: string;
+  }>;
+  status: 'pending' | 'applied';
+}
+
 interface Message {
   id: string;
   content: string;
@@ -39,6 +69,7 @@ interface Message {
   createdAt: string;
   aiContext?: {
     taskPreview?: TaskPreviewData;
+    autoPlanPreview?: AutoPlanPreviewData;
   };
 }
 
@@ -71,6 +102,7 @@ export function ChatBox({
   const [mentionSelectedIndex, setMentionSelectedIndex] = useState(0);
   const [mentionStartPos, setMentionStartPos] = useState(0);
   const [createdTaskIds, setCreatedTaskIds] = useState<Set<string>>(new Set());
+  const [appliedPlanIds, setAppliedPlanIds] = useState<Set<string>>(new Set());
   const [dismissedPreviews, setDismissedPreviews] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
@@ -111,6 +143,24 @@ export function ChatBox({
     setDismissedPreviews(prev => new Set(prev).add(messageId));
   };
 
+  // Handle auto-plan applied
+  const handlePlanApplied = (messageId: string, info: {
+    tasksApplied: number;
+  }) => {
+    // Mark the plan as applied so it hides immediately
+    setAppliedPlanIds(prev => new Set(prev).add(messageId));
+
+    // Emit socket event for AI to send confirmation message
+    const socket = socketRef.current;
+    if (socket) {
+      socket.emit('confirm_auto_plan_applied', {
+        chatId,
+        messageId,
+        tasksApplied: info.tasksApplied,
+      });
+    }
+  };
+
   // Check if message has a task preview
   const hasTaskPreview = (message: Message): boolean => {
     const taskPreview = message.aiContext?.taskPreview;
@@ -136,6 +186,23 @@ export function ChatBox({
         result,
       });
     }
+    return result;
+  };
+
+  // Check if message has an auto-plan preview
+  const hasAutoPlanPreview = (message: Message): boolean => {
+    const autoPlanPreview = message.aiContext?.autoPlanPreview;
+    // Check both: persisted status from DB AND local state (for immediate hide)
+    const isAppliedInDB = autoPlanPreview?.status === 'applied';
+    const isAppliedLocally = appliedPlanIds.has(message.id);
+
+    const result = !!(
+      autoPlanPreview?.type === 'auto_plan_preview' &&
+      autoPlanPreview?.plan &&
+      !isAppliedInDB &&
+      !isAppliedLocally &&
+      !dismissedPreviews.has(message.id)
+    );
     return result;
   };
 
@@ -524,6 +591,15 @@ export function ChatBox({
                 <TaskPreviewCard
                   taskData={message.aiContext.taskPreview.task}
                   onTaskCreated={(info) => handleTaskCreated(message.id, info)}
+                  onDismiss={() => handleDismissPreview(message.id)}
+                />
+              )}
+
+              {/* Auto-Plan Preview Card */}
+              {hasAutoPlanPreview(message) && message.aiContext?.autoPlanPreview && (
+                <AutoPlanPreviewCard
+                  planData={message.aiContext.autoPlanPreview}
+                  onPlanApplied={(info) => handlePlanApplied(message.id, info)}
                   onDismiss={() => handleDismissPreview(message.id)}
                 />
               )}
