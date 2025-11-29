@@ -49,6 +49,8 @@ import {
 } from "@/lib/api/tasks";
 import { DraggableTaskCard, DroppableDay, BacklogCard } from "./week-schedule-cards";
 import { TaskDetailModal } from "./task-detail-modal";
+import { PendingTasksBanner } from "./pending-tasks-banner";
+import { TaskAcceptanceModal } from "./task-acceptance-modal";
 import { useOrganizationUsers } from "@/hooks/use-organization-users";
 import { useProjects } from "@/hooks/use-projects";
 
@@ -98,6 +100,11 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [currentUserName, setCurrentUserName] = useState<string>("");
+
+  // Task acceptance modal state
+  const [acceptanceTask, setAcceptanceTask] = useState<Task | null>(null);
+  const [acceptanceModalOpen, setAcceptanceModalOpen] = useState(false);
+  const [pendingRefreshKey, setPendingRefreshKey] = useState(0);
 
   // Fetch users and projects for filters
   const { users } = useOrganizationUsers();
@@ -336,6 +343,24 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
     setBacklogTasks((prev) => prev.filter((t) => t.id !== taskId));
   };
 
+  // Task acceptance handlers
+  const handleReviewPendingTask = (task: Task) => {
+    setAcceptanceTask(task);
+    setAcceptanceModalOpen(true);
+  };
+
+  const handleTaskAccepted = (task: Task) => {
+    // Add to backlog since accepted tasks go to backlog status
+    setBacklogTasks((prev) => [task, ...prev]);
+    // Trigger refresh of pending banner
+    setPendingRefreshKey((prev) => prev + 1);
+  };
+
+  const handleTaskDeclined = () => {
+    // Trigger refresh of pending banner
+    setPendingRefreshKey((prev) => prev + 1);
+  };
+
   // Drag handlers
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
@@ -428,6 +453,12 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
       onDragEnd={handleDragEnd}
     >
       <div className="space-y-6">
+        {/* Pending Tasks Banner */}
+        <PendingTasksBanner
+          key={pendingRefreshKey}
+          onReviewTask={handleReviewPendingTask}
+        />
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -737,6 +768,15 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
         currentUserName={currentUserName}
         onTaskUpdated={handleTaskUpdated}
         onTaskDeleted={handleTaskDeleted}
+      />
+
+      {/* Task Acceptance Modal */}
+      <TaskAcceptanceModal
+        task={acceptanceTask}
+        open={acceptanceModalOpen}
+        onOpenChange={setAcceptanceModalOpen}
+        onTaskAccepted={handleTaskAccepted}
+        onTaskDeclined={handleTaskDeclined}
       />
     </DndContext>
   );

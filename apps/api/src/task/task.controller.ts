@@ -106,6 +106,27 @@ export class TaskController {
     }
   }
 
+  @Get('pending')
+  async getPendingTasks(@Req() req) {
+    try {
+      if (!req.user || !req.user.organizationId) {
+        throw new BadRequestException('User not authenticated or missing organization');
+      }
+
+      const userId = req.user.id;
+      const organizationId = req.user.organizationId;
+
+      return this.taskService.getPendingTasks(organizationId, userId);
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch pending tasks';
+      throw new InternalServerErrorException(errorMessage);
+    }
+  }
+
   @Get('time/active')
   async getActiveTimer(@Req() req) {
     try {

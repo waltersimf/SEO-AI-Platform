@@ -12,6 +12,7 @@ datasource db {
 
 // Task Management Enums
 enum TaskStatus {
+  pending_acceptance
   backlog
   scheduled
   todo
@@ -19,6 +20,7 @@ enum TaskStatus {
   blocked
   paused
   done
+  declined
   wont_do
 }
 
