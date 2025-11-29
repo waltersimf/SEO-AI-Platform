@@ -708,21 +708,28 @@ export class ChatGateway
 
       const aiModel = this.configService.get<string>('AI_MODEL') || 'claude-sonnet-4-20250514';
 
-      // Save AI message with task preview in aiContext
+      // Save AI message with ONLY taskPreview in aiContext (not the full context - too large)
+      const aiContextToSave = { taskPreview };
+      this.logger.log('📋 Saving aiContext to DB:', JSON.stringify(aiContextToSave));
+
       const aiMessage = await this.chatService.createAIMessage(
         chatId,
         this.aiUserId!,
         previewMessage,
         aiModel,
-        { ...context, taskPreview },
+        aiContextToSave,
       );
+
+      this.logger.log('📋 Created AI message with id:', aiMessage.id);
+      this.logger.log('📋 AI message aiContext from DB:', JSON.stringify(aiMessage.aiContext));
 
       // Broadcast AI response with task preview
       const messageWithPreview = {
         ...aiMessage,
-        aiContext: { taskPreview },
+        aiContext: aiContextToSave,
       };
-      this.logger.log('📋 Emitting task preview message:', JSON.stringify(messageWithPreview, null, 2));
+      this.logger.log('📋 Emitting task preview message to room:', chatId);
+      this.logger.log('📋 Message aiContext:', JSON.stringify(messageWithPreview.aiContext));
       this.server.to(chatId).emit('receive_message', messageWithPreview);
 
       this.logger.log('📋 Task preview sent to chat');
