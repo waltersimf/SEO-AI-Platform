@@ -1,7 +1,6 @@
 "use client";
 
 import { useDraggable, useDroppable } from "@dnd-kit/core";
-import Link from "next/link";
 import { Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -26,9 +25,10 @@ const priorityBgColors: Record<TaskPriority, string> = {
 interface DraggableTaskCardProps {
   task: Task;
   columnHeight: number;
+  onTaskClick?: (task: Task) => void;
 }
 
-export function DraggableTaskCard({ task, columnHeight }: DraggableTaskCardProps) {
+export function DraggableTaskCard({ task, columnHeight, onTaskClick }: DraggableTaskCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
   });
@@ -49,53 +49,62 @@ export function DraggableTaskCard({ task, columnHeight }: DraggableTaskCardProps
     )
   );
 
+  const handleClick = (e: React.MouseEvent) => {
+    // Only trigger click if not dragging
+    if (!isDragging && onTaskClick) {
+      e.preventDefault();
+      e.stopPropagation();
+      onTaskClick(task);
+    }
+  };
+
   return (
-    <Link href={`/dashboard/tasks/${task.id}`}>
-      <div
-        ref={setNodeRef}
-        style={{ ...style, height: proportionalHeight }}
-        {...listeners}
-        {...attributes}
-        className={cn(
-          "bg-card border border-l-4 rounded-lg p-2 cursor-grab active:cursor-grabbing transition-shadow hover:shadow-md flex flex-col",
-          priorityBorderColors[task.priority],
-          isDragging && "opacity-50 shadow-lg"
-        )}
-      >
-        {/* Assignee name */}
-        {task.assignedTo && (
-          <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide truncate">
-            {task.assignedTo.name}
-          </div>
-        )}
-
-        {/* Title */}
-        <div className="font-medium text-sm mt-0.5 line-clamp-2 flex-1">
-          {task.title}
+    <div
+      ref={setNodeRef}
+      style={{ ...style, height: proportionalHeight }}
+      {...listeners}
+      {...attributes}
+      onClick={handleClick}
+      className={cn(
+        "bg-card border border-l-4 rounded-lg p-2 cursor-grab active:cursor-grabbing transition-shadow hover:shadow-md flex flex-col",
+        priorityBorderColors[task.priority],
+        isDragging && "opacity-50 shadow-lg"
+      )}
+    >
+      {/* Assignee name */}
+      {task.assignedTo && (
+        <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide truncate">
+          {task.assignedTo.name}
         </div>
+      )}
 
-        {/* Footer */}
-        <div className="flex items-center justify-between mt-auto pt-1">
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            <span>{estimatedHours}h</span>
-          </div>
-          {task.assignedTo && (
-            <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-medium">
-              {task.assignedTo.name.charAt(0).toUpperCase()}
-            </div>
-          )}
-        </div>
+      {/* Title */}
+      <div className="font-medium text-sm mt-0.5 line-clamp-2 flex-1">
+        {task.title}
       </div>
-    </Link>
+
+      {/* Footer */}
+      <div className="flex items-center justify-between mt-auto pt-1">
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Clock className="h-3 w-3" />
+          <span>{estimatedHours}h</span>
+        </div>
+        {task.assignedTo && (
+          <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-medium">
+            {task.assignedTo.name.charAt(0).toUpperCase()}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
 interface BacklogCardProps {
   task: Task;
+  onTaskClick?: (task: Task) => void;
 }
 
-export function BacklogCard({ task }: BacklogCardProps) {
+export function BacklogCard({ task, onTaskClick }: BacklogCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
   });
@@ -106,47 +115,55 @@ export function BacklogCard({ task }: BacklogCardProps) {
       }
     : undefined;
 
+  const handleClick = (e: React.MouseEvent) => {
+    // Only trigger click if not dragging
+    if (!isDragging && onTaskClick) {
+      e.preventDefault();
+      e.stopPropagation();
+      onTaskClick(task);
+    }
+  };
+
   return (
-    <Link href={`/dashboard/tasks/${task.id}`}>
-      <div
-        ref={setNodeRef}
-        style={style}
-        {...listeners}
-        {...attributes}
-        className={cn(
-          "bg-card border rounded-lg p-3 cursor-grab active:cursor-grabbing transition-shadow hover:shadow-md h-full min-h-[100px]",
-          isDragging && "opacity-50 shadow-lg"
-        )}
-      >
-        {/* Priority badge */}
-        <Badge className={cn("text-[10px] mb-2", priorityBgColors[task.priority])}>
-          {task.priority}
-        </Badge>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      onClick={handleClick}
+      className={cn(
+        "bg-card border rounded-lg p-3 cursor-grab active:cursor-grabbing transition-shadow hover:shadow-md h-full min-h-[100px]",
+        isDragging && "opacity-50 shadow-lg"
+      )}
+    >
+      {/* Priority badge */}
+      <Badge className={cn("text-[10px] mb-2", priorityBgColors[task.priority])}>
+        {task.priority}
+      </Badge>
 
-        {/* Assignee */}
-        {task.assignedTo && (
-          <div className="text-[10px] text-muted-foreground uppercase tracking-wide truncate mb-1">
-            {task.assignedTo.name}
-          </div>
-        )}
-
-        {/* Title */}
-        <div className="font-medium text-sm line-clamp-2 mb-2">{task.title}</div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between mt-auto">
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            <span>{task.estimatedTime || 0}h</span>
-          </div>
-          {task.assignedTo && (
-            <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-medium">
-              {task.assignedTo.name.charAt(0).toUpperCase()}
-            </div>
-          )}
+      {/* Assignee */}
+      {task.assignedTo && (
+        <div className="text-[10px] text-muted-foreground uppercase tracking-wide truncate mb-1">
+          {task.assignedTo.name}
         </div>
+      )}
+
+      {/* Title */}
+      <div className="font-medium text-sm line-clamp-2 mb-2">{task.title}</div>
+
+      {/* Footer */}
+      <div className="flex items-center justify-between mt-auto">
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Clock className="h-3 w-3" />
+          <span>{task.estimatedTime || 0}h</span>
+        </div>
+        {task.assignedTo && (
+          <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-medium">
+            {task.assignedTo.name.charAt(0).toUpperCase()}
+          </div>
+        )}
       </div>
-    </Link>
+    </div>
   );
 }
 
