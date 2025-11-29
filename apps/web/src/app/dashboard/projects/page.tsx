@@ -67,8 +67,8 @@ export default function ProjectsPage() {
   return (
     <div className="h-screen bg-background flex flex-col">
       <div className="flex-1 overflow-auto">
-        <div className="p-8">
-          <div className="max-w-6xl mx-auto space-y-8">
+        <div className="p-6">
+          <div className="space-y-8">
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
