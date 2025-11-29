@@ -49,6 +49,10 @@ export class CreateTaskDto {
   @IsOptional()
   dueDate?: string;
 
+  @IsString()
+  @IsOptional()
+  scheduledTime?: string; // Time in HH:MM format (e.g., "11:00", "14:30")
+
   @IsNumber()
   @IsOptional()
   estimatedTime?: number;

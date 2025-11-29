@@ -34,8 +34,10 @@ interface TaskPreviewData {
   projectId?: string;
   projectName?: string;
   dueDate?: string;
+  scheduledTime?: string; // Time in HH:MM format
   priority?: 'low' | 'medium' | 'high' | 'critical';
   estimatedTime?: number;
+  recurrenceRule?: 'daily' | 'weekly' | 'monthly';
   organizationId: string;
 }
 
@@ -90,7 +92,8 @@ export function TaskPreviewCard({
   const [estimatedTime, setEstimatedTime] = useState<string>(
     taskData.estimatedTime?.toString() || ''
   );
-  const [recurrenceRule, setRecurrenceRule] = useState<string>('none');
+  const [scheduledTime, setScheduledTime] = useState(taskData.scheduledTime || '');
+  const [recurrenceRule, setRecurrenceRule] = useState<string>(taskData.recurrenceRule || 'none');
 
   // UI state
   const [isCreating, setIsCreating] = useState(false);
@@ -156,6 +159,7 @@ export function TaskPreviewCard({
           ),
           projectId: taskData.projectId || undefined,
           dueDate: dueDate || undefined,
+          scheduledTime: scheduledTime || undefined,
           priority: priority,
           estimatedTime: estimatedTime ? parseFloat(estimatedTime) : undefined,
           // Recurring task fields
@@ -351,6 +355,20 @@ export function TaskPreviewCard({
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
+            className="h-9"
+          />
+        </div>
+
+        {/* Scheduled Time */}
+        <div>
+          <Label htmlFor="task-time" className="text-xs text-muted-foreground mb-1 block">
+            Time
+          </Label>
+          <Input
+            id="task-time"
+            type="time"
+            value={scheduledTime}
+            onChange={(e) => setScheduledTime(e.target.value)}
             className="h-9"
           />
         </div>
