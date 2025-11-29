@@ -366,7 +366,8 @@ export function TaskPreviewCard({
           </Label>
           <Input
             id="task-time"
-            type="time"
+            type="text"
+            placeholder="HH:MM"
             value={scheduledTime}
             onChange={(e) => setScheduledTime(e.target.value)}
             className="h-9"
