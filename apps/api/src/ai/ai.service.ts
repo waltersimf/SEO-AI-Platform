@@ -11,8 +11,10 @@ export interface TaskParseResult {
     assigneeName?: string;
     projectName?: string;
     dueDate?: string;
+    scheduledTime?: string; // Time in HH:MM format (e.g., "11:00", "14:30")
     priority?: 'low' | 'medium' | 'high' | 'critical';
     estimatedTime?: number;
+    recurrenceRule?: 'daily' | 'weekly' | 'monthly'; // Recurring task pattern
   };
   message?: string;
 }
@@ -201,18 +203,25 @@ Extract the following from the user's message:
 - assigneeName: Person's name from available team members, or "me" if user refers to themselves (optional)
 - projectName: Project name from available projects if mentioned (optional)
 - dueDate: Deadline in ISO format YYYY-MM-DD. Parse relative dates like "friday", "next week", "tomorrow", "in 3 days" (optional)
+- scheduledTime: Time in HH:MM 24-hour format. Parse from phrases like "о 11:00", "at 2pm", "в 14:30", "at noon" (optional)
 - priority: One of "low", "medium", "high", "critical" based on urgency words (optional, default to "medium")
 - estimatedTime: Hours as a number if mentioned (optional)
+- recurrenceRule: Extract recurring pattern if mentioned. MUST be one of: "daily", "weekly", "monthly" or omit if not recurring.
+  Patterns to detect:
+  - Daily: "щодня", "кожен день", "каждый день", "daily", "every day", "ежедневно"
+  - Weekly: "щотижня", "кожен тиждень", "каждую неделю", "weekly", "every week", "еженедельно"
+  - Monthly: "щомісяця", "кожен місяць", "каждый месяц", "monthly", "every month", "ежемесячно"
 
 IMPORTANT:
 - Return ONLY valid JSON, no markdown code blocks
 - If it's not a clear task creation request, return {"isTaskRequest": false}
 - For assigneeName, match to available team members if possible
+- For scheduledTime, convert 12-hour format to 24-hour (e.g., "2pm" → "14:00", "noon" → "12:00")
 
 User message: "${message}"
 
 Response format:
-{"isTaskRequest": true, "task": {"title": "...", "description": "...", "assigneeName": "...", "projectName": "...", "dueDate": "...", "priority": "...", "estimatedTime": ...}}`;
+{"isTaskRequest": true, "task": {"title": "...", "description": "...", "assigneeName": "...", "projectName": "...", "dueDate": "...", "scheduledTime": "...", "priority": "...", "estimatedTime": ..., "recurrenceRule": "..."}}`;
 
       const response = await this.anthropic.messages.create({
         model,
@@ -260,10 +269,15 @@ Response format:
         assignee: 'Assignee',
         project: 'Project',
         dueDate: 'Due Date',
+        scheduledTime: 'Scheduled Time',
         priority: 'Priority',
         estimatedTime: 'Estimated Time',
         hours: 'hours',
         description: 'Description',
+        recurrence: 'Repeats',
+        daily: 'Daily',
+        weekly: 'Weekly',
+        monthly: 'Monthly',
       },
       uk: {
         preview: 'Ось задача яку я створю:',
@@ -271,10 +285,15 @@ Response format:
         assignee: 'Виконавець',
         project: 'Проект',
         dueDate: 'Термін',
+        scheduledTime: 'Запланований час',
         priority: 'Пріоритет',
         estimatedTime: 'Оцінка часу',
         hours: 'годин',
         description: 'Опис',
+        recurrence: 'Повторення',
+        daily: 'Щодня',
+        weekly: 'Щотижня',
+        monthly: 'Щомісяця',
       },
     };
 
@@ -285,8 +304,13 @@ Response format:
     if (task.assigneeName) preview += `**${t.assignee}:** ${task.assigneeName}\n`;
     if (task.projectName) preview += `**${t.project}:** ${task.projectName}\n`;
     if (task.dueDate) preview += `**${t.dueDate}:** ${task.dueDate}\n`;
+    if (task.scheduledTime) preview += `**${t.scheduledTime}:** ${task.scheduledTime}\n`;
     if (task.priority) preview += `**${t.priority}:** ${task.priority}\n`;
     if (task.estimatedTime) preview += `**${t.estimatedTime}:** ${task.estimatedTime} ${t.hours}\n`;
+    if (task.recurrenceRule) {
+      const recurrenceLabel = t[task.recurrenceRule] || task.recurrenceRule;
+      preview += `**${t.recurrence}:** ${recurrenceLabel}\n`;
+    }
     if (task.description) preview += `\n**${t.description}:** ${task.description}\n`;
 
     return preview;

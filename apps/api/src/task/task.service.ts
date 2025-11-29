@@ -49,6 +49,7 @@ export class TaskService {
         status: initialStatus,
         priority: dto.priority as any,
         dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+        scheduledTime: dto.scheduledTime,
         estimatedTime: dto.estimatedTime,
         tags: dto.tags || [],
         // Recurring task fields
@@ -107,6 +108,7 @@ export class TaskService {
           status: initialStatus,
           priority: dto.priority as any,
           dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+          scheduledTime: dto.scheduledTime,
           estimatedTime: dto.estimatedTime,
           tags: dto.tags || [],
           groupTaskId,
@@ -222,6 +224,7 @@ export class TaskService {
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.dueDate !== undefined) updateData.dueDate = dto.dueDate ? new Date(dto.dueDate) : null;
     if (dto.scheduledDate !== undefined) updateData.scheduledDate = dto.scheduledDate ? new Date(dto.scheduledDate) : null;
+    if (dto.scheduledTime !== undefined) updateData.scheduledTime = dto.scheduledTime || null;
     if (dto.estimatedTime !== undefined) updateData.estimatedTime = dto.estimatedTime;
     if (dto.actualTime !== undefined) updateData.actualTime = dto.actualTime;
     if (dto.tags !== undefined) updateData.tags = dto.tags;
@@ -313,6 +316,7 @@ export class TaskService {
         status: initialStatus,
         priority: parentTask.priority,
         scheduledDate: nextScheduledDate,
+        scheduledTime: parentTask.scheduledTime, // Preserve scheduled time
         dueDate: parentTask.dueDate ? this.calculateNextDate(parentTask.dueDate, parentTask.recurrenceRule) : null,
         estimatedTime: parentTask.estimatedTime,
         tags: parentTask.tags || [],

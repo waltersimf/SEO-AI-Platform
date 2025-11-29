@@ -205,6 +205,7 @@ model Task {
 
   // Scheduling
   scheduledDate DateTime?
+  scheduledTime String?   // Time in HH:MM format (e.g., "11:00", "14:30")
   dueDate       DateTime?
 
   // Time tracking
