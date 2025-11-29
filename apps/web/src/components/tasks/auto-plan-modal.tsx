@@ -23,6 +23,13 @@ interface PlannedTask {
   dueDate: string | null;
 }
 
+interface UnscheduledTask {
+  taskId: string;
+  taskTitle: string;
+  estimatedTime: number;
+  reason: string;
+}
+
 interface WeekInfo {
   weekStart: string;
   weekEnd: string;
@@ -37,6 +44,7 @@ interface AutoPlanResult {
   planEnd: string;
   totalTasksPlanned: number;
   totalTasksInBacklog: number;
+  unscheduledTasks?: UnscheduledTask[];
   message?: string;
 }
 
@@ -252,6 +260,38 @@ export function AutoPlanModal({
               ) : (
                 <div className="py-8 text-center text-muted-foreground">
                   <p>No tasks scheduled for this week</p>
+                </div>
+              )}
+
+              {/* Unscheduled Tasks Warning */}
+              {planData.unscheduledTasks && planData.unscheduledTasks.length > 0 && (
+                <div className="mt-6 pt-4 border-t">
+                  <div className="flex items-center gap-2 text-amber-600 mb-3">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="font-medium text-sm">
+                      {planData.unscheduledTasks.length} task(s) could not be scheduled
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {planData.unscheduledTasks.map((task) => (
+                      <div
+                        key={task.taskId}
+                        className="p-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium truncate flex-1">
+                            {task.taskTitle}
+                          </span>
+                          <span className="text-xs text-muted-foreground flex-shrink-0">
+                            {task.estimatedTime}h
+                          </span>
+                        </div>
+                        <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                          {task.reason}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
