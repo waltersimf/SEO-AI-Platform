@@ -4,6 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EventsGateway } from '../events/events.gateway';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { TaskFiltersDto } from './dto/task-filters.dto';
@@ -11,7 +12,10 @@ import { TaskStatus } from '@prisma/client';
 
 @Injectable()
 export class TaskService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private eventsGateway: EventsGateway,
+  ) {}
 
   private readonly taskInclude = {
     assignedTo: {
@@ -50,6 +54,9 @@ export class TaskService {
       },
       include: this.taskInclude,
     });
+
+    // Emit real-time event
+    this.eventsGateway.emitTaskCreated(organizationId, task);
 
     return task;
   }
@@ -165,15 +172,22 @@ export class TaskService {
       include: this.taskInclude,
     });
 
+    // Emit real-time event
+    this.eventsGateway.emitTaskUpdated(organizationId, task);
+
     return task;
   }
 
   async deleteTask(id: string, organizationId: string) {
+    // Validate task exists before deleting
     await this.getTaskById(id, organizationId);
 
     await this.prisma.task.delete({
       where: { id },
     });
+
+    // Emit real-time event
+    this.eventsGateway.emitTaskDeleted(organizationId, id);
 
     return {
       success: true,
@@ -205,6 +219,9 @@ export class TaskService {
       include: this.taskInclude,
     });
 
+    // Emit real-time event for status change
+    this.eventsGateway.emitTaskStatusChanged(organizationId, updatedTask);
+
     return updatedTask;
   }
 
@@ -231,6 +248,9 @@ export class TaskService {
       include: this.taskInclude,
     });
 
+    // Emit real-time event for status change
+    this.eventsGateway.emitTaskStatusChanged(organizationId, updatedTask);
+
     return updatedTask;
   }
 
@@ -251,6 +271,9 @@ export class TaskService {
       include: this.taskInclude,
     });
 
+    // Emit real-time event for status change
+    this.eventsGateway.emitTaskStatusChanged(organizationId, task);
+
     return task;
   }
 
@@ -265,6 +288,9 @@ export class TaskService {
       },
       include: this.taskInclude,
     });
+
+    // Emit real-time event for schedule update
+    this.eventsGateway.emitTaskUpdated(organizationId, task);
 
     return task;
   }

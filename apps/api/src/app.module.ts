@@ -9,6 +9,7 @@ import { UsersModule } from './users/users.module';
 import { AiModule } from './ai/ai.module';
 import { ProjectsModule } from './projects/projects.module';
 import { TaskModule } from './task/task.module';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { TaskModule } from './task/task.module';
       envFilePath: '../../.env',
     }),
     PrismaModule,
+    EventsModule,
     AuthModule,
     IntegrationsModule,
     GscModule,
