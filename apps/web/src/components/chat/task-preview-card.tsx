@@ -64,7 +64,7 @@ export function TaskPreviewCard({
   // Editable state
   const [title, setTitle] = useState(taskData.title);
   const [description, setDescription] = useState(taskData.description || '');
-  const [assigneeId, setAssigneeId] = useState(taskData.assigneeId || '');
+  const [assigneeId, setAssigneeId] = useState(taskData.assigneeId || 'unassigned');
   const [dueDate, setDueDate] = useState(taskData.dueDate || '');
   const [priority, setPriority] = useState<string>(taskData.priority || 'medium');
   const [estimatedTime, setEstimatedTime] = useState<string>(
@@ -127,7 +127,7 @@ export function TaskPreviewCard({
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim() || undefined,
-          assignedToId: assigneeId || undefined,
+          assignedToId: assigneeId && assigneeId !== 'unassigned' ? assigneeId : undefined,
           projectId: taskData.projectId || undefined,
           dueDate: dueDate || undefined,
           priority: priority,
@@ -221,12 +221,14 @@ export function TaskPreviewCard({
               <SelectValue placeholder={loadingMembers ? 'Loading...' : 'Unassigned'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Unassigned</SelectItem>
-              {teamMembers.map((member) => (
-                <SelectItem key={member.id} value={member.id}>
-                  {member.name}
-                </SelectItem>
-              ))}
+              <SelectItem value="unassigned">Unassigned</SelectItem>
+              {teamMembers
+                .filter((member) => member.id)
+                .map((member) => (
+                  <SelectItem key={member.id} value={member.id}>
+                    {member.name}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         </div>
