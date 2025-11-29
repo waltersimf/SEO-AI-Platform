@@ -19,10 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useOrganizationUsers } from "@/hooks/use-organization-users";
 import { useProjects } from "@/hooks/use-projects";
 import { createTask, updateTask, CreateTaskData, UpdateTaskData, TaskPriority, Task } from "@/lib/api/tasks";
-import { Loader2 } from "lucide-react";
+import { Loader2, Repeat } from "lucide-react";
 
 interface TaskFormProps {
   open: boolean;
@@ -42,10 +43,21 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
   const [assignedToId, setAssignedToId] = useState<string>(task?.assignedToId || "");
   const [priority, setPriority] = useState<TaskPriority>(task?.priority || "medium");
   const [dueDate, setDueDate] = useState(task?.dueDate ? task.dueDate.split("T")[0] : "");
+  const [scheduledTime, setScheduledTime] = useState((task as any)?.scheduledTime || "");
   const [estimatedTime, setEstimatedTime] = useState(task?.estimatedTime?.toString() || "");
   const [tags, setTags] = useState(task?.tags?.join(", ") || "");
+  const [recurrenceRule, setRecurrenceRule] = useState<string>((task as any)?.recurrenceRule || "none");
+  const [assignToAll, setAssignToAll] = useState(false);
+  const [includeSelf, setIncludeSelf] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const recurrenceOptions = [
+    { value: "none", label: "Does not repeat" },
+    { value: "daily", label: "Daily" },
+    { value: "weekly", label: "Weekly" },
+    { value: "monthly", label: "Monthly" },
+  ];
 
   // Update form when task prop changes
   useEffect(() => {
@@ -56,8 +68,10 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
       setAssignedToId(task.assignedToId || "");
       setPriority(task.priority);
       setDueDate(task.dueDate ? task.dueDate.split("T")[0] : "");
+      setScheduledTime((task as any).scheduledTime || "");
       setEstimatedTime(task.estimatedTime?.toString() || "");
       setTags(task.tags?.join(", ") || "");
+      setRecurrenceRule((task as any).recurrenceRule || "none");
     }
   }, [task]);
 
@@ -69,8 +83,12 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
       setAssignedToId("");
       setPriority("medium");
       setDueDate("");
+      setScheduledTime("");
       setEstimatedTime("");
       setTags("");
+      setRecurrenceRule("none");
+      setAssignToAll(false);
+      setIncludeSelf(true);
     }
     setError(null);
   };
@@ -89,7 +107,8 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
       return;
     }
 
-    if (!assignedToId) {
+    // Assignee is required unless assigning to all
+    if (!assignToAll && !assignedToId) {
       setError("Assignee is required");
       return;
     }
@@ -110,6 +129,7 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
           assignedToId,
           priority,
           dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+          scheduledTime: scheduledTime || undefined,
           estimatedTime: estimatedTime ? parseFloat(estimatedTime) : undefined,
           tags: parsedTags.length > 0 ? parsedTags : undefined,
         };
@@ -122,9 +142,16 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
         // Create new task
         const data: CreateTaskData = {
           title: title.trim(),
-          assignedToId,
           priority,
         };
+
+        // Handle assignee - either assign to all or to specific person
+        if (assignToAll) {
+          data.assignToAll = true;
+          data.includeSelf = includeSelf;
+        } else {
+          data.assignedToId = assignedToId;
+        }
 
         if (description.trim()) {
           data.description = description.trim();
@@ -138,6 +165,10 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
           data.dueDate = new Date(dueDate).toISOString();
         }
 
+        if (scheduledTime) {
+          data.scheduledTime = scheduledTime;
+        }
+
         if (estimatedTime) {
           const hours = parseFloat(estimatedTime);
           if (!isNaN(hours) && hours > 0) {
@@ -147,6 +178,12 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
 
         if (parsedTags.length > 0) {
           data.tags = parsedTags;
+        }
+
+        // Handle recurring task fields
+        if (recurrenceRule !== "none") {
+          data.isRecurring = true;
+          data.recurrenceRule = recurrenceRule;
         }
 
         const newTask = await createTask(data);
@@ -229,15 +266,15 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
             {/* Assignee */}
             <div className="space-y-2">
               <Label htmlFor="assignee">
-                Assignee <span className="text-destructive">*</span>
+                Assignee {!assignToAll && <span className="text-destructive">*</span>}
               </Label>
               <Select
                 value={assignedToId}
                 onValueChange={setAssignedToId}
-                disabled={submitting || usersLoading}
+                disabled={submitting || usersLoading || assignToAll}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select assignee" />
+                  <SelectValue placeholder={assignToAll ? "All team members" : "Select assignee"} />
                 </SelectTrigger>
                 <SelectContent>
                   {users.map((user) => (
@@ -249,6 +286,38 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
               </Select>
             </div>
           </div>
+
+          {/* Assign to all team members (only in create mode) */}
+          {!isEditMode && (
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="assignToAll"
+                  checked={assignToAll}
+                  onCheckedChange={(checked) => setAssignToAll(checked === true)}
+                  disabled={submitting}
+                />
+                <Label htmlFor="assignToAll" className="text-sm font-normal cursor-pointer">
+                  Assign to all team members
+                </Label>
+              </div>
+
+              {/* Include myself checkbox (shows when assignToAll is checked) */}
+              {assignToAll && (
+                <div className="flex items-center space-x-2 ml-6">
+                  <Checkbox
+                    id="includeSelf"
+                    checked={includeSelf}
+                    onCheckedChange={(checked) => setIncludeSelf(checked === true)}
+                    disabled={submitting}
+                  />
+                  <Label htmlFor="includeSelf" className="text-sm font-normal cursor-pointer">
+                    Include myself
+                  </Label>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Two columns: Priority and Due Date */}
           <div className="grid grid-cols-2 gap-4">
@@ -282,6 +351,45 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
                 onChange={(e) => setDueDate(e.target.value)}
                 disabled={submitting}
               />
+            </div>
+          </div>
+
+          {/* Two columns: Time and Repeat */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Time */}
+            <div className="space-y-2">
+              <Label htmlFor="scheduledTime">Time</Label>
+              <Input
+                id="scheduledTime"
+                type="time"
+                value={scheduledTime}
+                onChange={(e) => setScheduledTime(e.target.value)}
+                disabled={submitting}
+              />
+            </div>
+
+            {/* Repeat */}
+            <div className="space-y-2">
+              <Label htmlFor="recurrence">Repeat</Label>
+              <Select
+                value={recurrenceRule}
+                onValueChange={setRecurrenceRule}
+                disabled={submitting}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {recurrenceOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <span className="flex items-center gap-2">
+                        {option.value !== "none" && <Repeat className="h-3 w-3" />}
+                        {option.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

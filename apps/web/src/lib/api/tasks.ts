@@ -80,6 +80,7 @@ export interface CreateTaskData {
   includeSelf?: boolean; // For group tasks - whether to include creator
   priority?: TaskPriority;
   dueDate?: string;
+  scheduledTime?: string; // Time in HH:MM format
   estimatedTime?: number;
   tags?: string[];
   // Recurring task fields
@@ -97,6 +98,7 @@ export interface UpdateTaskData {
   status?: TaskStatus;
   dueDate?: string | null;
   scheduledDate?: string | null;
+  scheduledTime?: string | null; // Time in HH:MM format
   estimatedTime?: number;
   actualTime?: number;
   tags?: string[];
