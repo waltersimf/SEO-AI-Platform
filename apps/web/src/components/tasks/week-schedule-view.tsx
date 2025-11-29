@@ -782,6 +782,7 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
             </PopoverContent>
           </Popover>
         </div>
+      </div>
 
         {/* Week Grid */}
         <div className="grid grid-cols-5 gap-3">
