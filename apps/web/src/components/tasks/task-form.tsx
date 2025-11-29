@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { TimePicker } from "@/components/ui/time-picker";
 import { useOrganizationUsers } from "@/hooks/use-organization-users";
 import { useProjects } from "@/hooks/use-projects";
 import { createTask, updateTask, CreateTaskData, UpdateTaskData, TaskPriority, Task } from "@/lib/api/tasks";
@@ -359,12 +360,9 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
             {/* Time */}
             <div className="space-y-2">
               <Label htmlFor="scheduledTime">Time</Label>
-              <Input
-                id="scheduledTime"
-                type="text"
-                placeholder="HH:MM (e.g. 14:30)"
+              <TimePicker
                 value={scheduledTime}
-                onChange={(e) => setScheduledTime(e.target.value)}
+                onChange={setScheduledTime}
                 disabled={submitting}
               />
             </div>

@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { TimePicker } from '@/components/ui/time-picker';
 import {
   Loader2,
   CheckCircle,
@@ -364,14 +365,7 @@ export function TaskPreviewCard({
           <Label htmlFor="task-time" className="text-xs text-muted-foreground mb-1 block">
             Time
           </Label>
-          <Input
-            id="task-time"
-            type="text"
-            placeholder="HH:MM"
-            value={scheduledTime}
-            onChange={(e) => setScheduledTime(e.target.value)}
-            className="h-9"
-          />
+          <TimePicker value={scheduledTime} onChange={setScheduledTime} />
         </div>
 
         {/* Estimated Time */}
