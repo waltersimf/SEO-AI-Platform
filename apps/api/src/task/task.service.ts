@@ -26,6 +26,14 @@ export class TaskService {
   };
 
   async createTask(dto: CreateTaskDto, userId: string, organizationId: string) {
+    // Determine initial status:
+    // - If assigned to someone else → pending_acceptance
+    // - If self-assigned or unassigned → backlog
+    const isAssignedToOther = dto.assignedToId && dto.assignedToId !== userId;
+    const initialStatus = isAssignedToOther
+      ? TaskStatus.pending_acceptance
+      : TaskStatus.backlog;
+
     const task = await this.prisma.task.create({
       data: {
         title: dto.title,
@@ -34,6 +42,7 @@ export class TaskService {
         assignedToId: dto.assignedToId,
         createdById: userId,
         organizationId,
+        status: initialStatus,
         priority: dto.priority as any,
         dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
         estimatedTime: dto.estimatedTime,
@@ -180,13 +189,17 @@ export class TaskService {
       throw new ForbiddenException('Only the assigned user can accept this task');
     }
 
+    if (task.status !== TaskStatus.pending_acceptance) {
+      throw new ForbiddenException('This task is not pending acceptance');
+    }
+
     const updatedTask = await this.prisma.task.update({
       where: { id },
       data: {
         acceptedAt: new Date(),
         declinedAt: null,
         declineReason: null,
-        status: TaskStatus.todo,
+        status: TaskStatus.backlog,
         ...(estimatedTime !== undefined && { estimatedTime }),
       },
       include: this.taskInclude,
@@ -202,12 +215,18 @@ export class TaskService {
       throw new ForbiddenException('Only the assigned user can decline this task');
     }
 
+    if (task.status !== TaskStatus.pending_acceptance) {
+      throw new ForbiddenException('This task is not pending acceptance');
+    }
+
     const updatedTask = await this.prisma.task.update({
       where: { id },
       data: {
         declinedAt: new Date(),
         declineReason: reason,
         acceptedAt: null,
+        status: TaskStatus.declined,
+        assignedToId: null, // Unassign when declined
       },
       include: this.taskInclude,
     });
@@ -317,6 +336,20 @@ export class TaskService {
     return tasks;
   }
 
+  async getPendingTasks(organizationId: string, userId: string) {
+    const tasks = await this.prisma.task.findMany({
+      where: {
+        organizationId,
+        assignedToId: userId,
+        status: TaskStatus.pending_acceptance,
+      },
+      include: this.taskInclude,
+      orderBy: [{ createdAt: 'desc' }],
+    });
+
+    return tasks;
+  }
+
   async getTaskStats(organizationId: string, userId?: string) {
     const where: any = { organizationId };
 
@@ -326,6 +359,7 @@ export class TaskService {
 
     const [
       total,
+      pendingAcceptance,
       backlog,
       scheduled,
       todo,
@@ -333,9 +367,11 @@ export class TaskService {
       blocked,
       paused,
       done,
+      declined,
       wontDo,
     ] = await Promise.all([
       this.prisma.task.count({ where }),
+      this.prisma.task.count({ where: { ...where, status: TaskStatus.pending_acceptance } }),
       this.prisma.task.count({ where: { ...where, status: TaskStatus.backlog } }),
       this.prisma.task.count({ where: { ...where, status: TaskStatus.scheduled } }),
       this.prisma.task.count({ where: { ...where, status: TaskStatus.todo } }),
@@ -343,12 +379,14 @@ export class TaskService {
       this.prisma.task.count({ where: { ...where, status: TaskStatus.blocked } }),
       this.prisma.task.count({ where: { ...where, status: TaskStatus.paused } }),
       this.prisma.task.count({ where: { ...where, status: TaskStatus.done } }),
+      this.prisma.task.count({ where: { ...where, status: TaskStatus.declined } }),
       this.prisma.task.count({ where: { ...where, status: TaskStatus.wont_do } }),
     ]);
 
     return {
       total,
       byStatus: {
+        pending_acceptance: pendingAcceptance,
         backlog,
         scheduled,
         todo,
@@ -356,11 +394,13 @@ export class TaskService {
         blocked,
         paused,
         done,
+        declined,
         wont_do: wontDo,
       },
       active: todo + inProgress + scheduled,
       completed: done,
       pending: backlog + blocked + paused,
+      awaitingAction: pendingAcceptance,
     };
   }
 
