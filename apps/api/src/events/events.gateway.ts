@@ -74,4 +74,17 @@ export class EventsGateway {
     this.logger.log(`Emitting task_status_changed to room ${roomName}`);
     this.server.to(roomName).emit('task_status_changed', task);
   }
+
+  // Emit bulk tasks updated (for auto-plan)
+  emitTasksUpdated(organizationId: string) {
+    const roomName = `org:${organizationId}`;
+    this.logger.log(`Emitting tasks_updated to room ${roomName}`);
+    this.server.to(roomName).emit('tasks_updated', { timestamp: new Date() });
+  }
+
+  // Emit chat list refresh
+  emitChatListRefresh(chatId: string) {
+    this.logger.log(`Emitting refresh_chat_list for chat ${chatId}`);
+    this.server.emit('refresh_chat_list', { chatId, timestamp: new Date() });
+  }
 }
