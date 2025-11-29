@@ -54,6 +54,11 @@ export interface Task {
   declinedAt?: string;
   declineReason?: string;
   completedAt?: string;
+  // Recurring task fields
+  isRecurring?: boolean;
+  recurrenceRule?: string;
+  recurrenceEnd?: string;
+  parentTaskId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -77,6 +82,10 @@ export interface CreateTaskData {
   dueDate?: string;
   estimatedTime?: number;
   tags?: string[];
+  // Recurring task fields
+  isRecurring?: boolean;
+  recurrenceRule?: string;
+  recurrenceEnd?: string;
 }
 
 export interface UpdateTaskData {

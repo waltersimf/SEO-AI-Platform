@@ -21,6 +21,7 @@ import {
   ChevronDown,
   ChevronUp,
   Users,
+  Repeat,
 } from 'lucide-react';
 import { API_URL } from '@/config/api';
 import { cn } from '@/lib/utils';
@@ -66,6 +67,13 @@ const priorityOptions = [
   { value: 'critical', label: 'Critical', color: 'bg-red-100 text-red-700' },
 ];
 
+const recurrenceOptions = [
+  { value: 'none', label: 'Does not repeat' },
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+];
+
 export function TaskPreviewCard({
   taskData,
   onTaskCreated,
@@ -82,6 +90,7 @@ export function TaskPreviewCard({
   const [estimatedTime, setEstimatedTime] = useState<string>(
     taskData.estimatedTime?.toString() || ''
   );
+  const [recurrenceRule, setRecurrenceRule] = useState<string>('none');
 
   // UI state
   const [isCreating, setIsCreating] = useState(false);
@@ -149,6 +158,11 @@ export function TaskPreviewCard({
           dueDate: dueDate || undefined,
           priority: priority,
           estimatedTime: estimatedTime ? parseFloat(estimatedTime) : undefined,
+          // Recurring task fields
+          ...(recurrenceRule !== 'none' && {
+            isRecurring: true,
+            recurrenceRule: recurrenceRule,
+          }),
         }),
       });
 
@@ -303,7 +317,7 @@ export function TaskPreviewCard({
         )}
       </div>
 
-      {/* Two Column Layout */}
+      {/* Grid Layout */}
       <div className="grid grid-cols-2 gap-3 mb-4">
         {/* Assignee */}
         <div className={cn(assignToAll && 'opacity-50 pointer-events-none')}>
@@ -380,6 +394,28 @@ export function TaskPreviewCard({
                         option.value === 'critical' && 'bg-red-500'
                       )}
                     />
+                    {option.label}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Repeat / Recurrence */}
+        <div>
+          <Label htmlFor="task-recurrence" className="text-xs text-muted-foreground mb-1 block">
+            Repeat
+          </Label>
+          <Select value={recurrenceRule} onValueChange={setRecurrenceRule}>
+            <SelectTrigger id="task-recurrence" className="h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {recurrenceOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  <span className="flex items-center gap-2">
+                    {option.value !== 'none' && <Repeat className="h-3 w-3" />}
                     {option.label}
                   </span>
                 </SelectItem>
