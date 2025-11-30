@@ -1,7 +1,8 @@
 # 🗺️ ROADMAP - Forgeline SEO AI Platform
 
 **Загальна тривалість:** 81 день (11.5 тижнів) до Public Launch  
-**Поточний прогрес:** v0.6 ЗАВЕРШЕНО! v0.7 Roles & Invite next 👥
+**Поточний прогрес:** v0.6 ЗАВЕРШЕНО! v0.7 Roles & Invite next 👥  
+**Останнє оновлення:** 30.11.2025 (Security Audit + New Ideas)
 
 ---
 
@@ -17,10 +18,71 @@
 | v0.5 | ✅ DONE | 100% | 8 днів | Projects 📁 |
 | **v0.6** | **✅ DONE** | **100%** | **7 днів** | **Tasks & Backlog** ✅ |
 | v0.7 | 📋 NEXT | 0% | 10 днів | Roles & Invite 👥 |
-| v0.8 | 📋 PLANNED | 0% | 8 днів | AI Analysis |
-| v0.9 | 📋 PLANNED | 0% | 10 днів | Notifications |
+| v0.8 | 📋 PLANNED | 0% | 8 днів | AI Analysis + Payment Status |
+| v0.9 | 📋 PLANNED | 0% | 10 днів | Notifications + Security Hardening 🔒 |
 | v1.0 | 📋 PLANNED | 0% | 10 днів | Launch Prep |
 | **Total** | | | **81 день** | Public Launch |
+
+---
+
+## 🚨 CRITICAL: Security Fixes Required
+
+**Дата виявлення:** 30.11.2025 (Security Audit by ChatGPT)  
+**Статус:** 🔴 MUST FIX before production demo
+
+### Critical Security Issues
+
+| Issue | Severity | Description | Fix Location |
+|-------|----------|-------------|--------------|
+| **Chat Access Check** | 🔴 CRITICAL | GET /chat/:id/messages не перевіряє membership | chat.service.ts |
+| **WebSocket join_room** | 🔴 CRITICAL | Не валідує чи user належить до чату | chat.gateway.ts |
+| **join_organization** | 🔴 CRITICAL | Можна підписатись на чужу org events | events.gateway.ts, test.gateway.ts |
+| **Online Users Broadcast** | 🟡 HIGH | Cross-org data leak (всім показує всіх) | test.gateway.ts |
+
+### Recommended Fixes
+
+```typescript
+// 1. Chat Access Check
+async getChatMessages(chatId: string, userId: string) {
+  // Verify user is member of chat
+  const membership = await this.prisma.chatMember.findFirst({
+    where: { chatId, userId }
+  });
+  if (!membership) throw new ForbiddenException('Not a member of this chat');
+  // ... rest of logic
+}
+
+// 2. WebSocket join_room validation
+@SubscribeMessage('join_room')
+async handleJoinRoom(client: Socket, chatId: string) {
+  const userId = client.data.userId;
+  const isMember = await this.chatService.isUserInChat(chatId, userId);
+  if (!isMember) {
+    client.emit('error', { message: 'Not authorized for this chat' });
+    return;
+  }
+  client.join(chatId);
+}
+
+// 3. join_organization check
+@SubscribeMessage('join_organization')
+async handleJoinOrg(client: Socket, orgId: string) {
+  const userId = client.data.userId;
+  const isMember = await this.userService.isUserInOrg(userId, orgId);
+  if (!isMember) {
+    client.emit('error', { message: 'Not a member of this organization' });
+    return;
+  }
+  client.join(`org_${orgId}`);
+}
+
+// 4. Scope online_users to organization
+// Instead of global broadcast, emit only to org members
+this.server.to(`org_${orgId}`).emit('online_users_updated', orgOnlineUsers);
+```
+
+**Estimated Fix Time:** ~2 hours  
+**When:** Before any public demo or investor presentation
 
 ---
 
@@ -31,22 +93,32 @@
 │                                                                          │
 │  ✅ v0.1-0.6 (36d)    📋 v0.7 (10d)    📋 v0.8 (8d)                     │
 │  Auth + Chat +        Roles & Invite   AI Analysis +                     │
-│  AI + Projects +      System           Morning Brief                     │
-│  Tasks ✅                                                                │
+│  AI + Projects +      System           Morning Brief +                   │
+│  Tasks ✅                              Payment Status                    │
 │  ─────────────────────────────────────────────────────────              │
 │                                                                          │
 │  📋 v0.9 (10d)                         📋 v1.0 (10d)                    │
 │  Notifications +                        Launch Prep +                    │
-│  Full Polish                            Security                         │
+│  Security Hardening 🔒                  Performance                      │
 │  ──────────────────────────────────────────────────────────────────     │
 │                                                                          │
 │                           🎉 PUBLIC LAUNCH 🎉                           │
 │                                                                          │
+├──────────────────────────────────────────────────────────────────────────┤
+│                         POST-LAUNCH ROADMAP                              │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  📋 v1.1 (3 weeks)         📋 v1.2 (3 weeks)       📋 v1.3 (2 weeks)   │
+│  Knowledge Base 📚         Internal SEO            Templates             │
+│  (MUST HAVE)               Browser 🌐              Marketplace 🏪        │
+│                            (UNIQUE FEATURE!)                             │
+│                                                                          │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Загальна тривалість:** ~81 день (2.7 місяці)  
-**Target Launch:** Січень 2026
+**Загальна тривалість до v1.0:** ~81 днів (2.7 місяці)  
+**Target Launch:** Січень 2026  
+**Post-Launch:** v1.1-v1.3 (Лютий-Березень 2026)
 
 ---
 
@@ -122,20 +194,6 @@
 - [x] Chat deletion with confirmation
 - [x] Unified chat + user list
 
-**Acceptance Criteria:**
-- ✅ Socket.io WebSocket працює
-- ✅ Real-time messaging між користувачами
-- ✅ Повідомлення зберігаються в БД
-- ✅ Message history завантажується
-- ✅ Online status tracking
-- ✅ User List з організації
-- ✅ Direct chats (auto-create)
-- ✅ Real-time unread counters
-- ✅ Chat types (Direct vs Group)
-- ✅ UI alignment fixes
-- ✅ Sticky notification bubble
-- ✅ No duplicate users
-
 **Result:** 13/13 критеріїв = 100% ✅
 
 ---
@@ -147,65 +205,11 @@
 **Статус:** ✅ **DONE** (100%)  
 **Deliverable:** ✅ Production deployment ready
 
-### Мета
+- [x] Environment variables (замість hardcoded localhost)
+- [x] Connection status indicator (🟢⚪🔴)
+- [x] Auto-logout при 401
 
-Критичні фікси перед v0.4 AI Teammate для production deployment:
-1. Environment variables (замість hardcoded localhost)
-2. Connection status indicator
-3. Auto-logout при 401
-
-### Completed Features ✅
-
-#### 1. Environment Variables ✅
-
-**Проблема:** Hardcoded `http://localhost:4000` блокував production deployment.
-
-**Рішення:**
-- [x] Створено `config/api.ts` з `API_URL` і `SOCKET_URL`
-- [x] `.env.local` для development
-- [x] `.env.production` для production
-- [x] Замінено hardcode в 10+ файлах
-- [x] `import { API_URL } from '@/config/api'` всюди
-
----
-
-#### 2. Socket.io connection status indicator 🟢⚪
-
-**Проблема:** Користувач НЕ бачив коли connection lost.
-
-**Рішення:**
-- [x] Додано socketStatus state (connected/disconnected/reconnecting)
-- [x] Створено ConnectionStatus компонент
-- [x] Показується у Dashboard в "What's Next?" секції
-- [x] 🟢 Connected / ⚪ Reconnecting / 🔴 Disconnected
-- [x] Auto-reconnect працює
-
----
-
-#### 3. Auto-logout при 401 🔐
-
-**Проблема:** Токен протухає, але користувач сидить на сторінці.
-
-**Рішення:**
-- [x] Створено `lib/api.ts` wrapper з error handling
-- [x] При 401: clear token + toast + redirect to /auth/login
-- [x] Toast: "Session expired. Please login again."
-- [x] `apiFetch()` функція для всіх API calls
-- [x] `useApi()` hook для зручності
-- [x] Застосовано до критичних файлів
-
-### Acceptance Criteria: ✅ 3/3
-
-- ✅ **Environment variables** - може деплоїти на production (no hardcode)
-- ✅ **Connection status** - користувач бачить connection status  
-- ✅ **Auto-logout на 401** - працює при expired token
-
-### Result
-
-✅ **Production-ready!** Можна deploy на staging/production  
-✅ **Демо-ready!** Можна показати інвесторам  
-✅ **v0.4-ready!** Готові до AI Teammate development  
-✅ **Zero blockers** для подальшого розвитку
+**Result:** ✅ Production-ready! Можна deploy на staging/production
 
 ---
 
@@ -221,8 +225,6 @@
 
 AI як повноцінний член команди - можна @mention в чаті, він аналізує контекст, дає рекомендації.
 
-**Це як Grok на Twitter, але для маркетинг команд!**
-
 ### Completed Features ✅
 
 **Backend:**
@@ -230,40 +232,14 @@ AI як повноцінний член команди - можна @mention в 
 - [x] Claude API integration (BYOK model)
 - [x] AI message handler (async processing)
 - [x] Context builder (chat history + team members)
-- [x] Error handling (API limits, errors)
-- [x] seed-ai-user.ts script
 
 **Frontend:**
 - [x] @mention detection у input (@ та " для UA keyboard)
 - [x] Mention autocomplete dropdown
-- [x] Keyboard navigation (↑↓ Enter Escape)
 - [x] AI message indicator (🤖 avatar, "Bot" badge)
 - [x] ReactMarkdown для AI responses
-- [x] Real-time unread counts (stale closure fix)
-- [x] Chat preview 3 states (Summary/Single/Empty)
-
-**Acceptance Criteria:**
-- ✅ AI User entity в БД
-- ✅ Claude API integration працює
-- ✅ @mention detection
-- ✅ AI відповідає в чаті
-- ✅ AI avatar (🤖) всюди
-- ✅ Markdown rendering
-- ✅ Real-time unread counts
-- ✅ Chat preview states
 
 **Result:** 8/8 критеріїв = 100% ✅
-
-### 🐛 Troubleshooting
-
-**Проблема:** Chat preview card positioning  
-**Спроби:** 5+ невдалих ітерацій (PR #69, #70)  
-**Рішення:** Revert через GitHub UI, відновлення через Gemini AI Studio
-
-**Lessons Learned:**
-- Не вгадувати числа - дивитись реальний код
-- Аналізувати reference implementation
-- Визнавати коли застряг - передати іншому AI
 
 ---
 
@@ -275,248 +251,39 @@ AI як повноцінний член команди - можна @mention в 
 
 ### Completed Features ✅
 
-**Project CRUD:**
-- [x] Create project (name, URL, description)
-- [x] Edit project
-- [x] Delete project
-- [x] Project list view (cards grid)
-- [x] Project details page
+- [x] Project CRUD (create, edit, delete, list)
+- [x] Google OAuth integration (organization-level)
+- [x] Google Search Console API
+- [x] Google Analytics GA4 API
+- [x] Google Drive/Docs/Sheets API
+- [x] Settings page for integrations
+- [x] Property selector for GSC/GA4
 
-**Google OAuth Integration:**
-- [x] Google OAuth 2.0 flow
-- [x] Token storage (encrypted)
-- [x] Token refresh mechanism
-- [x] Multiple Google account support
-
-**Google Integrations:**
-- [x] Google Search Console connection
-- [x] Google Analytics connection
-- [x] Site list from GSC
-- [x] Basic metrics display
-
-**Acceptance Criteria:**
-- ✅ Can create projects
-- ✅ Can edit/delete projects
-- ✅ Projects list shows all team projects
-- ✅ Can connect Google accounts
-- ✅ GSC data displayed on dashboard
-
-**Result:** 5/5 критеріїв = 100% ✅
+**Result:** 100% ✅
 
 ---
 
 ## 📦 v0.6 - Tasks & Backlog (✅ ЗАВЕРШЕНО)
 
-**Дата:** 29-30.11.2025  
+**Дата:** 28.11.2025 → 30.11.2025  
 **Статус:** ✅ **COMPLETE** (100%)  
-**Deliverable:** ✅ Full task management with AI auto-planning
-
-### Мета
-
-Повноцінна система управління задачами як в ClickUp/Asana, але з AI-powered auto-planning.
+**Deliverable:** ✅ Full task management with AI integration
 
 ### Completed Features ✅
 
-#### Task Management Core
-
-**Week Calendar View:**
-- [x] Google Calendar-style weekly view
-- [x] Days Mon-Fri displayed
-- [x] Hours per day indicator (0.0h / 8h)
-- [x] Progress bar per day (blue/yellow/red)
-- [x] Week navigation (prev/next/today)
-- [x] Responsive layout
-
-**Backlog Grid:**
-- [x] Task cards in grid layout
-- [x] Search backlog
-- [x] Add to Backlog button
-- [x] Priority badges (color-coded)
-- [x] Estimated time display
-
-**Task CRUD:**
-- [x] Create task (title, description, assignee, priority, due date, estimated time)
-- [x] Edit task
-- [x] Delete task with confirmation
-- [x] Task status management
-
-**Task Details:**
-- [x] Task Detail Modal (slide-out panel)
-- [x] Task comments section
-- [x] Created/Updated timestamps
-- [x] Accepted timestamp
-- [x] Start Working button
-- [x] Edit/Delete buttons
-
----
-
-#### Drag & Drop
-
-- [x] @dnd-kit integration
-- [x] Backlog → Schedule (sets scheduledDate)
-- [x] Schedule → Schedule (changes date)
-- [x] Schedule → Backlog (clears date)
-- [x] Visual drag overlay
-- [x] Drop zone highlighting
-
----
-
-#### AI Task Creation
-
-**Natural Language Parsing:**
-- [x] Detect task creation intent from chat
-- [x] Parse title, assignee, priority, due date, estimated time
-- [x] Ukrainian language support
-- [x] English language support
-
-**Task Preview Card:**
-- [x] Editable preview before creation
-- [x] All fields editable (title, assignee, priority, etc.)
-- [x] Create Task / Cancel buttons
-- [x] Persists after page refresh (DB status)
-
-**Scheduled Time:**
-- [x] scheduledTime field (HH:MM format)
-- [x] AI parses "о 11:00", "at 2pm", etc.
-- [x] TimePicker component (hours + 15min intervals)
-- [x] Display in task cards
-
-**Recurring Tasks:**
-- [x] isRecurring flag
-- [x] recurrenceRule (daily, weekly, monthly)
-- [x] recurrenceEnd date
-- [x] Auto-create next occurrence when marked done
-- [x] Repeat dropdown in task forms
-
-**Group Tasks:**
-- [x] "Assign to all team members" checkbox
-- [x] Creates separate task for each member
-- [x] groupTaskId to link related tasks
-- [x] "Include myself" option
-- [x] Member count display
-
----
-
-#### Acceptance Workflow
-
-- [x] Task status: pending_acceptance
-- [x] Task status: accepted
-- [x] Task status: in_progress
-- [x] Task status: done
-- [x] Accept/Reject buttons for assignee
-- [x] Status change notifications
-- [x] "Завдання очікує підтвердження" message
-
----
-
-#### Real-time Updates
-
-- [x] EventsGateway for WebSocket broadcasting
-- [x] task_created event
-- [x] task_updated event
-- [x] task_deleted event
-- [x] task_status_changed event
-- [x] useTaskSocket hook on frontend
-- [x] Live updates without refresh
-
----
-
-#### Auto-Planning
-
-**Button on Tasks Page:**
-- [x] Auto-plan button next to Filters
-- [x] Generate plan API endpoint
-- [x] Apply plan API endpoint
-- [x] Auto-Plan Preview Modal
-
-**Auto-Plan Logic:**
-- [x] Sort by priority (critical > high > medium > low)
-- [x] Sort by due date (closest first)
-- [x] Max 8h per day capacity
-- [x] Skip weekends (Mon-Fri only)
-- [x] Multi-week planning (3 weeks ahead)
-- [x] Track unscheduled tasks with reasons
-
-**Auto-Plan Preview Modal:**
-- [x] Tasks grouped by date
-- [x] Week selector buttons (clickable)
-- [x] Hours per day summary
-- [x] Total tasks/hours display
-- [x] Unscheduled tasks warning
-- [x] Apply Plan / Cancel buttons
-
-**Auto-Plan via AI Chat:**
-- [x] Intent detection ("розплануй мої задачі", "plan my week")
-- [x] Auto-Plan Preview Card in chat
-- [x] Apply directly from chat
-- [x] Confirmation message after apply
-
-**Scheduled Auto-Planning (Settings):**
-- [x] AutoPlanSettings model in DB
-- [x] Enable/disable toggle
-- [x] Frequency (daily/weekly)
-- [x] Day of week selector
-- [x] Time selector (TimePicker)
-- [x] "Preview before applying" option
-- [x] "Apply automatically" option
-- [x] SchedulerService with cron jobs
-- [x] Settings page UI
-
----
-
-#### UI Components
-
-- [x] TimePicker (hours dropdown + 15min intervals)
-- [x] Switch component (toggle)
-- [x] Auto-Plan Modal
-- [x] Auto-Plan Preview Card (for chat)
-- [x] Task filters (priority, date range)
-
----
-
-### ⏸️ Перенесено на пізніші версії
-
-- [ ] Time Tracking UI → v0.8
-- [ ] Task attachments → v0.8
-- [ ] Task history/audit log → v0.9
-
----
-
-### Acceptance Criteria: ✅ 15/15
-
-- ✅ Week Calendar View працює
-- ✅ Drag & drop в обидва напрямки
-- ✅ AI створює задачі з chat
-- ✅ Recurring tasks працюють
-- ✅ Scheduled time працює
-- ✅ Group tasks працюють
-- ✅ Acceptance workflow працює
-- ✅ Real-time updates працюють
-- ✅ Auto-plan button працює
-- ✅ Auto-plan в AI Chat працює
-- ✅ Auto-plan Settings працює
-- ✅ Multi-week planning
-- ✅ Progress bar per day
-- ✅ Task filters працюють
-- ✅ Task comments працюють
+- [x] Week Calendar View (5 days, Mon-Fri)
+- [x] Drag & Drop (Backlog ↔ Calendar)
+- [x] AI Task Creation from chat (natural language)
+- [x] Recurring tasks (daily, weekly, monthly)
+- [x] Scheduled time (HH:MM)
+- [x] Group tasks (assign to all team members)
+- [x] Acceptance workflow (pending → accepted → in_progress → done)
+- [x] Real-time updates (WebSocket)
+- [x] Auto-planning (button + AI Chat + Settings with cron)
+- [x] Task filters (priority, assignee, project)
+- [x] Task comments
 
 **Result:** 15/15 критеріїв = 100% ✅
-
----
-
-### 🐛 Troubleshooting v0.6
-
-**Проблема:** Task preview card не з'являвся  
-**Причина:** aiContext зберігався з повним conversationHistory (занадто великий)  
-**Рішення:** Зберігати тільки { taskPreview } без зайвого контексту
-
-**Проблема:** NestJS dependency injection errors  
-**Причина:** Missing module imports (TaskModule, ChatModule)  
-**Рішення:** Додати потрібні модулі в imports
-
-**Проблема:** Page width issues  
-**Причина:** Різні max-width для різних компонентів  
-**Рішення:** Уніфікувати ширину контенту і chat overlay
 
 ---
 
@@ -527,22 +294,25 @@ AI як повноцінний член команди - можна @mention в 
 **Deliverable:** ✅ Team management + role-based access
 
 **День 1-4: Invite System**
+- [ ] Invite model (email, token, expiresAt, usedAt, role)
 - [ ] Generate invite links
 - [ ] Email invites (SendGrid)
 - [ ] Accept/decline invites
-- [ ] Invite expiration
-- [ ] Invite link UI
+- [ ] Invite expiration (7 days default)
+- [ ] Pending invites UI (for admin)
+- [ ] Revoke invite functionality
 
 **День 5-7: Role Management**
 - [ ] Roles: Owner, Admin, Member, Viewer
 - [ ] Role-based permissions matrix
+- [ ] @Roles() decorator for NestJS guards
 - [ ] Permission checks in API guards
 - [ ] Role assignment UI
 - [ ] Role restrictions enforcement
 
 **День 8-10: Team Management**
 - [ ] Team member list page
-- [ ] Remove team members
+- [ ] Remove team members (soft delete)
 - [ ] Change member roles
 - [ ] Team settings page
 - [ ] Organization profile editing
@@ -554,13 +324,18 @@ AI як повноцінний член команди - можна @mention в 
 - [ ] Team management UI complete
 - [ ] Owner can manage all members
 
+**Technical Notes (from Gemini audit):**
+- Use soft delete for users (isDeleted: true) to preserve task history
+- Implement @Roles() decorator pattern instead of inline checks
+- Invite table should track usedAt for audit trail
+
 ---
 
-## 📦 v0.8 - AI Analysis + Chat Polish
+## 📦 v0.8 - AI Analysis + Chat Polish + Payment Status
 
 **Час:** 8 днів  
 **Статус:** 📋 PLANNED  
-**Deliverable:** ✅ AI analyzes data + polished chat UX
+**Deliverable:** ✅ AI analyzes data + polished chat UX + project payments
 
 **День 1-3: AI Daily Analysis**
 - [ ] Scheduled jobs (BullMQ)
@@ -575,25 +350,32 @@ AI як повноцінний член команди - можна @mention в 
 - [ ] Recommendations
 - [ ] Email delivery (SendGrid)
 
-**День 6-8: Chat Polish + Time Tracking**
+**День 6-7: Chat Polish**
 - [ ] Message reactions (emoji)
 - [ ] Reply threads
 - [ ] Message editing
 - [ ] Message deletion
 - [ ] File attachments
-- [ ] Time Tracking UI (start/stop timer)
-- [ ] Task attachments
+- [ ] DRY refactor: createMessage + createAIMessage → saveMessageToDb()
+- [ ] Enhanced WebSocket logging (chatId, userId in errors)
+
+**День 8: Payment Status Tracking** 💰
+- [ ] Project payment status (paid, pending, unpaid, overdue)
+- [ ] Status indicator in project list
+- [ ] Notification when status changes
+- [ ] Budget tracking (optional: budgetTotal, budgetSpent)
+- [ ] "Can spend" indicator for SEO specialists
 
 **Acceptance Criteria:**
 - [ ] AI analyzes changes daily
 - [ ] Morning brief generated at 7:00 AM
 - [ ] Emails delivered to users
 - [ ] Chat reactions work
-- [ ] Time tracking works
+- [ ] Payment status visible on projects
 
 ---
 
-## 📦 v0.9 - Notifications + Full Polish + Security Hardening
+## 📦 v0.9 - Notifications + Full Polish + Security Hardening 🔒
 
 **Час:** 10 днів  
 **Статус:** 📋 PLANNED  
@@ -623,13 +405,17 @@ AI як повноцінний член команди - можна @mention в 
 - [ ] Task history/audit log
 - [ ] Dark mode (optional)
 
-**День 9-10: Security Hardening**
+**День 9-10: Security Hardening** 🔒
 - [ ] Rate limiting (100 req/min per user)
 - [ ] CSRF protection
 - [ ] XSS prevention
-- [ ] SQL injection prevention (Prisma handles, but audit)
 - [ ] Secure headers (helmet.js)
 - [ ] Content Security Policy
+- [ ] OAuth state signing (cryptographic validation)
+- [ ] Multiple sessions handling (don't show offline if other session active)
+- [ ] Scope broadcasts to organization (fix global broadcasts)
+- [ ] Unread counts optimization (batch query instead of N+1)
+- [ ] DB indexes: Message (chatId, createdAt), Task (status, assignedToId)
 
 **Acceptance Criteria:**
 - [ ] Notifications work for all event types
@@ -679,6 +465,124 @@ AI як повноцінний член команди - можна @mention в 
 
 ---
 
+## 🔮 POST-LAUNCH ROADMAP
+
+### 📦 v1.1 - Knowledge Base (MUST HAVE) 📚
+
+**Час:** 3 тижні  
+**Статус:** 📋 PLANNED (Post-Launch)  
+**Deliverable:** RAG-based knowledge system (own NotebookLM)
+
+**Чому MUST HAVE:**
+AI Teammate зараз відповідає з загальних знань Claude. З Knowledge Base він працюватиме по стандартах твоєї агентства.
+
+**Контент для людей:**
+- [ ] SOPs / Гайди
+- [ ] Навчальні матеріали
+- [ ] Кейси (успішні/провальні)
+- [ ] Онбординг docs
+
+**Контент для AI (KILLER!):**
+- [ ] Шаблони звітів/документів
+- [ ] Покрокові інструкції (семантика, кластеризація, аудит)
+- [ ] Чеклісти якості
+- [ ] Стандарти агентства
+- [ ] Промпти/приклади для AI
+
+**Технічна реалізація:**
+- [ ] pgvector extension для PostgreSQL
+- [ ] Embedding service (Claude API)
+- [ ] Chunking logic для документів
+- [ ] Vector search (semantic)
+- [ ] Upload UI (PDF, DOCX, Google Docs)
+- [ ] Integration з AI Teammate (auto-context)
+- [ ] Тегування: [human] vs [ai-instruction]
+
+**News Monitoring (частина KB):**
+- [ ] Додавання джерел (RSS, URLs)
+- [ ] Scheduled fetch (вечір)
+- [ ] AI filtering (релевантність)
+- [ ] Morning digest в чат
+- [ ] "Add to KB" action
+
+---
+
+### 📦 v1.2 - Internal SEO Browser (UNIQUE FEATURE!) 🌐
+
+**Час:** 3 тижні  
+**Статус:** 📋 PLANNED (Post-Launch)  
+**Deliverable:** Built-in browser with SEO metrics overlay
+
+**Чому UNIQUE:**
+Жоден конкурент не має вбудованого браузера. Замінює 10+ розширень!
+
+**Replaces:**
+- Ahrefs SEO Toolbar
+- SEMrush extension
+- MozBar
+- Serpstat
+- SimilarWeb
+- Wappalyzer
+- PageSpeed Insights extension
+- Check My Links
+- ... та інші
+
+**Features:**
+- [ ] Browse any URL
+- [ ] SERP analysis overlay (on Google results)
+- [ ] Domain metrics (DR, UR, Backlinks, Traffic)
+- [ ] Keyword data (volume, KD, CPC)
+- [ ] Keyword suggestions sidebar
+- [ ] Page analysis (meta tags, H1-H6, Core Web Vitals)
+- [ ] Technology detection (Wappalyzer API)
+- [ ] Quick actions: "Add to project", "Create task", "Save competitor"
+
+**Technical approach:**
+- [ ] Web-based (proxy through backend)
+- [ ] Iframe/embed rendering
+- [ ] Overlay with metrics from Ahrefs/Serpstat APIs
+- [ ] Integration with Projects
+
+---
+
+### 📦 v1.3 - Templates Marketplace 🏪
+
+**Час:** 2 тижні  
+**Статус:** 📋 PLANNED (Post-Launch)  
+**Deliverable:** Shareable templates library
+
+**Template Types:**
+- [ ] Task Templates (аудит сайту, збір семантики)
+- [ ] Report Templates (місячний звіт, технічний аудит)
+- [ ] SOP Templates (чеклісти, інструкції)
+- [ ] AI Prompt Templates (готові промпти для AI Teammate)
+- [ ] Project Templates (готовий сетап проекту)
+
+**Features:**
+- [ ] Inspiration tab (як у Claude Artifacts)
+- [ ] Community templates (від інших агентств)
+- [ ] Official templates (від Forgeline)
+- [ ] "Use this" → копіює до тебе
+- [ ] Rating/reviews
+- [ ] Premium templates (monetization?)
+
+---
+
+### 📦 v1.5+ - Future Ideas
+
+**Lower Priority (after user feedback):**
+
+| Idea | Description | When |
+|------|-------------|------|
+| White-label Reports | Звіти з логотипом агентства | After reports feature |
+| Gamification | Бали, streak, лідерборд для команди | v1.5+ |
+| Client Portal | Read-only доступ для клієнтів | After user feedback |
+| Slack/Telegram Webhooks | Alerts до зовнішніх месенджерів | v1.4 |
+| Task Dependencies | blocked_by relationship | v1.4 |
+| Time Tracking | Start/stop timer per task | v0.8 or v1.4 |
+
+---
+
 ## 📈 Progress Summary
 
 **Completed:**
@@ -692,15 +596,20 @@ AI як повноцінний член команди - можна @mention в 
 
 **Total completed:** 36 days
 
-**Remaining:**
+**Remaining to v1.0:**
 - 📋 v0.7 - Roles & Invite (10 days) ← NEXT!
-- 📋 v0.8 - AI Analysis (8 days)
-- 📋 v0.9 - Notifications (10 days)
+- 📋 v0.8 - AI Analysis + Payment Status (8 days)
+- 📋 v0.9 - Notifications + Security (10 days)
 - 📋 v1.0 - Launch Prep (10 days)
 
 **Total remaining:** 38 days
 
 **Progress:** 36/81 days = **44%** complete 🎉
+
+**Post-Launch:**
+- 📋 v1.1 - Knowledge Base (3 weeks) - MUST HAVE
+- 📋 v1.2 - Internal SEO Browser (3 weeks) - UNIQUE FEATURE
+- 📋 v1.3 - Templates Marketplace (2 weeks)
 
 ---
 
@@ -717,9 +626,29 @@ AI як повноцінний член команди - можна @mention в 
 | 30.11.2025 | v0.6 Complete (Tasks) | ✅ |
 | 10.12.2025 | v0.7 Complete (Roles & Invite) | 📋 |
 | 18.12.2025 | v0.8 Complete (AI Analysis) | 📋 |
-| 28.12.2025 | v0.9 Complete (Notifications) | 📋 |
+| 28.12.2025 | v0.9 Complete (Notifications + Security) | 📋 |
 | 07.01.2026 | v1.0 Complete (Launch Prep) | 📋 |
 | **15.01.2026** | **🎉 PUBLIC LAUNCH** | 📋 |
+| 05.02.2026 | v1.1 Complete (Knowledge Base) | 📋 |
+| 26.02.2026 | v1.2 Complete (Internal Browser) | 📋 |
+| 12.03.2026 | v1.3 Complete (Templates) | 📋 |
+
+---
+
+## 🔒 Security Checklist (Pre-Production)
+
+**🔴 Critical (MUST fix before demo):**
+- [ ] Chat access check (verify membership)
+- [ ] WebSocket join_room validation
+- [ ] join_organization org membership check
+- [ ] Scope online_users to organization
+
+**🟡 Important (fix in v0.9):**
+- [ ] OAuth state signing
+- [ ] Multiple sessions handling
+- [ ] Global broadcasts → scoped
+- [ ] Rate limiting
+- [ ] CSRF/XSS protection
 
 ---
 
@@ -746,20 +675,21 @@ AI як повноцінний член команди - можна @mention в 
 
 ## 🚀 Next Steps
 
-1. ✅ v0.5 Projects - DONE!
-2. ✅ v0.6 Tasks & Backlog - DONE!
+1. ✅ v0.6 Tasks & Backlog - DONE!
+2. 🔴 **Fix Critical Security Issues** (~2 hours)
 3. **Start v0.7 - Roles & Invite** 👥 ← NEXT!
 4. **Demo для інвесторів** (після v0.7)
 
-**Focus:** Invite system + Role-based access для team collaboration!
+**Focus:** Security fixes + Invite system + Role-based access!
 
 ---
 
 **Last Updated:** 30.11.2025  
 **Current Version:** v0.6 ✅  
 **Next Version:** v0.7 - Roles & Invite 👥  
-**Days to Launch:** 45 days
+**Days to Launch:** 45 days  
+**Security Status:** 🔴 Critical fixes required
 
 ---
 
-🎯 **v0.6 Complete! Almost halfway to launch!** 🚀
+🎯 **v0.6 Complete! Security audit done! Ready for v0.7!** 🚀

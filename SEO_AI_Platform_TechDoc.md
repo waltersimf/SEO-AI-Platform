@@ -1,8 +1,8 @@
-# SEO AI Platform - Технічна документація
+# Forgeline - Технічна документація
 
-**Версія:** 1.5  
-**Дата:** 12.11.2025  
-**Статус:** MVP Planning
+**Версія:** 1.6  
+**Дата:** 30.11.2025  
+**Статус:** MVP Development (v0.6 Complete)
 
 ---
 
@@ -13,9 +13,13 @@
 3. [Технічна архітектура](#технічна-архітектура)
 4. [Технологічний стек](#технологічний-стек)
 5. [Функціональні модулі](#функціональні-модулі)
+   - 5.X. [Knowledge Base (RAG)](#knowledge-base-rag-система)
+   - 5.Y. [Internal SEO Browser](#internal-seo-browser)
+   - 5.Z. [Templates Marketplace](#templates-marketplace)
 6. [API інтеграції](#api-інтеграції)
 7. [Multi-tenancy модель](#multi-tenancy-модель)
 8. [Безпека та зберігання даних](#безпека-та-зберігання-даних)
+   - 8.X. [Security Issues & Fixes](#виявлені-security-issues)
 9. [UI/UX концепція](#uiux-концепція)
 10. [Економіка проекту](#економіка-проекту)
 11. [Roadmap розробки](#roadmap-розробки)
@@ -26,7 +30,7 @@
 ## 1. Огляд проекту
 
 ### 1.1. Назва проекту
-**SEO AI Platform** (робоча назва)
+**Forgeline** (робоча назва)
 
 ### 1.2. Опис
 AI-powered централізована платформа для SEO-команд та агентств, яка об'єднує всі інструменти SEO-аналізу в одному місці з автоматичним AI-аналізом та генерацією actionable рекомендацій.
@@ -2614,6 +2618,425 @@ const result = await fetch('/api/scheduled-tasks/latest');
 
 ---
 
+### 5.12. Knowledge Base (RAG система) 📚
+
+**Версія:** v1.1 (Post-Launch)  
+**Статус:** Planned  
+**Пріоритет:** MUST HAVE
+
+#### Концепція
+
+Власна система Knowledge Base на базі RAG (Retrieval-Augmented Generation), аналог NotebookLM від Google. Дозволяє AI Teammate відповідати не з загальних знань Claude, а з **внутрішньої бази знань агентства**.
+
+#### Два типи контенту
+
+**1. Контент для людей (Team Training):**
+- SOPs / Гайди з процесів
+- Навчальні матеріали для онбордингу
+- Кейси (успішні та провальні)
+- Чеклісти та інструкції
+
+**2. Контент для AI (AI Instructions):**
+- Шаблони звітів/документів
+- Покрокові інструкції (семантика, кластеризація, аудит)
+- Чеклісти якості
+- Стандарти агентства
+- Промпти та приклади для AI Teammate
+
+#### Use Case
+
+```
+БЕЗ Knowledge Base:
+User: "Зроби аудит site-a.com"
+AI: *робить generic аудит з загальних знань*
+
+З Knowledge Base:
+User: "Зроби аудит site-a.com"  
+AI: *читає шаблон аудиту агентства*
+    *читає чекліст перевірки*
+    *робить аудит ПО СТАНДАРТАМ АГЕНТСТВА*
+    *форматує по внутрішньому шаблону*
+```
+
+#### Технічна архітектура
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  1. UPLOAD                                                  │
+│  ─────────                                                  │
+│  Користувач завантажує:                                     │
+│  PDF, DOCX, Google Docs, URLs                               │
+│                    ↓                                        │
+├─────────────────────────────────────────────────────────────┤
+│  2. PROCESSING                                              │
+│  ────────────                                               │
+│  • Chunking (розбивка на ~500 токенів)                     │
+│  • Embedding (Claude API)                                   │
+│  • Tagging: [human] vs [ai-instruction]                    │
+│  • Зберігання в pgvector                                    │
+│                    ↓                                        │
+├─────────────────────────────────────────────────────────────┤
+│  3. QUERY (AI Teammate)                                     │
+│  ─────────────────────                                      │
+│  User: "@AI як збирати семантику?"                          │
+│                    ↓                                        │
+│  • Питання → embedding → vector search                      │
+│  • Знаходить топ-5 релевантних chunks                       │
+│  • Chunks передаються в контекст Claude                     │
+│                    ↓                                        │
+├─────────────────────────────────────────────────────────────┤
+│  4. RESPONSE                                                │
+│  ──────────                                                 │
+│  AI: "Згідно вашої інструкції [посилання]:                  │
+│       1. Спочатку зібрати базові ключі з GSC...             │
+│       2. Розширити через Serpstat...                        │
+│       3. Кластеризувати за інтентом..."                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Технологічний стек
+
+| Компонент | Технологія | Примітка |
+|-----------|------------|----------|
+| Vector DB | pgvector | Extension для PostgreSQL (вже є) |
+| Embeddings | Claude API | Консистентність з AI Teammate |
+| Chunking | LangChain / custom | ~500 tokens per chunk |
+| File parsing | pdf-parse, mammoth | PDF, DOCX support |
+| Google Docs | Google Drive API | Вже інтегровано в v0.5 |
+
+#### Database Schema
+
+```prisma
+model KnowledgeDocument {
+  id              String   @id @default(cuid())
+  organizationId  String
+  
+  title           String
+  sourceType      String   // 'upload', 'google_doc', 'url'
+  sourceUrl       String?
+  originalContent String   @db.Text
+  
+  contentType     String   // 'human', 'ai-instruction'
+  tags            String[] // ['sop', 'template', 'case-study']
+  
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  chunks          KnowledgeChunk[]
+  organization    Organization @relation(fields: [organizationId], references: [id])
+}
+
+model KnowledgeChunk {
+  id          String   @id @default(cuid())
+  documentId  String
+  
+  content     String   @db.Text
+  embedding   Float[]  // pgvector
+  chunkIndex  Int
+  tokenCount  Int
+  
+  document    KnowledgeDocument @relation(fields: [documentId], references: [id])
+  
+  @@index([embedding], type: Hnsw(ops: VectorCosineOps))
+}
+```
+
+#### News Monitoring (Sub-feature)
+
+Частина Knowledge Base — автоматичний моніторинг новин:
+
+```
+Workflow:
+1. User додає джерела (RSS feeds, URLs)
+2. Cron job (22:00) — fetch нових статей
+3. AI фільтрує за релевантністю
+4. Зранку (08:00) — digest в team chat
+5. "Add to KB" кнопка для корисного контенту
+```
+
+#### Оцінка розробки
+
+| Етап | Час |
+|------|-----|
+| pgvector setup + schema | 1 день |
+| Embedding service | 2 дні |
+| Chunking + processing | 2 дні |
+| Vector search | 1 день |
+| Upload UI | 3 дні |
+| Integration з AI Teammate | 2 дні |
+| News Monitoring | 3 дні |
+| Polish + testing | 2 дні |
+| **Разом** | **~3 тижні** |
+
+---
+
+### 5.13. Internal SEO Browser 🌐
+
+**Версія:** v1.2 (Post-Launch)  
+**Статус:** Planned  
+**Пріоритет:** HIGH — Unique Feature!
+
+#### Концепція
+
+Вбудований браузер з overlay SEO-метрик. Замінює 10+ браузерних розширень, які типово використовує кожен SEO-спеціаліст.
+
+#### Проблема
+
+Типовий набір розширень у SEO-спеціаліста:
+- Ahrefs SEO Toolbar
+- SEMrush extension
+- MozBar
+- Serpstat
+- SimilarWeb
+- Wappalyzer
+- PageSpeed Insights
+- Check My Links
+- ... ще 5-10 інших
+
+**Результат:** Повільний браузер, конфлікти розширень, розрізнені дані.
+
+#### Рішення
+
+Один вбудований браузер з усіма метриками в unified UI:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Forgeline Browser                                    [URL bar]  │
+├─────────────────────────────────────┬───────────────────────────┤
+│                                     │ 📊 SERP Analysis          │
+│   Google Search Results             │                           │
+│   ─────────────────────             │ Query: "seo tools"        │
+│                                     │ KD: 54 | Volume: 42K      │
+│   1. ahrefs.com                     │ CPC: $2.15                │
+│      DR: 90 | BL: 5.5M | Traffic:   │                           │
+│      3.5M                           │ ───────────────────────── │
+│                                     │ 💡 Keyword Ideas          │
+│   2. semrush.com                    │ • seo tools free          │
+│      DR: 91 | BL: 4.2M | Traffic:   │ • best seo tools 2025     │
+│      2.8M                           │ • seo software            │
+│                                     │                           │
+│   3. moz.com                        │ ───────────────────────── │
+│      DR: 89 | BL: 3.1M | Traffic:   │ 🔗 Quick Actions          │
+│      1.2M                           │ [Add to project]          │
+│                                     │ [Create task]             │
+│                                     │ [Save as competitor]      │
+│                                     │ [Analyze with AI]         │
+└─────────────────────────────────────┴───────────────────────────┘
+```
+
+#### Дані що показуємо
+
+| Метрика | Джерело | Де показуємо |
+|---------|---------|--------------|
+| DR, UR, Backlinks, Traffic | Ahrefs API | SERP overlay, Page analysis |
+| Keyword difficulty, Volume | Ahrefs / Serpstat | SERP overlay |
+| Keyword suggestions | Ahrefs / Serpstat | Sidebar |
+| Technologies (CMS, frameworks) | Wappalyzer API | Page analysis |
+| Core Web Vitals | PageSpeed API (free) | Page analysis |
+| Meta tags, H1-H6 | Own parsing | Page analysis |
+| Broken links | Own checker | Page analysis |
+| Indexed pages | GSC API | Domain analysis |
+
+#### Технічна реалізація
+
+**Варіант A: Web-based (MVP)**
+```
+Архітектура:
+├─ User вводить URL
+├─ Backend робить proxy request
+├─ Паралельно: fetch Ahrefs/Serpstat metrics
+├─ Рендеримо сторінку в iframe з CSP bypass
+├─ Overlay з метриками поверх
+└─ Sidebar з додатковими даними
+
+Плюси:
++ Швидше розробити
++ Працює в браузері
++ Не потребує окремого app
+
+Мінуси:
+- CSP/CORS обмеження
+- Деякі сайти блокують iframe
+```
+
+**Варіант B: Desktop App (Phase 2)**
+```
+Архітектура:
+├─ Electron або Tauri
+├─ Вбудований Chromium
+├─ Повний контроль над DOM
+├─ Injection власних скриптів
+└─ Native performance
+
+Плюси:
++ Немає CSP/CORS проблем
++ Повний контроль
++ Краща інтеграція з OS
+
+Мінуси:
+- Більше часу на розробку
+- Окремі builds для Win/Mac/Linux
+```
+
+**Рекомендація:** Почати з Варіант A (web), якщо буде попит — зробити Варіант B.
+
+#### Integration Points
+
+```typescript
+// При кліку на URL в SERP
+onUrlClick(url: string) {
+  // 1. Fetch page metrics
+  const metrics = await fetchMetrics(url);
+  
+  // 2. Show in sidebar
+  setSidebarData(metrics);
+  
+  // 3. Quick actions available
+  const actions = [
+    { label: 'Add to project', action: () => addToProject(url) },
+    { label: 'Create task', action: () => createTask(url) },
+    { label: 'Ask AI', action: () => askAI(`Analyze ${url}`) },
+  ];
+}
+
+// AI Integration
+askAI(`
+  Проаналізуй сторінку ${url}:
+  - DR: ${metrics.dr}
+  - Traffic: ${metrics.traffic}
+  - Backlinks: ${metrics.backlinks}
+  
+  Чи варто її розглядати як конкурента для проекту ${projectName}?
+`);
+```
+
+#### Оцінка розробки
+
+| Етап | Час |
+|------|-----|
+| Proxy service | 2 дні |
+| SERP detection + parsing | 3 дні |
+| Metrics fetching (parallel) | 2 дні |
+| Overlay UI | 3 дні |
+| Sidebar components | 2 дні |
+| Quick actions integration | 2 дні |
+| Page analysis view | 3 дні |
+| Polish + testing | 3 дні |
+| **Разом** | **~3 тижні** |
+
+---
+
+### 5.Z. Templates Marketplace 🏪
+
+**Версія:** v1.3 (Post-Launch)  
+**Статус:** Planned  
+**Пріоритет:** MEDIUM
+
+#### Концепція
+
+Бібліотека готових шаблонів для швидкого старту. Аналог Claude Artifacts sharing або Notion templates.
+
+#### Типи шаблонів
+
+| Тип | Опис | Приклад |
+|-----|------|---------|
+| **Task Templates** | Готові набори задач | "Технічний аудит сайту" (15 задач) |
+| **Report Templates** | Шаблони звітів | "Місячний SEO звіт для клієнта" |
+| **SOP Templates** | Процеси та чеклісти | "Онбординг нового проекту" |
+| **AI Prompt Templates** | Промпти для AI Teammate | "Аналіз конкурентів" |
+| **Project Templates** | Готовий сетап проекту | "E-commerce SEO проект" |
+
+#### UI Flow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Templates                                    [+ New]       │
+├─────────────────────────────────────────────────────────────┤
+│  [Inspiration] [My Templates]                               │
+├─────────────────────────────────────────────────────────────┤
+│  Categories: [All] [Tasks] [Reports] [SOPs] [AI] [Projects] │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │ 📋          │  │ 📊          │  │ 🤖          │         │
+│  │ Technical   │  │ Monthly     │  │ Competitor  │         │
+│  │ SEO Audit   │  │ Report      │  │ Analysis    │         │
+│  │             │  │             │  │ Prompt      │         │
+│  │ ⭐ 4.8 (124)│  │ ⭐ 4.6 (89) │  │ ⭐ 4.9 (56) │         │
+│  │ By: Forge.. │  │ By: SEO Pro │  │ By: AI Team │         │
+│  │             │  │             │  │             │         │
+│  │ [Use This]  │  │ [Use This]  │  │ [Use This]  │         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Database Schema
+
+```prisma
+model Template {
+  id              String   @id @default(cuid())
+  
+  title           String
+  description     String
+  type            String   // 'task', 'report', 'sop', 'prompt', 'project'
+  category        String[] // ['technical', 'content', 'linkbuilding']
+  
+  content         Json     // Template data structure
+  
+  isPublic        Boolean  @default(false)
+  isOfficial      Boolean  @default(false)  // By Forgeline team
+  isPremium       Boolean  @default(false)  // Paid template
+  
+  authorId        String
+  organizationId  String?  // null = public template
+  
+  usageCount      Int      @default(0)
+  rating          Float?
+  reviewCount     Int      @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  author          User     @relation(fields: [authorId], references: [id])
+  reviews         TemplateReview[]
+}
+
+model TemplateReview {
+  id          String   @id @default(cuid())
+  templateId  String
+  userId      String
+  rating      Int      // 1-5
+  comment     String?
+  createdAt   DateTime @default(now())
+  
+  template    Template @relation(fields: [templateId], references: [id])
+}
+```
+
+#### Monetization Options
+
+1. **Free tier:** Access to community templates
+2. **Pro tier:** Create & share own templates
+3. **Premium templates:** One-time purchase ($5-20)
+4. **Revenue share:** 70% author / 30% Forgeline
+
+#### Оцінка розробки
+
+| Етап | Час |
+|------|-----|
+| Schema + API | 2 дні |
+| Template browser UI | 3 дні |
+| Template preview | 2 дні |
+| "Use This" flow | 2 дні |
+| My Templates section | 2 дні |
+| Rating/reviews | 1 день |
+| Polish | 2 дні |
+| **Разом** | **~2 тижні** |
+
+---
+
 ## 6. API Інтеграції
 
 ### 6.1. Модель: BYOK (Bring Your Own Keys)
@@ -3715,6 +4138,153 @@ Admin:
 - ✅ Data portability (експорт у JSON/CSV)
 - ✅ Encrypted storage
 - ✅ Audit logs (хто що змінив)
+
+---
+
+### 8.6. Виявлені Security Issues (Audit 30.11.2025)
+
+**Джерело:** Security Audit by ChatGPT  
+**Статус:** 🔴 Critical issues require immediate fix
+
+#### Critical Issues
+
+| Issue | Severity | Location | Description |
+|-------|----------|----------|-------------|
+| **Chat Access Check** | 🔴 CRITICAL | chat.service.ts | GET /chat/:id/messages не перевіряє чи user є member чату. Можливо читати чужі повідомлення. |
+| **WebSocket join_room** | 🔴 CRITICAL | chat.gateway.ts | join_room event не валідує membership. Можливо підключитись до чужого чату. |
+| **join_organization** | 🔴 CRITICAL | events.gateway.ts, test.gateway.ts | Можливо підписатись на events чужої організації. |
+| **Online Users Broadcast** | 🟡 HIGH | test.gateway.ts | Глобальний broadcast online users — cross-org data leak. |
+| **OAuth State** | 🟡 MEDIUM | google.strategy.ts | State parameter не підписаний криптографічно. |
+
+#### Required Fixes
+
+**1. Chat Access Check**
+```typescript
+// chat.service.ts
+async getChatMessages(chatId: string, userId: string) {
+  // Verify membership BEFORE returning messages
+  const membership = await this.prisma.chatMember.findFirst({
+    where: { chatId, userId }
+  });
+  
+  if (!membership) {
+    throw new ForbiddenException('Not a member of this chat');
+  }
+  
+  return this.prisma.message.findMany({
+    where: { chatId },
+    // ... rest
+  });
+}
+```
+
+**2. WebSocket join_room Validation**
+```typescript
+// chat.gateway.ts
+@SubscribeMessage('join_room')
+async handleJoinRoom(client: Socket, chatId: string) {
+  const userId = client.data.userId;
+  
+  // Verify user is member of this chat
+  const isMember = await this.chatService.isUserInChat(chatId, userId);
+  
+  if (!isMember) {
+    client.emit('error', { 
+      code: 'UNAUTHORIZED',
+      message: 'Not authorized for this chat' 
+    });
+    return;
+  }
+  
+  client.join(chatId);
+  this.logger.log(`User ${userId} joined chat ${chatId}`);
+}
+```
+
+**3. join_organization Check**
+```typescript
+// events.gateway.ts
+@SubscribeMessage('join_organization')
+async handleJoinOrg(client: Socket, orgId: string) {
+  const userId = client.data.userId;
+  
+  // Verify user belongs to this organization
+  const user = await this.prisma.user.findFirst({
+    where: { id: userId, organizationId: orgId }
+  });
+  
+  if (!user) {
+    client.emit('error', { 
+      code: 'UNAUTHORIZED',
+      message: 'Not a member of this organization' 
+    });
+    return;
+  }
+  
+  client.join(`org_${orgId}`);
+}
+```
+
+**4. Scope Online Users to Organization**
+```typescript
+// test.gateway.ts
+private async broadcastOnlineUsers(orgId: string) {
+  // Get only users from this organization
+  const orgUsers = await this.getOnlineUsersForOrg(orgId);
+  
+  // Broadcast only to this organization's room
+  this.server
+    .to(`org_${orgId}`)
+    .emit('online_users_updated', orgUsers);
+}
+```
+
+#### Race Conditions (Lower Priority)
+
+| Issue | Severity | Description | Fix |
+|-------|----------|-------------|-----|
+| Multiple Sessions | 🟡 MEDIUM | User closes 1 tab → shows offline even if 2nd tab open | Track socket count per user |
+| Duplicate Direct Chats | 🟡 MEDIUM | Two users initiate DM simultaneously → 2 chats created | Add unique constraint or transaction |
+| Dual Gateways | 🟢 LOW | EventsGateway + TestGateway overlap | Consolidate or use namespaces |
+
+#### Performance Issues
+
+| Issue | Severity | Description | Fix |
+|-------|----------|-------------|-----|
+| Global Broadcasts | 🟡 HIGH | refresh_chat_list goes to ALL clients | Scope to organization |
+| Unread N+1 | 🟡 MEDIUM | O(n) queries for unread counts | Batch query or cache |
+| Online Users List | 🟢 LOW | Full list broadcast on every change | Pagination or delta updates |
+
+#### Recommended DB Indexes
+
+```prisma
+model Message {
+  // ... fields
+  
+  @@index([chatId, createdAt]) // For message history queries
+}
+
+model Task {
+  // ... fields
+  
+  @@index([status])            // For filtering by status
+  @@index([assignedToId])      // For user's tasks
+  @@index([projectId])         // For project's tasks
+  @@index([scheduledDate])     // For calendar view
+}
+```
+
+#### Security Hardening Checklist (v0.9)
+
+- [ ] Rate limiting (100 req/min per user)
+- [ ] CSRF protection tokens
+- [ ] XSS prevention (sanitize inputs)
+- [ ] Secure headers (helmet.js)
+- [ ] Content Security Policy
+- [ ] OAuth state signing (HMAC)
+- [ ] Input validation (class-validator)
+- [ ] SQL injection audit (Prisma handles, but verify)
+- [ ] Dependency audit (npm audit)
 
 ---
 
