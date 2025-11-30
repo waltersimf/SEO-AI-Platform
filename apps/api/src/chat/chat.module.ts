@@ -15,5 +15,6 @@ import { TaskModule } from '../task/task.module';
     TestGateway,    // ✅ TestGateway with online status
     ChatService,
   ],
+  exports: [ChatService],
 })
 export class ChatModule {}
