@@ -1,7 +1,7 @@
 # 🗺️ ROADMAP - Forgeline SEO AI Platform
 
 **Загальна тривалість:** 81 день (11.5 тижнів) до Public Launch  
-**Поточний прогрес:** v0.4 ЗАВЕРШЕНО! v0.5 Projects next 📁
+**Поточний прогрес:** v0.6 ЗАВЕРШЕНО! v0.7 Roles & Invite next 👥
 
 ---
 
@@ -13,10 +13,10 @@
 | v0.2 | ✅ DONE | 100% | 5 днів | Dashboard UI |
 | v0.3 | ✅ DONE | 100% | 7 днів | Chat System |
 | v0.3.1 | ✅ DONE | 100% | 1 день | Production Ready |
-| **v0.4** | **✅ DONE** | **100%** | **3 дні** | **AI Teammate** 🤖 |
-| v0.5 | 📋 NEXT | 0% | 8 днів | Projects 📁 |
-| v0.6 | 📋 PLANNED | 0% | 7 днів | Tasks + Backlog |
-| v0.7 | 📋 PLANNED | 0% | 10 днів | Chat Polish + Invite |
+| v0.4 | ✅ DONE | 100% | 3 дні | AI Teammate 🤖 |
+| v0.5 | ✅ DONE | 100% | 8 днів | Projects 📁 |
+| **v0.6** | **✅ DONE** | **100%** | **7 днів** | **Tasks & Backlog** ✅ |
+| v0.7 | 📋 NEXT | 0% | 10 днів | Roles & Invite 👥 |
 | v0.8 | 📋 PLANNED | 0% | 8 днів | AI Analysis |
 | v0.9 | 📋 PLANNED | 0% | 10 днів | Notifications |
 | v1.0 | 📋 PLANNED | 0% | 10 днів | Launch Prep |
@@ -29,14 +29,15 @@
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                                                                          │
-│  ✅ v0.1-0.4 (21d)    📋 v0.5 (8d)    📋 v0.6 (7d)                      │
-│  Auth + Chat +        Projects        Tasks + Backlog                    │
-│  AI Teammate ✅                                                          │
+│  ✅ v0.1-0.6 (36d)    📋 v0.7 (10d)    📋 v0.8 (8d)                     │
+│  Auth + Chat +        Roles & Invite   AI Analysis +                     │
+│  AI + Projects +      System           Morning Brief                     │
+│  Tasks ✅                                                                │
 │  ─────────────────────────────────────────────────────────              │
 │                                                                          │
-│  📋 v0.7 (10d)       📋 v0.8 (8d)    📋 v0.9 (10d)    📋 v1.0 (10d)    │
-│  Chat Polish +       AI Analysis +   Notifications +   Launch Prep +    │
-│  Invite System       Morning Brief   Full Polish       Security         │
+│  📋 v0.9 (10d)                         📋 v1.0 (10d)                    │
+│  Notifications +                        Launch Prep +                    │
+│  Full Polish                            Security                         │
 │  ──────────────────────────────────────────────────────────────────     │
 │                                                                          │
 │                           🎉 PUBLIC LAUNCH 🎉                           │
@@ -45,7 +46,7 @@
 ```
 
 **Загальна тривалість:** ~81 день (2.7 місяці)  
-**Target Launch:** Лютий 2026
+**Target Launch:** Січень 2026
 
 ---
 
@@ -253,16 +254,6 @@ AI як повноцінний член команди - можна @mention в 
 
 **Result:** 8/8 критеріїв = 100% ✅
 
-### ⏸️ Перенесено на пізніші версії
-
-**Task Creation** (залежить від v0.6 Task Manager):
-- AI suggests tasks → User confirms → Task created
-
-**Data Context** (залежить від v0.5 Projects):
-- GSC data access
-- Ahrefs data access  
-- Project-specific recommendations
-
 ### 🐛 Troubleshooting
 
 **Проблема:** Chat preview card positioning  
@@ -276,130 +267,300 @@ AI як повноцінний член команди - можна @mention в 
 
 ---
 
-## 📦 v0.5 - Projects Management
+## 📦 v0.5 - Projects Management (✅ ЗАВЕРШЕНО)
 
-**Час:** 8 днів  
-**Статус:** 📋 NEXT  
-**Deliverable:** ✅ Teams can manage SEO projects
+**Час:** 8 днів (27.11.2025 → 28.11.2025)  
+**Статус:** ✅ **COMPLETE** (100%)  
+**Deliverable:** ✅ Teams can manage SEO projects with Google integrations
+
+### Completed Features ✅
+
+**Project CRUD:**
+- [x] Create project (name, URL, description)
+- [x] Edit project
+- [x] Delete project
+- [x] Project list view (cards grid)
+- [x] Project details page
+
+**Google OAuth Integration:**
+- [x] Google OAuth 2.0 flow
+- [x] Token storage (encrypted)
+- [x] Token refresh mechanism
+- [x] Multiple Google account support
+
+**Google Integrations:**
+- [x] Google Search Console connection
+- [x] Google Analytics connection
+- [x] Site list from GSC
+- [x] Basic metrics display
+
+**Acceptance Criteria:**
+- ✅ Can create projects
+- ✅ Can edit/delete projects
+- ✅ Projects list shows all team projects
+- ✅ Can connect Google accounts
+- ✅ GSC data displayed on dashboard
+
+**Result:** 5/5 критеріїв = 100% ✅
+
+---
+
+## 📦 v0.6 - Tasks & Backlog (✅ ЗАВЕРШЕНО)
+
+**Дата:** 29-30.11.2025  
+**Статус:** ✅ **COMPLETE** (100%)  
+**Deliverable:** ✅ Full task management with AI auto-planning
 
 ### Мета
 
-Повноцінне управління проектами з інтеграціями Google.
+Повноцінна система управління задачами як в ClickUp/Asana, але з AI-powered auto-planning.
 
-**День 1-3: Project CRUD**
-- [ ] Create project
-- [ ] Edit project
-- [ ] Delete project
-- [ ] Project list view
-- [ ] Project details page
+### Completed Features ✅
 
-**День 4-5: Project Settings**
-- [ ] Domain/URL input
-- [ ] Target keywords
-- [ ] Competitors
-- [ ] Google credentials link
+#### Task Management Core
 
-**День 6-8: API Integrations Setup**
-- [ ] Google Search Console auth
-- [ ] Google Analytics auth
-- [ ] Ahrefs API key input
-- [ ] Connection testing
+**Week Calendar View:**
+- [x] Google Calendar-style weekly view
+- [x] Days Mon-Fri displayed
+- [x] Hours per day indicator (0.0h / 8h)
+- [x] Progress bar per day (blue/yellow/red)
+- [x] Week navigation (prev/next/today)
+- [x] Responsive layout
 
-**Acceptance Criteria:**
-- [ ] Can create projects
-- [ ] Can edit/delete projects
-- [ ] Projects list shows all team projects
-- [ ] Can connect Google accounts
-- [ ] Can add API keys
+**Backlog Grid:**
+- [x] Task cards in grid layout
+- [x] Search backlog
+- [x] Add to Backlog button
+- [x] Priority badges (color-coded)
+- [x] Estimated time display
 
----
+**Task CRUD:**
+- [x] Create task (title, description, assignee, priority, due date, estimated time)
+- [x] Edit task
+- [x] Delete task with confirmation
+- [x] Task status management
 
-## 📦 v0.6 - Tasks & Backlog
-
-**Час:** 7 днів  
-**Статус:** 📋 PLANNED  
-**Deliverable:** ✅ Teams can manage SEO tasks
-
-**День 1-3: Task Management**
-- [ ] Task CRUD
-- [ ] Task assignment
-- [ ] Task status (Todo, In Progress, Done)
-- [ ] Task priority
-- [ ] Due dates
-
-**День 4-5: Backlog**
-- [ ] Kanban board
-- [ ] Drag & drop
-- [ ] Task filtering
-- [ ] Sprint planning
-
-**День 6-7: Task Details**
-- [ ] Task description (rich text)
-- [ ] Task comments
-- [ ] Task attachments
-- [ ] Task history
-
-**Acceptance Criteria:**
-- [ ] Can create tasks
-- [ ] Can assign tasks
-- [ ] Kanban board works
-- [ ] Drag & drop works
-- [ ] Task comments work
-
-### 🔗 Post v0.6: AI Task Creation
-
-Після завершення Task Manager, додати до AI:
-- [ ] AI can suggest tasks from chat
-- [ ] User confirms task creation
-- [ ] Task automatically created
-- [ ] Task linked to chat message
-- [ ] Notification sent
+**Task Details:**
+- [x] Task Detail Modal (slide-out panel)
+- [x] Task comments section
+- [x] Created/Updated timestamps
+- [x] Accepted timestamp
+- [x] Start Working button
+- [x] Edit/Delete buttons
 
 ---
 
-## 📦 v0.7 - Chat UI Polish + Invite System
+#### Drag & Drop
+
+- [x] @dnd-kit integration
+- [x] Backlog → Schedule (sets scheduledDate)
+- [x] Schedule → Schedule (changes date)
+- [x] Schedule → Backlog (clears date)
+- [x] Visual drag overlay
+- [x] Drop zone highlighting
+
+---
+
+#### AI Task Creation
+
+**Natural Language Parsing:**
+- [x] Detect task creation intent from chat
+- [x] Parse title, assignee, priority, due date, estimated time
+- [x] Ukrainian language support
+- [x] English language support
+
+**Task Preview Card:**
+- [x] Editable preview before creation
+- [x] All fields editable (title, assignee, priority, etc.)
+- [x] Create Task / Cancel buttons
+- [x] Persists after page refresh (DB status)
+
+**Scheduled Time:**
+- [x] scheduledTime field (HH:MM format)
+- [x] AI parses "о 11:00", "at 2pm", etc.
+- [x] TimePicker component (hours + 15min intervals)
+- [x] Display in task cards
+
+**Recurring Tasks:**
+- [x] isRecurring flag
+- [x] recurrenceRule (daily, weekly, monthly)
+- [x] recurrenceEnd date
+- [x] Auto-create next occurrence when marked done
+- [x] Repeat dropdown in task forms
+
+**Group Tasks:**
+- [x] "Assign to all team members" checkbox
+- [x] Creates separate task for each member
+- [x] groupTaskId to link related tasks
+- [x] "Include myself" option
+- [x] Member count display
+
+---
+
+#### Acceptance Workflow
+
+- [x] Task status: pending_acceptance
+- [x] Task status: accepted
+- [x] Task status: in_progress
+- [x] Task status: done
+- [x] Accept/Reject buttons for assignee
+- [x] Status change notifications
+- [x] "Завдання очікує підтвердження" message
+
+---
+
+#### Real-time Updates
+
+- [x] EventsGateway for WebSocket broadcasting
+- [x] task_created event
+- [x] task_updated event
+- [x] task_deleted event
+- [x] task_status_changed event
+- [x] useTaskSocket hook on frontend
+- [x] Live updates without refresh
+
+---
+
+#### Auto-Planning
+
+**Button on Tasks Page:**
+- [x] Auto-plan button next to Filters
+- [x] Generate plan API endpoint
+- [x] Apply plan API endpoint
+- [x] Auto-Plan Preview Modal
+
+**Auto-Plan Logic:**
+- [x] Sort by priority (critical > high > medium > low)
+- [x] Sort by due date (closest first)
+- [x] Max 8h per day capacity
+- [x] Skip weekends (Mon-Fri only)
+- [x] Multi-week planning (3 weeks ahead)
+- [x] Track unscheduled tasks with reasons
+
+**Auto-Plan Preview Modal:**
+- [x] Tasks grouped by date
+- [x] Week selector buttons (clickable)
+- [x] Hours per day summary
+- [x] Total tasks/hours display
+- [x] Unscheduled tasks warning
+- [x] Apply Plan / Cancel buttons
+
+**Auto-Plan via AI Chat:**
+- [x] Intent detection ("розплануй мої задачі", "plan my week")
+- [x] Auto-Plan Preview Card in chat
+- [x] Apply directly from chat
+- [x] Confirmation message after apply
+
+**Scheduled Auto-Planning (Settings):**
+- [x] AutoPlanSettings model in DB
+- [x] Enable/disable toggle
+- [x] Frequency (daily/weekly)
+- [x] Day of week selector
+- [x] Time selector (TimePicker)
+- [x] "Preview before applying" option
+- [x] "Apply automatically" option
+- [x] SchedulerService with cron jobs
+- [x] Settings page UI
+
+---
+
+#### UI Components
+
+- [x] TimePicker (hours dropdown + 15min intervals)
+- [x] Switch component (toggle)
+- [x] Auto-Plan Modal
+- [x] Auto-Plan Preview Card (for chat)
+- [x] Task filters (priority, date range)
+
+---
+
+### ⏸️ Перенесено на пізніші версії
+
+- [ ] Time Tracking UI → v0.8
+- [ ] Task attachments → v0.8
+- [ ] Task history/audit log → v0.9
+
+---
+
+### Acceptance Criteria: ✅ 15/15
+
+- ✅ Week Calendar View працює
+- ✅ Drag & drop в обидва напрямки
+- ✅ AI створює задачі з chat
+- ✅ Recurring tasks працюють
+- ✅ Scheduled time працює
+- ✅ Group tasks працюють
+- ✅ Acceptance workflow працює
+- ✅ Real-time updates працюють
+- ✅ Auto-plan button працює
+- ✅ Auto-plan в AI Chat працює
+- ✅ Auto-plan Settings працює
+- ✅ Multi-week planning
+- ✅ Progress bar per day
+- ✅ Task filters працюють
+- ✅ Task comments працюють
+
+**Result:** 15/15 критеріїв = 100% ✅
+
+---
+
+### 🐛 Troubleshooting v0.6
+
+**Проблема:** Task preview card не з'являвся  
+**Причина:** aiContext зберігався з повним conversationHistory (занадто великий)  
+**Рішення:** Зберігати тільки { taskPreview } без зайвого контексту
+
+**Проблема:** NestJS dependency injection errors  
+**Причина:** Missing module imports (TaskModule, ChatModule)  
+**Рішення:** Додати потрібні модулі в imports
+
+**Проблема:** Page width issues  
+**Причина:** Різні max-width для різних компонентів  
+**Рішення:** Уніфікувати ширину контенту і chat overlay
+
+---
+
+## 📦 v0.7 - Roles & Invite System
 
 **Час:** 10 днів  
-**Статус:** 📋 PLANNED  
-**Deliverable:** ✅ Professional chat + team invites
+**Статус:** 📋 NEXT  
+**Deliverable:** ✅ Team management + role-based access
 
-**День 1-4: Chat Polish**
-- [ ] Message reactions (emoji)
-- [ ] Reply threads
-- [ ] Message editing
-- [ ] Message deletion
-- [ ] Rich text formatting
-- [ ] File attachments
-- [ ] Image preview
-- [ ] Link preview
-
-**День 5-7: Invite System**
+**День 1-4: Invite System**
 - [ ] Generate invite links
-- [ ] Email invites
+- [ ] Email invites (SendGrid)
 - [ ] Accept/decline invites
-- [ ] Role-based access
 - [ ] Invite expiration
+- [ ] Invite link UI
+
+**День 5-7: Role Management**
+- [ ] Roles: Owner, Admin, Member, Viewer
+- [ ] Role-based permissions matrix
+- [ ] Permission checks in API guards
+- [ ] Role assignment UI
+- [ ] Role restrictions enforcement
 
 **День 8-10: Team Management**
-- [ ] Team member list
-- [ ] Role management (Owner, Admin, Member)
+- [ ] Team member list page
 - [ ] Remove team members
-- [ ] Change roles
+- [ ] Change member roles
+- [ ] Team settings page
+- [ ] Organization profile editing
 
 **Acceptance Criteria:**
-- [ ] Chat має reactions
-- [ ] Reply threads працюють
-- [ ] Можна запросити в команду
-- [ ] Roles працюють
-- [ ] Professional UX
+- [ ] Invite links work
+- [ ] Email invites sent
+- [ ] Roles restrict access properly
+- [ ] Team management UI complete
+- [ ] Owner can manage all members
 
 ---
 
-## 📦 v0.8 - AI Analysis + Morning Brief
+## 📦 v0.8 - AI Analysis + Chat Polish
 
 **Час:** 8 днів  
 **Статус:** 📋 PLANNED  
-**Deliverable:** ✅ AI analyzes data daily + sends brief
+**Deliverable:** ✅ AI analyzes data + polished chat UX
 
 **День 1-3: AI Daily Analysis**
 - [ ] Scheduled jobs (BullMQ)
@@ -414,17 +575,21 @@ AI як повноцінний член команди - можна @mention в 
 - [ ] Recommendations
 - [ ] Email delivery (SendGrid)
 
-**День 6-8: AI Context Enhancement**
-- [ ] GSC data access for AI
-- [ ] Ahrefs data access for AI
-- [ ] Project-specific recommendations
-- [ ] Historical data analysis
+**День 6-8: Chat Polish + Time Tracking**
+- [ ] Message reactions (emoji)
+- [ ] Reply threads
+- [ ] Message editing
+- [ ] Message deletion
+- [ ] File attachments
+- [ ] Time Tracking UI (start/stop timer)
+- [ ] Task attachments
 
 **Acceptance Criteria:**
 - [ ] AI analyzes changes daily
 - [ ] Morning brief generated at 7:00 AM
 - [ ] Emails delivered to users
-- [ ] AI має доступ до project data
+- [ ] Chat reactions work
+- [ ] Time tracking works
 
 ---
 
@@ -455,6 +620,7 @@ AI як повноцінний член команди - можна @mention в 
 - [ ] Empty states with illustrations
 - [ ] Smooth transitions
 - [ ] Mobile responsiveness final check
+- [ ] Task history/audit log
 - [ ] Dark mode (optional)
 
 **День 9-10: Security Hardening**
@@ -521,16 +687,20 @@ AI як повноцінний член команди - можна @mention в 
 - ✅ v0.3 - Chat System (7 days)
 - ✅ v0.3.1 - Production Ready (1 day)
 - ✅ v0.4 - AI Teammate (3 days)
+- ✅ v0.5 - Projects (8 days)
+- ✅ v0.6 - Tasks & Backlog (7 days)
 
-**Total completed:** 21 days
+**Total completed:** 36 days
 
 **Remaining:**
-- 📋 v0.5 - Projects (8 days) ← NEXT!
-- 📋 v0.6-v1.0 (52 days)
+- 📋 v0.7 - Roles & Invite (10 days) ← NEXT!
+- 📋 v0.8 - AI Analysis (8 days)
+- 📋 v0.9 - Notifications (10 days)
+- 📋 v1.0 - Launch Prep (10 days)
 
-**Total remaining:** 60 days
+**Total remaining:** 38 days
 
-**Progress:** 21/81 days = **26%** complete
+**Progress:** 36/81 days = **44%** complete 🎉
 
 ---
 
@@ -543,13 +713,13 @@ AI як повноцінний член команди - можна @mention в 
 | 22.11.2025 | v0.3 Complete | ✅ |
 | 23.11.2025 | v0.3.1 Complete | ✅ |
 | 26.11.2025 | v0.4 Complete (AI Teammate) | ✅ |
-| 04.12.2025 | v0.5 Complete (Projects) | 📋 |
-| 11.12.2025 | v0.6 Complete (Tasks) | 📋 |
-| 21.12.2025 | v0.7 Complete (Chat Polish) | 📋 |
-| 29.12.2025 | v0.8 Complete (AI Analysis) | 📋 |
-| 08.01.2026 | v0.9 Complete (Notifications) | 📋 |
-| 18.01.2026 | v1.0 Complete (Launch Prep) | 📋 |
-| **25.01.2026** | **🎉 PUBLIC LAUNCH** | 📋 |
+| 28.11.2025 | v0.5 Complete (Projects) | ✅ |
+| 30.11.2025 | v0.6 Complete (Tasks) | ✅ |
+| 10.12.2025 | v0.7 Complete (Roles & Invite) | 📋 |
+| 18.12.2025 | v0.8 Complete (AI Analysis) | 📋 |
+| 28.12.2025 | v0.9 Complete (Notifications) | 📋 |
+| 07.01.2026 | v1.0 Complete (Launch Prep) | 📋 |
+| **15.01.2026** | **🎉 PUBLIC LAUNCH** | 📋 |
 
 ---
 
@@ -576,20 +746,20 @@ AI як повноцінний член команди - можна @mention в 
 
 ## 🚀 Next Steps
 
-1. ✅ v0.3.1 Production Ready - DONE!
-2. ✅ v0.4 AI Teammate - DONE!
-3. **Start v0.5 - Projects** 📁 ← NEXT!
-4. **Demo для інвесторів** (after v0.5)
+1. ✅ v0.5 Projects - DONE!
+2. ✅ v0.6 Tasks & Backlog - DONE!
+3. **Start v0.7 - Roles & Invite** 👥 ← NEXT!
+4. **Demo для інвесторів** (після v0.7)
 
-**Focus:** Projects + Google integrations для повноцінного demo!
-
----
-
-**Last Updated:** 26.11.2025  
-**Current Version:** v0.4 ✅  
-**Next Version:** v0.5 - Projects 📁  
-**Days to Launch:** 60 days
+**Focus:** Invite system + Role-based access для team collaboration!
 
 ---
 
-🎯 **Let's build the future of digital marketing!** 🚀
+**Last Updated:** 30.11.2025  
+**Current Version:** v0.6 ✅  
+**Next Version:** v0.7 - Roles & Invite 👥  
+**Days to Launch:** 45 days
+
+---
+
+🎯 **v0.6 Complete! Almost halfway to launch!** 🚀
