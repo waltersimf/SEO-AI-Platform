@@ -1,7 +1,7 @@
 # Forgeline - Executive Summary
 
-**Версія:** 2.2  
-**Дата:** 13 листопада 2025  
+**Версія:** 2.3  
+**Дата:** 30 листопада 2025  
 
 ---
 
@@ -37,6 +37,7 @@ Digital marketing спеціаліст (SEO/PPC/SMM) щодня витрачає
 - **Комунікація** — в Slack або Microsoft Teams
 - **Задачі** — в Jira, Trello, Asana
 - **Звіти** — вручну в Google Docs/Sheets
+- **Браузер** — 10+ розширень (Ahrefs Toolbar, MozBar, Wappalyzer...)
 
 **Результат:** Постійне переключення між вкладками, втрата контексту, дублювання роботи.
 
@@ -44,7 +45,7 @@ Digital marketing спеціаліст (SEO/PPC/SMM) щодня витрачає
 
 ## ✨ Рішення
 
-### 🔥 Killer Feature: AI Teammate
+### 🔥 Killer Feature #1: AI Teammate
 
 **Перше в індустрії** — AI як повноцінний член команди:
 
@@ -76,12 +77,74 @@ Ivan: "@AI що ти думаєш про це?"
 
 **Це як Grok на Twitter, але для маркетинг команд!**
 
+### 🧠 Killer Feature #2: Knowledge Base
+
+**AI що працює по-вашому** — AI Teammate навчається стандартам вашого агентства:
+
+```
+БЕЗ Knowledge Base:
+User: "@AI зроби аудит site-a.com"
+AI: *робить generic аудит з загальних знань*
+
+З Knowledge Base:
+User: "@AI зроби аудит site-a.com"
+AI: *читає ваш шаблон аудиту*
+    *читає ваш чекліст перевірки*
+    *робить аудит ПО ВАШИМ СТАНДАРТАМ*
+    *форматує по вашому шаблону*
+```
+
+**Два типи контенту:**
+- 📚 **Для команди:** SOPs, гайди, кейси, навчальні матеріали
+- 🤖 **Для AI:** Шаблони звітів, інструкції, чеклісти, промпти
+
+**Технологія:** RAG (Retrieval-Augmented Generation) на базі pgvector + Claude API.
+
+**Результат:** AI Teammate не просто відповідає — він працює як ваш досвідчений співробітник, який знає всі процеси агентства.
+
+### 🌐 Killer Feature #3: Internal SEO Browser
+
+**Один браузер замість 10 розширень:**
+
+**Проблема:** Типовий SEO має 10+ браузерних розширень:
+- Ahrefs Toolbar, SEMrush, MozBar, Serpstat
+- SimilarWeb, Wappalyzer, PageSpeed Insights...
+
+**Результат:** Повільний браузер, конфлікти, розрізнені дані.
+
+**Наше рішення:**
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Forgeline Browser                          [URL bar]   │
+├───────────────────────────────┬─────────────────────────┤
+│  Google SERP Results          │ 📊 SERP Analysis        │
+│                               │ KD: 54 | Vol: 42K       │
+│  1. ahrefs.com                │ CPC: $2.15              │
+│     DR: 90 | BL: 5.5M         │                         │
+│                               │ 🔗 Quick Actions        │
+│  2. semrush.com               │ [Add to project]        │
+│     DR: 91 | BL: 4.2M         │ [Create task]           │
+│                               │ [Analyze with AI]       │
+└───────────────────────────────┴─────────────────────────┘
+```
+
+**Що показуємо (через API):**
+- DR, Backlinks, Traffic (Ahrefs/Serpstat)
+- Keyword difficulty, Volume
+- Core Web Vitals (безкоштовно)
+- Technologies, Meta tags
+
+**Унікальність:** Цього немає ні в Ahrefs, ні в SEMrush — вони мають тільки розширення, не вбудований браузер в платформу.
+
 ### Один інструмент замість купи розрізнених
 
 **Що ми ЗАМІНЮЄМО:**
 - ✅ **Slack/Teams** → Вбудований командний месенджер
-- ✅ **Jira/Trello/Asana** → Таск-менеджер з AI
+- ✅ **Jira/Trello/Asana** → Таск-менеджер з AI auto-planning
 - ✅ **Частково Google Docs** → AI генерує звіти автоматично
+- ✅ **Notion/Confluence** → Knowledge Base для команди та AI
+- ✅ **10+ браузерних розширень** → Internal SEO Browser
 
 **Що ми ІНТЕГРУЄМО (не замінюємо):**
 - 🔌 Google Search Console, Analytics (обов'язково)
@@ -96,6 +159,8 @@ Ivan: "@AI що ти думаєш про це?"
 - **Управління задачами** — AI планує тиждень автоматично
 - **Автозвіти** — AI пише звіти для клієнтів
 - **Дашборд з віджетами** — всі метрики в одному місці
+- **Knowledge Base** — AI працює по стандартах вашого агентства
+- **SEO Browser** — всі метрики в одному браузері
 
 ### Приклад типового дня
 
@@ -131,29 +196,41 @@ Ivan: "@AI що ти думаєш про це?"
 ### Team OS Concept
 
 ```
-┌─────────────────────────────────────────┐
-│ Marketing Team Operating System         │
-├─────────────────────────────────────────┤
-│                                         │
-│ 👥 Team Layer (як Slack)                │
-│ ├─ Messaging (real-time)                │
-│ ├─ AI Teammate (@mention)               │
-│ ├─ Notifications (розумні алерти)       │
-│ └─ Task Management                      │
-│                                         │
-│ 📊 Data Layer (як Ahrefs + SEMrush)     │
-│ ├─ Google Search Console / Analytics    │
-│ ├─ Site Audits (краулер)                │
-│ ├─ Keyword Research (опціонально)       │
-│ └─ Backlinks Analysis (опціонально)     │
-│                                         │
-│ 🤖 AI Layer (унікальне!)                │
-│ ├─ Аналіз даних (Claude API)            │
-│ ├─ Генерація задач                      │
-│ ├─ Написання звітів                     │
-│ └─ Командний асистент                   │
-│                                         │
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│           Marketing Team Operating System               │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│ 👥 Team Layer (як Slack)                                │
+│ ├─ Messaging (real-time)                                │
+│ ├─ AI Teammate (@mention)                               │
+│ ├─ Notifications (розумні алерти)                       │
+│ └─ Task Management (AI auto-planning)                   │
+│                                                         │
+│ 📊 Data Layer (як Ahrefs + SEMrush)                     │
+│ ├─ Google Search Console / Analytics                    │
+│ ├─ Site Audits (краулер)                                │
+│ ├─ Keyword Research (опціонально)                       │
+│ └─ Backlinks Analysis (опціонально)                     │
+│                                                         │
+│ 🧠 Knowledge Layer (як NotebookLM)                      │
+│ ├─ SOPs та гайди команди                                │
+│ ├─ Шаблони для AI                                       │
+│ ├─ Чеклісти та стандарти                                │
+│ └─ News Monitoring + AI Digest                          │
+│                                                         │
+│ 🌐 Browser Layer (унікальне!)                           │
+│ ├─ Вбудований SEO браузер                               │
+│ ├─ Overlay метрик (DR, BL, Traffic)                     │
+│ ├─ SERP analysis                                        │
+│ └─ Quick actions (add to project, create task)          │
+│                                                         │
+│ 🤖 AI Layer (Claude API)                                │
+│ ├─ Аналіз даних                                         │
+│ ├─ Генерація задач                                      │
+│ ├─ Написання звітів                                     │
+│ └─ RAG з Knowledge Base                                 │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ### Технологія
@@ -164,6 +241,7 @@ Ivan: "@AI що ти думаєш про це?"
 - Frontend: Next.js 14 + shadcn/ui (React)
 - Backend: NestJS + PostgreSQL + Redis
 - AI: Claude API (Anthropic)
+- Vector DB: pgvector (для Knowledge Base)
 - Real-time: WebSockets
 - Crawler: Playwright (server-side)
 
@@ -212,7 +290,7 @@ Ivan: "@AI що ти думаєш про це?"
 Infrastructure: $10-100/міс
 API витрати: $0 (користувачі платять)
 Support: $0 (community для старту)
-────────────────────────────
+────────────────────────────────
 РАЗОМ: $10-100/міс
 
 Break-even: 1-3 платні користувачі 🚀
@@ -237,7 +315,7 @@ Break-even: 1-3 платні користувачі 🚀
 
 **Наша перевага:**
 - 🎯 **Flat-fee** замість per-user (команди ростуть → конкуренти дорожчають, ми — ні!)
-- 🚀 **Не тільки задачі** — Task Manager + Messaging + AI + SEO Tools в одному
+- 🚀 **Не тільки задачі** — Task Manager + Messaging + AI + SEO Tools + Knowledge Base + Browser в одному
 - 💰 **Дешевше** — $149 за 10 users vs $200 у Linear
 
 #### Тарифи
@@ -248,7 +326,7 @@ Break-even: 1-3 платні користувачі 🚀
 |------|----------|---------|-------|-------------|-----------------|
 | **Free** | $0 | 1 | 3 | ❌ | Dashboard, Google APIs |
 | **Pro** | $49 | 10 | **5** | **+$9/user** | **AI Teammate**, Tasks, Reports |
-| **Agency** | $149 | 50 | 10 | +$7/user | White-label, API, Advanced |
+| **Agency** | $149 | 50 | 10 | +$7/user | White-label, API, Knowledge Base, Browser |
 | **Enterprise** | $499 | ∞ | ∞ | ✅ Included | Custom, SLA, Dedicated |
 
 **Annual Plans (2 МІСЯЦІ БЕЗКОШТОВНО!! 🎉):**
@@ -273,6 +351,8 @@ Break-even: 1-3 платні користувачі 🚀
 ❌ Немає messaging
 ❌ Немає AI
 ❌ Немає SEO tools
+❌ Немає Knowledge Base
+❌ Немає вбудованого браузера
 ```
 
 **Наш Agency (10 users) = $149/міс:**
@@ -280,6 +360,8 @@ Break-even: 1-3 платні користувачі 🚀
 ✅ Task Manager (як у Linear)
 ✅ Team Messaging (як Slack)
 ✅ AI Teammate 🔥 (як Grok на Twitter)
+✅ Knowledge Base 🧠 (як NotebookLM)
+✅ SEO Browser 🌐 (заміна 10 extensions)
 ✅ SEO Tools інтеграції
 ✅ Автоматичні звіти
 ✅ Дешевше на $51/міс!
@@ -371,7 +453,41 @@ ARR (річний дохід): $189,660/рік
 
 **Чому це важливо:** Команда працює там де дані. Не треба переключатись між Slack → Ahrefs → Jira → Google Docs.
 
-### 2. Розумні сповіщення
+### 2. Knowledge Base 🧠
+
+**RAG-система для вашого агентства:**
+- Завантаження документів (PDF, DOCX, Google Docs)
+- Автоматичне чанкування та embedding
+- Vector search для релевантного контексту
+- AI Teammate читає ваші інструкції
+
+**Два типи контенту:**
+- **Для людей:** SOPs, гайди, кейси, онбординг
+- **Для AI:** Шаблони, інструкції, чеклісти, промпти
+
+**News Monitoring (суб-фіча):**
+- Моніторинг SEO блогів та новин
+- AI фільтрує за релевантністю
+- Зранку — digest в team chat
+- "Add to KB" для корисного контенту
+
+### 3. Internal SEO Browser 🌐
+
+**Заміна 10+ браузерних розширень:**
+- Ahrefs Toolbar, SEMrush, MozBar
+- Serpstat, SimilarWeb, Wappalyzer
+- PageSpeed Insights, Check My Links...
+
+**Функції:**
+- SERP analysis з overlay метрик
+- Domain metrics (DR, BL, Traffic)
+- Keyword data (KD, Volume, CPC)
+- Page analysis (meta, H1-H6, CWV)
+- Quick actions (add to project, create task)
+
+**Унікальність:** Ніхто з конкурентів не має вбудованого браузера в платформу!
+
+### 4. Розумні сповіщення
 
 **Стек нотіфікацій (floating справа):**
 - Критичні алерти спливають автоматично
@@ -388,7 +504,7 @@ ARR (річний дохід): $189,660/рік
     [View Details] [Create Tasks] [×]
 ```
 
-### 3. Таск-менеджер з AI
+### 5. Таск-менеджер з AI
 
 **Заміна Jira/Trello/Asana для маркетингу:**
 - Schedule + Backlog + Done views
@@ -400,7 +516,7 @@ ARR (річний дохід): $189,660/рік
 
 **Killer feature:** AI розуміє "Зроби семантику на вихідні" → планує → виконує → відправляє результат в Telegram!
 
-### 4. Дашборд з віджетами
+### 6. Дашборд з віджетами
 
 **Налаштовуваний робочий простір:**
 - Google Search Console widget
@@ -413,7 +529,7 @@ ARR (річний дохід): $189,660/рік
 
 **Drag & drop** для персоналізації (Phase 2)
 
-### 5. Збір та аналіз даних
+### 7. Збір та аналіз даних
 
 **Автоматично щодня:**
 - Google Search Console (clicks, impressions, errors)
@@ -427,7 +543,7 @@ ARR (річний дохід): $189,660/рік
 - Рекомендації
 - Автоматично генерує задачі
 
-### 6. Краулер сайтів
+### 8. Краулер сайтів
 
 **Server-side краулінг:**
 - До 10K+ сторінок
@@ -437,7 +553,7 @@ ARR (річний дохід): $189,660/рік
 - Core Web Vitals
 - Background jobs (не блокує UI)
 
-### 7. Звіти та експорт
+### 9. Звіти та експорт
 
 **AI генерує звіти:**
 - Google Docs (форматовані)
@@ -486,6 +602,25 @@ ARR (річний дохід): $189,660/рік
 - Ahrefs integration
 - Custom dashboards
 - Додаткові можливості AI
+
+### Post-Launch Roadmap (v1.1+)
+
+**v1.1 — Knowledge Base (Лютий 2026)**
+- RAG система на базі pgvector
+- Upload документів (PDF, DOCX, Google Docs)
+- AI Teammate читає внутрішні інструкції
+- News Monitoring з AI digest
+
+**v1.2 — Internal SEO Browser (Березень 2026)**
+- Вбудований браузер з overlay метрик
+- SERP analysis в реальному часі
+- Quick actions (add to project, create task)
+- Заміна 10+ браузерних розширень
+
+**v1.3 — Templates Marketplace (Квітень 2026)**
+- Бібліотека готових шаблонів
+- Community templates
+- Premium templates (monetization)
 
 ---
 
@@ -596,9 +731,11 @@ ARR (річний дохід): $189,660/рік
 **З платформою команда з 10 людей може робити роботу 20-30:**
 
 - AI бере на себе рутину
+- Knowledge Base зберігає всі процеси
 - Автоматизація звітів
 - Миттєві алерти замість щоденних перевірок
 - Таск-менеджер планує автоматично
+- SEO Browser економить час на дослідження
 
 **Результат:** Агентства що використовують платформу стають набагато конкурентнішими.
 
@@ -632,6 +769,16 @@ ARR (річний дохід): $189,660/рік
 - ❌ Вони: Ручне налаштування
 - ✅ Ми: AI генерує автоматично
 
+**Knowledge Management (Notion, Confluence):**
+- ✅ Вони: Добрі для документації
+- ❌ Вони: AI не читає ваші процеси
+- ✅ Ми: RAG система — AI працює по вашим стандартам
+
+**Browser Extensions (Ahrefs Toolbar, MozBar):**
+- ✅ Вони: Показують метрики
+- ❌ Вони: Розрізнені, конфлікти, окремо від платформи
+- ✅ Ми: Вбудований браузер з quick actions
+
 ### Ahrefs, SEMrush, Serpstat — партнери, не конкуренти
 
 **Важливо розуміти:**
@@ -642,7 +789,7 @@ ARR (річний дохід): $189,660/рік
 
 **Наша унікальність:**
 ```
-Task Manager + Team Chat + AI + SEO Tools Integration = 
+Task Manager + Team Chat + AI + SEO Tools + Knowledge Base + Browser = 
 = НОВА КАТЕГОРІЯ: Marketing Team OS
 ```
 
@@ -655,6 +802,8 @@ Task Manager + Team Chat + AI + SEO Tools Integration =
    - Project management (Jira)
    - SEO domain knowledge (Ahrefs)
 3. BYOK модель не очевидна (здається що треба платити за API)
+4. Knowledge Base + RAG — технологія стала доступною нещодавно
+5. Internal Browser — ніхто не думав про заміну розширень
 
 ---
 
@@ -665,15 +814,15 @@ Task Manager + Team Chat + AI + SEO Tools Integration =
 - Підтверджено інтерв'ю та власним досвідом
 - Ринок активно шукає рішення
 
-### 2. Killer Feature = Захист від конкурентів
+### 2. Три Killer Features = Захист від конкурентів
 - **AI Teammate** — це не просто фіча, це нова категорія
-- Існуючі гравці не можуть швидко скопіювати:
-  - Ahrefs/SEMrush фокусуються на даних, не на командах
-  - Slack/Teams не мають SEO експертизи
-  - Jira/Asana не мають AI інтеграції з маркетинг даними
+- **Knowledge Base** — AI що працює по-вашому, не generic
+- **Internal Browser** — унікальне рішення, якого немає ні в кого
+- Існуючі гравці не можуть швидко скопіювати все разом
 
 ### 3. Perfect Timing
 - AI технологія готова (Claude Sonnet 4 достатньо хороший)
+- RAG технологія доступна (pgvector, embeddings)
 - Ринок готовий (всі чули про AI, хочуть використовувати)
 - Remote teams потребують collaboration tools
 - SEO індустрія зріла і готова платити
@@ -692,6 +841,7 @@ Task Manager + Team Chat + AI + SEO Tools Integration =
 
 ### 6. Захист від конкуренції
 - **Історичні дані:** Чим довше користувач з нами, тим цінніша платформа
+- **Knowledge Base:** Чим більше документів завантажено, тим важче піти
 - **Ефект перемикання:** Вся історія задач, чатів, звітів
 - **Покращення з часом:** AI промпти стають кращими з використанням
 - **Brand equity:** "Slack for marketing teams"
@@ -704,6 +854,8 @@ Task Manager + Team Chat + AI + SEO Tools Integration =
 - **MAU** (Активних користувачів/міс) — target: 100+ до 6 міс
 - **DAU/MAU** ratio — target: >30%
 - **AI queries** — кількість запитів до AI teammate на користувача
+- **KB documents** — кількість документів в Knowledge Base
+- **Browser sessions** — використання Internal Browser
 - **Заощаджений час** — середня економія годин на користувача
 - **NPS** (Net Promoter Score) — target: >50
 
@@ -718,6 +870,7 @@ Task Manager + Team Chat + AI + SEO Tools Integration =
 - **Uptime** — target: 99.9%
 - **API response time** — target: <200ms
 - **AI response time** — target: <3s
+- **Vector search time** — target: <500ms
 - **Error rate** — target: <0.1%
 
 ---
@@ -771,10 +924,12 @@ Task Manager + Team Chat + AI + SEO Tools Integration =
 
 ## 🎯 Висновок
 
-**SEO AI Platform** — це не ще один маркетинг інструмент.
+**Forgeline** — це не ще один маркетинг інструмент.
 
-Це **перша операційна система для маркетинг-команд** з AI teammate:
-- 🤖 **AI як член команди** (killer feature!)
+Це **перша операційна система для маркетинг-команд** з трьома killer features:
+- 🤖 **AI Teammate** — AI як член команди (killer feature #1)
+- 🧠 **Knowledge Base** — AI працює по-вашому (killer feature #2)
+- 🌐 **Internal Browser** — 10 розширень в одному (killer feature #3)
 - 💬 Командна робота (заміна Slack)
 - 📊 Централізація даних (10+ tools → 1)
 - ✅ Автоматизація задач (AI планує та виконує)
@@ -782,7 +937,7 @@ Task Manager + Team Chat + AI + SEO Tools Integration =
 
 ### Чому зараз?
 
-✅ **Технологія готова** — Claude API достатньо хороший  
+✅ **Технологія готова** — Claude API + pgvector достатньо хороші  
 ✅ **Ринок готовий** — remote teams потребують collaboration  
 ✅ **Конкуренція спить** — Ahrefs/SEMrush фокусуються на data, не на teams  
 ✅ **Економіка працює** — 96% маржа, LTV/CAC = 4-12x  
@@ -799,13 +954,6 @@ Task Manager + Team Chat + AI + SEO Tools Integration =
 **Ринок готовий. Технологія готова. Економіка працює.**
 
 **Час будувати Marketing Team OS! 🚀**
-
----
-
-**Контакти:**  
-📧 Email: [TBD]  
-🌐 Website: [TBD]  
-📄 Full TechDoc: `SEO_AI_Platform_TechDoc.md`
 
 ---
 
