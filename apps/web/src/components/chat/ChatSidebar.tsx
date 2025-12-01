@@ -83,10 +83,12 @@ export function ChatSidebar({
         onClick={(e) => e.stopPropagation()}
         className={cn(
           'fixed top-0 right-0 h-full bg-white border-l border-gray-200 shadow-xl z-40',
-          'transform transition-transform duration-300 ease-out',
+          'transform transition-all duration-300 ease-out',
           state.isOpen ? 'translate-x-0' : 'translate-x-full',
           // Width based on mode - Narrow: 400px, Wide: 50vw (min 700px, max 900px)
-          isWide ? 'w-[50vw] min-w-[700px] max-w-[900px]' : 'w-full md:w-[400px]'
+          isWide
+            ? 'w-[50vw] min-w-[700px] max-w-[900px]'
+            : 'w-[400px] max-w-full'
         )}
       >
         {/* Narrow Mode */}

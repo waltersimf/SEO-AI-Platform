@@ -18,7 +18,6 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Projects', href: '/dashboard/projects', icon: FolderKanban },
   { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare },
-  { name: 'Chat', href: '/chat', icon: MessageSquare, disabled: true, badge: 'v0.2+' },
   { name: 'Knowledge Base', href: '/knowledge', icon: BookOpen, disabled: true, badge: 'v1.1' },
   { name: 'Browser', href: '/browser', icon: Globe, disabled: true, badge: 'v1.2' },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
