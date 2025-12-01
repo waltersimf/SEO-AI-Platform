@@ -99,6 +99,11 @@ export function Sidebar() {
             Sign Out
           </button>
         </div>
+
+        {/* Version */}
+        <div className="px-6 py-2">
+          <p className="text-xs text-muted-foreground">v0.3.5 Beta</p>
+        </div>
       </div>
     </aside>
   );
