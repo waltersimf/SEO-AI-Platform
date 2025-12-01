@@ -488,7 +488,7 @@ export function SidebarChatWindow({
                   message.author.id === userId ? 'text-blue-100' : 'text-gray-400'
                 )}
               >
-                {new Date(message.createdAt).toLocaleTimeString('en-US', {
+                {new Date(message.createdAt).toLocaleTimeString('uk-UA', {
                   hour: '2-digit',
                   minute: '2-digit',
                 })}
@@ -549,7 +549,7 @@ export function SidebarChatWindow({
         {mentionDropdownVisible && (
           <div className="absolute bottom-full left-3 right-3 mb-2 max-h-48 overflow-y-auto bg-white border rounded-lg shadow-lg z-10">
             {getFilteredUsers().length === 0 ? (
-              <div className="px-4 py-2 text-sm text-gray-500">No users found</div>
+              <div className="px-4 py-2 text-sm text-gray-500">Користувачів не знайдено</div>
             ) : (
               getFilteredUsers().map((user, index) => (
                 <button
@@ -589,7 +589,7 @@ export function SidebarChatWindow({
             value={inputValue}
             onChange={e => handleTyping(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={recipientName ? `Message ${recipientName}...` : 'Type a message...'}
+            placeholder={recipientName ? `Повідомлення для ${recipientName}...` : 'Введіть повідомлення...'}
             className="flex-1 px-4 py-2.5 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors"
           />
           <button

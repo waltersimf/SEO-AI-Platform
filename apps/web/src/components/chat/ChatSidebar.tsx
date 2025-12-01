@@ -100,7 +100,7 @@ export function ChatSidebar({
             {/* Header - List View */}
             {state.view === 'list' && (
               <div className="flex items-center justify-between px-4 h-14 border-b border-gray-200 flex-shrink-0">
-                <h2 className="text-xl font-semibold text-gray-900">Messages</h2>
+                <h2 className="text-xl font-semibold text-gray-900">Повідомлення</h2>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={toggleMode}
@@ -141,7 +141,7 @@ export function ChatSidebar({
                     <div>
                       <p className="text-sm font-semibold text-gray-900">{state.activeChatName}</p>
                       <p className="text-xs text-gray-500">
-                        {state.activeChatOnline ? 'Active now' : 'Offline'}
+                        {state.activeChatOnline ? 'Онлайн' : 'Офлайн'}
                       </p>
                     </div>
                   </div>
@@ -182,7 +182,7 @@ export function ChatSidebar({
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-500">
-                  Select a chat to start messaging
+                  Оберіть чат, щоб почати спілкування
                 </div>
               )}
             </div>
@@ -196,7 +196,7 @@ export function ChatSidebar({
             <div className="w-[300px] border-r border-gray-200 flex flex-col flex-shrink-0">
               {/* Header */}
               <div className="flex items-center justify-between px-4 h-14 border-b border-gray-200 flex-shrink-0">
-                <h2 className="text-lg font-semibold text-gray-900">Messages</h2>
+                <h2 className="text-lg font-semibold text-gray-900">Повідомлення</h2>
               </div>
 
               {/* Chat List */}
@@ -227,7 +227,7 @@ export function ChatSidebar({
                     <div>
                       <p className="text-sm font-semibold text-gray-900">{state.activeChatName}</p>
                       <p className="text-xs text-gray-500">
-                        {state.activeChatOnline ? 'Active now' : 'Offline'}
+                        {state.activeChatOnline ? 'Онлайн' : 'Офлайн'}
                       </p>
                     </div>
                   </div>
@@ -266,9 +266,9 @@ export function ChatSidebar({
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                       <span className="text-3xl">💬</span>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-700">Select a Conversation</h3>
+                    <h3 className="text-lg font-semibold text-gray-700">Оберіть розмову</h3>
                     <p className="text-sm text-gray-500 mt-1">
-                      Choose a chat from the list to start messaging
+                      Виберіть чат зі списку, щоб почати спілкування
                     </p>
                   </div>
                 )}

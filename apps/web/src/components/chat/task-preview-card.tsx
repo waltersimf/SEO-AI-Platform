@@ -64,17 +64,17 @@ interface TeamMember {
 }
 
 const priorityOptions = [
-  { value: 'low', label: 'Low', color: 'bg-green-100 text-green-700' },
-  { value: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-700' },
-  { value: 'high', label: 'High', color: 'bg-orange-100 text-orange-700' },
-  { value: 'critical', label: 'Critical', color: 'bg-red-100 text-red-700' },
+  { value: 'low', label: 'Низький', color: 'bg-green-100 text-green-700' },
+  { value: 'medium', label: 'Середній', color: 'bg-yellow-100 text-yellow-700' },
+  { value: 'high', label: 'Високий', color: 'bg-orange-100 text-orange-700' },
+  { value: 'critical', label: 'Критичний', color: 'bg-red-100 text-red-700' },
 ];
 
 const recurrenceOptions = [
-  { value: 'none', label: 'Does not repeat' },
-  { value: 'daily', label: 'Daily' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'monthly', label: 'Monthly' },
+  { value: 'none', label: 'Не повторюється' },
+  { value: 'daily', label: 'Щодня' },
+  { value: 'weekly', label: 'Щотижня' },
+  { value: 'monthly', label: 'Щомісяця' },
 ];
 
 export function TaskPreviewCard({
@@ -135,7 +135,7 @@ export function TaskPreviewCard({
 
   const handleCreateTask = async () => {
     if (!title.trim()) {
-      setError('Title is required');
+      setError('Назва обов\'язкова');
       return;
     }
 
@@ -172,7 +172,7 @@ export function TaskPreviewCard({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create task');
+        throw new Error('Не вдалося створити завдання');
       }
 
       const result = await response.json();
@@ -204,7 +204,7 @@ export function TaskPreviewCard({
       });
     } catch (err) {
       console.error('Error creating task:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create task');
+      setError(err instanceof Error ? err.message : 'Не вдалося створити завдання');
     } finally {
       setIsCreating(false);
     }
@@ -217,8 +217,8 @@ export function TaskPreviewCard({
           <CheckCircle className="h-5 w-5" />
           <span className="font-medium">
             {createdTaskCount > 1
-              ? `${createdTaskCount} tasks created for all team members!`
-              : 'Task created successfully!'}
+              ? `${createdTaskCount} завдань створено для всіх учасників команди!`
+              : 'Завдання успішно створено!'}
           </span>
         </div>
         {createdTaskCount === 1 && (
@@ -226,7 +226,7 @@ export function TaskPreviewCard({
             href={`/dashboard/tasks/${createdTaskId}`}
             className="inline-flex items-center gap-1 mt-2 text-sm text-green-600 hover:text-green-700 underline"
           >
-            View Task
+            Переглянути завдання
           </a>
         )}
         {createdTaskCount > 1 && (
@@ -234,7 +234,7 @@ export function TaskPreviewCard({
             href="/dashboard/tasks"
             className="inline-flex items-center gap-1 mt-2 text-sm text-green-600 hover:text-green-700 underline"
           >
-            View Tasks
+            Переглянути завдання
           </a>
         )}
       </div>
@@ -249,7 +249,7 @@ export function TaskPreviewCard({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-xs">
-            Task Preview
+            Попередній перегляд завдання
           </Badge>
           {selectedPriority && (
             <Badge className={cn('text-xs', selectedPriority.color)}>
@@ -271,13 +271,13 @@ export function TaskPreviewCard({
       {/* Title Input */}
       <div className="mb-4">
         <Label htmlFor="task-title" className="text-xs text-muted-foreground mb-1 block">
-          Title
+          Назва
         </Label>
         <Input
           id="task-title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Task title"
+          placeholder="Назва завдання"
           className="font-medium"
         />
       </div>
@@ -295,10 +295,18 @@ export function TaskPreviewCard({
             className="flex items-center gap-2 text-sm cursor-pointer"
           >
             <Users className="h-4 w-4" />
-            Assign to all team members
+            Призначити всім учасникам команди
             {teamMembers.length > 0 && (
               <span className="text-xs text-muted-foreground">
-                ({includeSelf ? teamMembers.length : teamMembers.length - 1} member{(includeSelf ? teamMembers.length : teamMembers.length - 1) !== 1 ? 's' : ''}{!includeSelf && ', excluding you'})
+                ({includeSelf ? teamMembers.length : teamMembers.length - 1} {(() => {
+                  const n = includeSelf ? teamMembers.length : teamMembers.length - 1;
+                  const lastTwo = n % 100;
+                  const lastOne = n % 10;
+                  if (lastTwo >= 11 && lastTwo <= 19) return 'учасників';
+                  if (lastOne === 1) return 'учасник';
+                  if (lastOne >= 2 && lastOne <= 4) return 'учасники';
+                  return 'учасників';
+                })()}{!includeSelf && ', крім вас'})
               </span>
             )}
           </Label>
@@ -316,7 +324,7 @@ export function TaskPreviewCard({
               htmlFor="include-self"
               className="text-sm cursor-pointer text-muted-foreground"
             >
-              Include myself
+              Включити себе
             </Label>
           </div>
         )}
@@ -327,14 +335,14 @@ export function TaskPreviewCard({
         {/* Assignee */}
         <div className={cn(assignToAll && 'opacity-50 pointer-events-none')}>
           <Label htmlFor="task-assignee" className="text-xs text-muted-foreground mb-1 block">
-            Assignee
+            Виконавець
           </Label>
           <Select value={assigneeId} onValueChange={setAssigneeId} disabled={assignToAll}>
             <SelectTrigger id="task-assignee" className="h-9">
-              <SelectValue placeholder={loadingMembers ? 'Loading...' : 'Unassigned'} />
+              <SelectValue placeholder={loadingMembers ? 'Завантаження...' : 'Не призначено'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="unassigned">Unassigned</SelectItem>
+              <SelectItem value="unassigned">Не призначено</SelectItem>
               {teamMembers
                 .filter((member) => member.id)
                 .map((member) => (
@@ -349,7 +357,7 @@ export function TaskPreviewCard({
         {/* Due Date */}
         <div>
           <Label htmlFor="task-duedate" className="text-xs text-muted-foreground mb-1 block">
-            Due Date
+            Дедлайн
           </Label>
           <Input
             id="task-duedate"
@@ -363,7 +371,7 @@ export function TaskPreviewCard({
         {/* Scheduled Time */}
         <div>
           <Label htmlFor="task-time" className="text-xs text-muted-foreground mb-1 block">
-            Time
+            Час
           </Label>
           <TimePicker value={scheduledTime} onChange={setScheduledTime} />
         </div>
@@ -371,7 +379,7 @@ export function TaskPreviewCard({
         {/* Estimated Time */}
         <div>
           <Label htmlFor="task-estimate" className="text-xs text-muted-foreground mb-1 block">
-            Est. Time (hours)
+            Оцінка (години)
           </Label>
           <Input
             id="task-estimate"
@@ -388,7 +396,7 @@ export function TaskPreviewCard({
         {/* Priority */}
         <div>
           <Label htmlFor="task-priority" className="text-xs text-muted-foreground mb-1 block">
-            Priority
+            Пріоритет
           </Label>
           <Select value={priority} onValueChange={setPriority}>
             <SelectTrigger id="task-priority" className="h-9">
@@ -418,7 +426,7 @@ export function TaskPreviewCard({
         {/* Repeat / Recurrence */}
         <div>
           <Label htmlFor="task-recurrence" className="text-xs text-muted-foreground mb-1 block">
-            Repeat
+            Повторення
           </Label>
           <Select value={recurrenceRule} onValueChange={setRecurrenceRule}>
             <SelectTrigger id="task-recurrence" className="h-9">
@@ -450,13 +458,13 @@ export function TaskPreviewCard({
           ) : (
             <ChevronDown className="h-3 w-3" />
           )}
-          Description (optional)
+          Опис (необов'язково)
         </button>
         {showDescription && (
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Add task description..."
+            placeholder="Додати опис завдання..."
             className="mt-2 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring"
           />
         )}
@@ -481,12 +489,12 @@ export function TaskPreviewCard({
           {isCreating ? (
             <>
               <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-              Creating...
+              Створення...
             </>
           ) : (
             <>
               <CheckCircle className="h-4 w-4 mr-1" />
-              Create Task
+              Створити завдання
             </>
           )}
         </Button>
@@ -497,7 +505,7 @@ export function TaskPreviewCard({
             onClick={onDismiss}
             disabled={isCreating}
           >
-            Cancel
+            Скасувати
           </Button>
         )}
       </div>
