@@ -117,29 +117,32 @@ export function SmartFAB({ className }: SmartFABProps) {
           'flex items-center justify-center shadow-lg transition-all duration-300 ease-out',
           'hover:shadow-xl active:scale-95',
           hasUnread
-            ? 'bg-blue-500 hover:bg-blue-600 rounded-full px-4 py-3 min-w-[180px] gap-2'
+            ? 'bg-blue-500 hover:bg-blue-600 rounded-full px-4 py-3 gap-3'
             : 'bg-blue-500 hover:bg-blue-600 rounded-full w-14 h-14 hover:scale-105'
         )}
       >
         {hasUnread ? (
           <>
-            {/* Facepile */}
-            <div className="flex -space-x-2">
+            {/* Facepile - overlapping avatars */}
+            <div className="flex items-center">
               {uniqueSenders.map((sender, index) => (
                 <div
                   key={sender.senderId}
                   className={cn(
-                    'w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium border-2 border-blue-500',
+                    'w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold border-2 border-white shadow-sm',
                     getColorClass(sender.senderName)
                   )}
-                  style={{ zIndex: uniqueSenders.length - index }}
+                  style={{
+                    marginLeft: index === 0 ? 0 : '-8px',
+                    zIndex: uniqueSenders.length - index
+                  }}
                 >
-                  {sender.senderAvatar || getInitials(sender.senderName)}
+                  {getInitials(sender.senderName).charAt(0)}
                 </div>
               ))}
             </div>
             {/* Text */}
-            <span className="text-white font-medium text-sm whitespace-nowrap">
+            <span className="text-white font-semibold text-sm whitespace-nowrap">
               {state.totalUnreadCount} New Message{state.totalUnreadCount !== 1 ? 's' : ''}
             </span>
           </>
