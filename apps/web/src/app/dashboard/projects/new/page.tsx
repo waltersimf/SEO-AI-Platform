@@ -28,7 +28,7 @@ export default function NewProjectPage() {
     setError(null);
 
     if (!name.trim() || !domain.trim()) {
-      setError('Name and domain are required');
+      setError('Назва та домен обов\'язкові');
       return;
     }
 
@@ -83,13 +83,13 @@ export default function NewProjectPage() {
               className="gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Projects
+              Назад до проєктів
             </Button>
 
             {/* Form Card */}
             <Card>
               <CardHeader>
-                <CardTitle>Create New Project</CardTitle>
+                <CardTitle>Створити новий проєкт</CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -102,11 +102,11 @@ export default function NewProjectPage() {
 
                   {/* Name Field */}
                   <div className="space-y-2">
-                    <Label htmlFor="name">Project Name</Label>
+                    <Label htmlFor="name">Назва проєкту</Label>
                     <Input
                       id="name"
                       type="text"
-                      placeholder="My Website"
+                      placeholder="Мій сайт"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required
@@ -115,7 +115,7 @@ export default function NewProjectPage() {
 
                   {/* Domain Field */}
                   <div className="space-y-2">
-                    <Label htmlFor="domain">Domain</Label>
+                    <Label htmlFor="domain">Домен</Label>
                     <Input
                       id="domain"
                       type="text"
@@ -129,14 +129,14 @@ export default function NewProjectPage() {
                   {/* Buttons */}
                   <div className="flex gap-4">
                     <Button type="submit" disabled={loading}>
-                      {loading ? 'Creating...' : 'Create Project'}
+                      {loading ? 'Створення...' : 'Створити проєкт'}
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => router.push('/dashboard/projects')}
                     >
-                      Cancel
+                      Скасувати
                     </Button>
                   </div>
                 </form>

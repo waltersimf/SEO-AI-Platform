@@ -170,13 +170,13 @@ export default function SettingsPage() {
           lastRunAt: data.lastRunAt,
           nextRunAt: data.nextRunAt,
         });
-        setActionResult({ type: 'success', message: 'Auto-plan settings saved' });
+        setActionResult({ type: 'success', message: 'Налаштування авто-плану збережено' });
       } else {
         throw new Error('Failed to save settings');
       }
     } catch (error) {
       console.error('Error saving auto-plan settings:', error);
-      setActionResult({ type: 'error', message: 'Failed to save auto-plan settings' });
+      setActionResult({ type: 'error', message: 'Не вдалося зберегти налаштування' });
     } finally {
       setAutoPlanSaving(false);
       setTimeout(() => setActionResult(null), 3000);
@@ -203,12 +203,12 @@ export default function SettingsPage() {
 
       if (response.ok) {
         setGoogleIntegration(null);
-        setActionResult({ type: 'success', message: 'Google account disconnected successfully' });
+        setActionResult({ type: 'success', message: 'Google акаунт успішно відключено' });
       } else {
         throw new Error('Failed to disconnect');
       }
     } catch (error) {
-      setActionResult({ type: 'error', message: 'Failed to disconnect Google account' });
+      setActionResult({ type: 'error', message: 'Не вдалося відключити Google акаунт' });
     } finally {
       setActionLoading(null);
       setTimeout(() => setActionResult(null), 5000);
@@ -235,7 +235,7 @@ export default function SettingsPage() {
         throw new Error('Failed to fetch files');
       }
     } catch (error) {
-      setActionResult({ type: 'error', message: 'Failed to fetch Drive files' });
+      setActionResult({ type: 'error', message: 'Не вдалося отримати файли Drive' });
       setTimeout(() => setActionResult(null), 5000);
     } finally {
       setActionLoading(null);
@@ -266,7 +266,7 @@ export default function SettingsPage() {
         throw new Error('Failed to create document');
       }
     } catch (error) {
-      setActionResult({ type: 'error', message: 'Failed to create Google Doc' });
+      setActionResult({ type: 'error', message: 'Не вдалося створити Google Doc' });
     } finally {
       setActionLoading(null);
       setTimeout(() => setActionResult(null), 10000);
@@ -297,7 +297,7 @@ export default function SettingsPage() {
         throw new Error('Failed to create spreadsheet');
       }
     } catch (error) {
-      setActionResult({ type: 'error', message: 'Failed to create Google Sheet' });
+      setActionResult({ type: 'error', message: 'Не вдалося створити Google Sheet' });
     } finally {
       setActionLoading(null);
       setTimeout(() => setActionResult(null), 10000);
@@ -308,12 +308,12 @@ export default function SettingsPage() {
     return googleIntegration?.scopes?.some(s => s.includes(scope)) || false;
   };
 
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dayNames = ['Неділя', 'Понеділок', 'Вівторок', 'Середа', 'Четвер', 'П\'ятниця', 'Субота'];
 
   const formatNextRunTime = (dateStr?: string) => {
-    if (!dateStr) return 'Not scheduled';
+    if (!dateStr) return 'Не заплановано';
     const date = new Date(dateStr);
-    return date.toLocaleString('en-US', {
+    return date.toLocaleString('uk-UA', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
@@ -337,9 +337,9 @@ export default function SettingsPage() {
           <div className="max-w-4xl mx-auto space-y-8">
             {/* Header */}
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+              <h1 className="text-3xl font-bold tracking-tight">Налаштування</h1>
               <p className="text-muted-foreground mt-2">
-                Manage your integrations and account settings
+                Керуйте інтеграціями та налаштуваннями акаунту
               </p>
             </div>
 
@@ -398,10 +398,10 @@ export default function SettingsPage() {
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                     />
                   </svg>
-                  Google Integration
+                  Google Інтеграція
                 </CardTitle>
                 <CardDescription>
-                  Connect your Google account to access Search Console, Analytics, Drive, Docs, and Sheets
+                  Підключіть Google акаунт для доступу до Search Console, Analytics, Drive, Docs та Sheets
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -412,7 +412,7 @@ export default function SettingsPage() {
                       <>
                         <CheckCircle2 className="h-5 w-5 text-green-600" />
                         <div>
-                          <p className="font-medium">Connected</p>
+                          <p className="font-medium">Підключено</p>
                           {googleIntegration.metadata?.email && (
                             <p className="text-sm text-muted-foreground">
                               {googleIntegration.metadata.email}
@@ -423,7 +423,7 @@ export default function SettingsPage() {
                     ) : (
                       <>
                         <XCircle className="h-5 w-5 text-muted-foreground" />
-                        <p className="font-medium text-muted-foreground">Not connected</p>
+                        <p className="font-medium text-muted-foreground">Не підключено</p>
                       </>
                     )}
                   </div>
@@ -437,11 +437,11 @@ export default function SettingsPage() {
                       {actionLoading === 'disconnect' ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        'Disconnect'
+                        'Відключити'
                       )}
                     </Button>
                   ) : (
-                    <Button onClick={handleConnectGoogle}>Connect Google Account</Button>
+                    <Button onClick={handleConnectGoogle}>Підключити Google акаунт</Button>
                   )}
                 </div>
 
@@ -457,11 +457,11 @@ export default function SettingsPage() {
                       <div className="flex items-center gap-2 text-sm">
                         {hasScope('webmasters') ? (
                           <span className="inline-flex items-center gap-1 text-green-600">
-                            <CheckCircle2 className="h-4 w-4" /> Connected
+                            <CheckCircle2 className="h-4 w-4" /> Підключено
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-muted-foreground">
-                            <XCircle className="h-4 w-4" /> Not authorized
+                            <XCircle className="h-4 w-4" /> Не авторизовано
                           </span>
                         )}
                       </div>
@@ -476,11 +476,11 @@ export default function SettingsPage() {
                       <div className="flex items-center gap-2 text-sm">
                         {hasScope('analytics') ? (
                           <span className="inline-flex items-center gap-1 text-green-600">
-                            <CheckCircle2 className="h-4 w-4" /> Connected
+                            <CheckCircle2 className="h-4 w-4" /> Підключено
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-muted-foreground">
-                            <XCircle className="h-4 w-4" /> Not authorized
+                            <XCircle className="h-4 w-4" /> Не авторизовано
                           </span>
                         )}
                       </div>
@@ -495,11 +495,11 @@ export default function SettingsPage() {
                       <div className="flex items-center gap-2 text-sm">
                         {hasScope('drive') ? (
                           <span className="inline-flex items-center gap-1 text-green-600">
-                            <CheckCircle2 className="h-4 w-4" /> Connected
+                            <CheckCircle2 className="h-4 w-4" /> Підключено
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-muted-foreground">
-                            <XCircle className="h-4 w-4" /> Not authorized
+                            <XCircle className="h-4 w-4" /> Не авторизовано
                           </span>
                         )}
                       </div>
@@ -516,7 +516,7 @@ export default function SettingsPage() {
                           ) : (
                             <HardDrive className="h-4 w-4 mr-2" />
                           )}
-                          View Files
+                          Переглянути файли
                         </Button>
                       )}
                     </div>
@@ -530,11 +530,11 @@ export default function SettingsPage() {
                       <div className="flex items-center gap-2 text-sm">
                         {hasScope('documents') ? (
                           <span className="inline-flex items-center gap-1 text-green-600">
-                            <CheckCircle2 className="h-4 w-4" /> Connected
+                            <CheckCircle2 className="h-4 w-4" /> Підключено
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-muted-foreground">
-                            <XCircle className="h-4 w-4" /> Not authorized
+                            <XCircle className="h-4 w-4" /> Не авторизовано
                           </span>
                         )}
                       </div>
@@ -551,7 +551,7 @@ export default function SettingsPage() {
                           ) : (
                             <FileText className="h-4 w-4 mr-2" />
                           )}
-                          Create Test Doc
+                          Створити тест. документ
                         </Button>
                       )}
                     </div>
@@ -565,11 +565,11 @@ export default function SettingsPage() {
                       <div className="flex items-center gap-2 text-sm">
                         {hasScope('spreadsheets') ? (
                           <span className="inline-flex items-center gap-1 text-green-600">
-                            <CheckCircle2 className="h-4 w-4" /> Connected
+                            <CheckCircle2 className="h-4 w-4" /> Підключено
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-muted-foreground">
-                            <XCircle className="h-4 w-4" /> Not authorized
+                            <XCircle className="h-4 w-4" /> Не авторизовано
                           </span>
                         )}
                       </div>
@@ -586,7 +586,7 @@ export default function SettingsPage() {
                           ) : (
                             <Table className="h-4 w-4 mr-2" />
                           )}
-                          Create Test Sheet
+                          Створити тест. таблицю
                         </Button>
                       )}
                     </div>
@@ -600,10 +600,10 @@ export default function SettingsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-3">
                   <Calendar className="h-6 w-6 text-purple-600" />
-                  Auto-Planning
+                  Авто-планування
                 </CardTitle>
                 <CardDescription>
-                  Automatically schedule your backlog tasks on a recurring basis
+                  Автоматично плануйте завдання з беклогу на регулярній основі
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -617,10 +617,10 @@ export default function SettingsPage() {
                     <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                       <div className="space-y-0.5">
                         <Label htmlFor="auto-plan-enabled" className="text-base font-medium">
-                          Enable scheduled auto-planning
+                          Увімкнути авто-планування
                         </Label>
                         <p className="text-sm text-muted-foreground">
-                          Automatically run auto-plan at specified times
+                          Автоматично запускати авто-план у вказаний час
                         </p>
                       </div>
                       <Switch
@@ -635,18 +635,18 @@ export default function SettingsPage() {
                     <div className={`grid gap-6 md:grid-cols-2 ${!autoPlanSettings.enabled ? 'opacity-50 pointer-events-none' : ''}`}>
                       {/* Frequency */}
                       <div className="space-y-2">
-                        <Label htmlFor="frequency">Frequency</Label>
+                        <Label htmlFor="frequency">Частота</Label>
                         <Select
                           value={autoPlanSettings.frequency}
                           onValueChange={(value: 'daily' | 'weekly') => updateAutoPlanSettings({ frequency: value })}
                           disabled={autoPlanSaving || !autoPlanSettings.enabled}
                         >
                           <SelectTrigger id="frequency">
-                            <SelectValue placeholder="Select frequency" />
+                            <SelectValue placeholder="Оберіть частоту" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="daily">Daily</SelectItem>
-                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="daily">Щодня</SelectItem>
+                            <SelectItem value="weekly">Щотижня</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -654,14 +654,14 @@ export default function SettingsPage() {
                       {/* Day of Week (only for weekly) */}
                       {autoPlanSettings.frequency === 'weekly' && (
                         <div className="space-y-2">
-                          <Label htmlFor="dayOfWeek">Day of Week</Label>
+                          <Label htmlFor="dayOfWeek">День тижня</Label>
                           <Select
                             value={autoPlanSettings.dayOfWeek.toString()}
                             onValueChange={(value) => updateAutoPlanSettings({ dayOfWeek: parseInt(value) })}
                             disabled={autoPlanSaving || !autoPlanSettings.enabled}
                           >
                             <SelectTrigger id="dayOfWeek">
-                              <SelectValue placeholder="Select day" />
+                              <SelectValue placeholder="Оберіть день" />
                             </SelectTrigger>
                             <SelectContent>
                               {dayNames.map((day, index) => (
@@ -676,7 +676,7 @@ export default function SettingsPage() {
 
                       {/* Time */}
                       <div className="space-y-2">
-                        <Label>Time</Label>
+                        <Label>Час</Label>
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-muted-foreground" />
                           <TimePicker
@@ -690,15 +690,15 @@ export default function SettingsPage() {
 
                     {/* Behavior Settings */}
                     <div className="space-y-4 pt-4 border-t">
-                      <h4 className="text-sm font-medium text-muted-foreground">Behavior</h4>
+                      <h4 className="text-sm font-medium text-muted-foreground">Поведінка</h4>
 
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
                           <Label htmlFor="notify-before" className="text-sm font-medium">
-                            Preview before applying
+                            Попередній перегляд
                           </Label>
                           <p className="text-xs text-muted-foreground">
-                            Send preview to AI chat before applying the plan
+                            Надіслати попередній перегляд в AI чат перед застосуванням
                           </p>
                         </div>
                         <Switch
@@ -712,10 +712,10 @@ export default function SettingsPage() {
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
                           <Label htmlFor="auto-apply" className="text-sm font-medium">
-                            Apply automatically
+                            Застосовувати автоматично
                           </Label>
                           <p className="text-xs text-muted-foreground">
-                            Apply the plan without manual confirmation
+                            Застосовувати план без ручного підтвердження
                           </p>
                         </div>
                         <Switch
@@ -733,12 +733,12 @@ export default function SettingsPage() {
                         <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
                           <Calendar className="h-4 w-4" />
                           <span className="text-sm font-medium">
-                            Next scheduled run: {formatNextRunTime(autoPlanSettings.nextRunAt)}
+                            Наступний запуск: {formatNextRunTime(autoPlanSettings.nextRunAt)}
                           </span>
                         </div>
                         {autoPlanSettings.lastRunAt && (
                           <p className="text-xs text-purple-600 dark:text-purple-400 mt-1 ml-6">
-                            Last run: {formatNextRunTime(autoPlanSettings.lastRunAt)}
+                            Останній запуск: {formatNextRunTime(autoPlanSettings.lastRunAt)}
                           </p>
                         )}
                       </div>
@@ -748,7 +748,7 @@ export default function SettingsPage() {
                     {autoPlanSaving && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Saving...
+                        Збереження...
                       </div>
                     )}
                   </>
@@ -764,7 +764,7 @@ export default function SettingsPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-background rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-lg font-semibold">Google Drive Files</h2>
+              <h2 className="text-lg font-semibold">Файли Google Drive</h2>
               <button
                 onClick={() => setShowFilesModal(false)}
                 className="p-2 hover:bg-muted rounded-lg"
@@ -775,7 +775,7 @@ export default function SettingsPage() {
             <div className="flex-1 overflow-auto p-4">
               {driveFiles.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">
-                  No files found in your Drive
+                  Файлів не знайдено у вашому Drive
                 </p>
               ) : (
                 <div className="space-y-2">

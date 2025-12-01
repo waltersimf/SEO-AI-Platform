@@ -70,7 +70,7 @@ export default function TasksPage() {
   if (!user) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
+        <div className="text-muted-foreground">Завантаження...</div>
       </div>
     );
   }
@@ -90,9 +90,9 @@ export default function TasksPage() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Tasks</h1>
+              <h1 className="text-3xl font-bold tracking-tight">Завдання</h1>
               <p className="text-muted-foreground mt-1">
-                Manage and track your work
+                Керуйте та відстежуйте свою роботу
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -103,8 +103,8 @@ export default function TasksPage() {
                 }
                 className="h-9 rounded-md border border-input bg-background px-3 text-sm"
               >
-                <option value={user.id}>My Tasks</option>
-                <option value="all">All Tasks</option>
+                <option value={user.id}>Мої завдання</option>
+                <option value="all">Всі завдання</option>
               </select>
             </div>
           </div>
@@ -120,7 +120,7 @@ export default function TasksPage() {
                   : "border-transparent text-muted-foreground hover:text-foreground"
               )}
             >
-              Schedule
+              Розклад
               {scheduledCount > 0 && (
                 <span className="ml-2 text-xs bg-muted px-1.5 py-0.5 rounded-full">
                   {scheduledCount}
@@ -136,7 +136,7 @@ export default function TasksPage() {
                   : "border-transparent text-muted-foreground hover:text-foreground"
               )}
             >
-              Done
+              Виконані
               {doneCount > 0 && (
                 <span className="ml-2 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">
                   {doneCount}
