@@ -92,7 +92,7 @@ export function SmartFAB({ className }: SmartFABProps) {
           className="absolute bottom-full right-0 mb-3 w-64 bg-white rounded-lg shadow-xl border border-gray-200 p-3 cursor-pointer transform transition-all duration-200 hover:shadow-2xl"
         >
           <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 font-medium">
-            Latest Message
+            Останнє повідомлення
           </p>
           <div className="flex items-start gap-3">
             {/* Avatar */}
@@ -152,7 +152,15 @@ export function SmartFAB({ className }: SmartFABProps) {
             </div>
             {/* Text */}
             <span className="text-white font-semibold text-sm whitespace-nowrap">
-              {state.totalUnreadCount} New Message{state.totalUnreadCount !== 1 ? 's' : ''}
+              {state.totalUnreadCount} {(() => {
+                const n = state.totalUnreadCount;
+                const lastTwo = n % 100;
+                const lastOne = n % 10;
+                if (lastTwo >= 11 && lastTwo <= 19) return 'нових повідомлень';
+                if (lastOne === 1) return 'нове повідомлення';
+                if (lastOne >= 2 && lastOne <= 4) return 'нові повідомлення';
+                return 'нових повідомлень';
+              })()}
             </span>
           </>
         ) : (

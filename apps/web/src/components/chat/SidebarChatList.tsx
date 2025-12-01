@@ -278,18 +278,18 @@ export function SidebarChatList({
     const hours = diff / (1000 * 60 * 60);
 
     if (hours < 24) {
-      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
     } else if (hours < 48) {
-      return 'Yesterday';
+      return 'Вчора';
     } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return date.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' });
     }
   };
 
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="text-sm text-gray-500">Loading...</div>
+        <div className="text-sm text-gray-500">Завантаження...</div>
       </div>
     );
   }
@@ -304,7 +304,7 @@ export function SidebarChatList({
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search..."
+            placeholder="Пошук..."
             className="w-full pl-9 pr-9 py-2 bg-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors"
           />
           <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 rounded">
@@ -320,7 +320,7 @@ export function SidebarChatList({
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium text-sm"
         >
           <Plus className="w-4 h-4" />
-          New Chat
+          Новий чат
         </button>
       </div>
 
@@ -330,7 +330,7 @@ export function SidebarChatList({
         {(aiUser || aiDirectChat) && (
           <div className="px-3 pt-2">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wider px-1 mb-2">
-              Pinned
+              Закріплені
             </p>
             <button
               onClick={() => {
@@ -353,10 +353,10 @@ export function SidebarChatList({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-gray-900">AI Teammate</p>
-                  <span className="text-xs text-gray-400">Now</span>
+                  <p className="text-sm font-semibold text-gray-900">AI Помічник</p>
+                  <span className="text-xs text-gray-400">Зараз</span>
                 </div>
-                <p className="text-xs text-gray-500 truncate">Ready to help...</p>
+                <p className="text-xs text-gray-500 truncate">Готовий допомогти...</p>
               </div>
             </button>
           </div>
@@ -366,7 +366,7 @@ export function SidebarChatList({
         {(regularChats.length > 0 || usersWithoutChats.length > 0) && (
           <div className="px-3 pt-4">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wider px-1 mb-2">
-              Recent
+              Останні
             </p>
 
             {/* Chats with messages */}
@@ -434,8 +434,8 @@ export function SidebarChatList({
                     </div>
                     <p className="text-xs text-gray-500 truncate">
                       {lastMessage
-                        ? `${lastMessage.author?.name || 'Unknown'}: ${lastMessage.content}`
-                        : 'No messages yet'}
+                        ? `${lastMessage.author?.name || 'Невідомий'}: ${lastMessage.content}`
+                        : 'Ще немає повідомлень'}
                     </p>
                   </div>
                 </button>
@@ -471,7 +471,7 @@ export function SidebarChatList({
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
                     <p className="text-xs text-gray-500">
-                      {online ? 'Online' : 'Offline'}
+                      {online ? 'Онлайн' : 'Офлайн'}
                     </p>
                   </div>
                 </button>
@@ -484,9 +484,9 @@ export function SidebarChatList({
         {regularChats.length === 0 && usersWithoutChats.length === 0 && !aiUser && (
           <div className="flex-1 flex items-center justify-center p-4">
             <p className="text-sm text-gray-500 text-center">
-              No conversations yet.
+              Ще немає розмов.
               <br />
-              Start a new chat!
+              Почніть новий чат!
             </p>
           </div>
         )}

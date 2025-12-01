@@ -2,7 +2,6 @@
 
 import { GoogleConnectButton } from "@/components/integrations/google-connect-button";
 import { GscMetricsCard } from "@/components/gsc-metrics-card";
-import { ConnectionStatus } from "@/components/connection-status";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSocket } from "@/contexts/socket-context";
@@ -37,7 +36,7 @@ export default function DashboardPage() {
   if (!user) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
+        <div className="text-muted-foreground">Завантаження...</div>
       </div>
     );
   }
@@ -51,81 +50,11 @@ export default function DashboardPage() {
             {/* Welcome Section */}
             <div>
               <h1 className="text-4xl font-bold tracking-tight">
-                Welcome to Forgeline! 🎉
+                Ласкаво просимо до Forgeline!
               </h1>
               <p className="text-muted-foreground mt-2">
-                Your SEO AI Platform is ready to use.
+                Ваша SEO AI платформа готова до роботи.
               </p>
-            </div>
-
-            {/* Status Card */}
-            <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={2}
-                    stroke="currentColor"
-                    className="h-6 w-6 text-primary"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-xl font-semibold mb-2">
-                    Now v0.3 Chat (85%)
-                  </h2>
-                  <p className="text-muted-foreground">
-                    Authentication & Google OAuth work! v0.3 Chat with real-time messaging, database
-                    persistence, and online status tracking is 85% complete. Try the chat on the left! →
-                  </p>
-                </div>
-              </div>
-
-              <div className="border-t border-primary/20 pt-6 mt-6">
-                <h3 className="font-semibold mb-3">What's Next? (v0.3 completion)</h3>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="flex items-start gap-3 text-sm">
-                    <div className="flex h-6 w-6 items-center justify-center rounded bg-green-500/20 text-green-600">
-                      ✓
-                    </div>
-                    <div>
-                      <p className="font-medium">Online Status</p>
-                      <p className="text-muted-foreground">
-                        See who's online real-time 🟢
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 text-sm">
-                    <div className="flex h-6 w-6 items-center justify-center rounded bg-primary/20 text-primary">
-                      2
-                    </div>
-                    <div>
-                      <p className="font-medium">@Mentions</p>
-                      <p className="text-muted-foreground">
-                        Tag team members
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 text-sm">
-                    <div className="flex h-6 w-6 items-center justify-center rounded bg-green-500/20 text-green-600">
-                      ✓
-                    </div>
-                    <div>
-                      <p className="font-medium">Connection Status</p>
-                      <div className="mt-1">
-                        <ConnectionStatus status={socketStatus} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* Quick Stats */}
@@ -150,7 +79,7 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      Your Account
+                      Ваш акаунт
                     </p>
                     <p className="text-2xl font-bold">{user.email}</p>
                   </div>
@@ -177,13 +106,13 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      Status
+                      Статус
                     </p>
-                    <p className="text-2xl font-bold">Active</p>
+                    <p className="text-2xl font-bold">Активний</p>
                   </div>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  All systems operational
+                  Всі системи працюють
                 </p>
               </div>
 
@@ -207,20 +136,20 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      AI Chats
+                      AI чати
                     </p>
                     <p className="text-2xl font-bold">-</p>
                   </div>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Coming in v0.4
+                  Скоро буде
                 </p>
               </div>
             </div>
 
             {/* Google Integration */}
             <div>
-              <h2 className="text-2xl font-bold mb-4">Google Integration</h2>
+              <h2 className="text-2xl font-bold mb-4">Інтеграція з Google</h2>
               <GoogleConnectButton />
             </div>
 

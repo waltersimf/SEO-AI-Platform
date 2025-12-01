@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   FolderKanban,
   CheckSquare,
-  MessageSquare,
   BookOpen,
   Globe,
   Settings,
@@ -15,12 +14,12 @@ import {
 } from 'lucide-react';
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Projects', href: '/dashboard/projects', icon: FolderKanban },
-  { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare },
-  { name: 'Knowledge Base', href: '/knowledge', icon: BookOpen, disabled: true, badge: 'v1.1' },
-  { name: 'Browser', href: '/browser', icon: Globe, disabled: true, badge: 'v1.2' },
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+  { name: 'Головна', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Проєкти', href: '/dashboard/projects', icon: FolderKanban },
+  { name: 'Завдання', href: '/dashboard/tasks', icon: CheckSquare },
+  { name: 'База знань', href: '/knowledge', icon: BookOpen, disabled: true, badge: 'Скоро' },
+  { name: 'Браузер', href: '/browser', icon: Globe, disabled: true, badge: 'Скоро' },
+  { name: 'Налаштування', href: '/dashboard/settings', icon: Settings },
 ];
 
 export function Sidebar() {
@@ -43,8 +42,6 @@ export function Sidebar() {
         <nav className="flex-1 space-y-1 px-4">
           {navigation.map((item) => {
             const Icon = item.icon;
-            // For Dashboard (/dashboard), use exact match only
-            // For other routes, allow sub-route matching
             const isActive = item.href === '/dashboard'
               ? pathname === '/dashboard'
               : pathname === item.href || pathname.startsWith(item.href + '/');
@@ -84,7 +81,7 @@ export function Sidebar() {
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium">Володимир</p>
-              <p className="text-xs text-muted-foreground">Admin</p>
+              <p className="text-xs text-muted-foreground">Адмін</p>
             </div>
           </div>
           <button
@@ -95,13 +92,13 @@ export function Sidebar() {
             className="mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
           >
             <LogOut className="h-4 w-4" />
-            Sign Out
+            Вийти
           </button>
         </div>
 
         {/* Version */}
         <div className="px-6 py-2">
-          <p className="text-xs text-muted-foreground">v0.3.5 Beta</p>
+          <p className="text-xs text-muted-foreground">v0.3.5 Бета</p>
         </div>
       </div>
     </aside>
