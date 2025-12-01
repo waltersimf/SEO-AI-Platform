@@ -243,6 +243,8 @@ model Task {
   timeEntries TimeEntry[]
 
   @@index([assignedToId, status])
+  @@index([status])
+  @@index([assignedToId])
   @@index([scheduledDate])
   @@index([projectId])
   @@index([organizationId])
