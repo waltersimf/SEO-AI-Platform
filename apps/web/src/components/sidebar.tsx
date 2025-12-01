@@ -8,6 +8,8 @@ import {
   FolderKanban,
   CheckSquare,
   MessageSquare,
+  BookOpen,
+  Globe,
   Settings,
   LogOut,
 } from 'lucide-react';
@@ -16,7 +18,9 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Projects', href: '/dashboard/projects', icon: FolderKanban },
   { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare },
-  { name: 'Chat', href: '/chat', icon: MessageSquare, disabled: true },
+  { name: 'Chat', href: '/chat', icon: MessageSquare, disabled: true, badge: 'v0.2+' },
+  { name: 'Knowledge Base', href: '/knowledge', icon: BookOpen, disabled: true, badge: 'v1.1' },
+  { name: 'Browser', href: '/browser', icon: Globe, disabled: true, badge: 'v1.2' },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
@@ -65,8 +69,8 @@ export function Sidebar() {
               >
                 <Icon className="h-4 w-4" />
                 {item.name}
-                {isDisabled && (
-                  <span className="ml-auto text-xs text-muted-foreground">v0.2+</span>
+                {isDisabled && item.badge && (
+                  <span className="ml-auto text-xs text-muted-foreground">{item.badge}</span>
                 )}
               </Link>
             );
