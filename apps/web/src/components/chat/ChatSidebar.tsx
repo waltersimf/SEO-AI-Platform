@@ -88,9 +88,9 @@ export function ChatSidebar({
         )}
         style={{
           // Inline styles to guarantee width works
-          width: isWide ? '60vw' : '33vw',
-          minWidth: isWide ? '800px' : '420px',
-          maxWidth: isWide ? '1100px' : '500px',
+          width: isWide ? '65vw' : '480px',
+          minWidth: isWide ? '900px' : '480px',
+          maxWidth: isWide ? '1200px' : '550px',
         }}
       >
         {/* Narrow Mode */}
