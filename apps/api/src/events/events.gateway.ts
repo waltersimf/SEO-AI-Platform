@@ -7,6 +7,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 
 interface OrganizationRoom {
   organizationId: string;
@@ -27,8 +28,10 @@ export class EventsGateway {
   // Track which users are in which organization rooms
   private userOrganizations: Map<string, string> = new Map();
 
+  constructor(private prisma: PrismaService) {}
+
   @SubscribeMessage('join_organization')
-  handleJoinOrganization(
+  async handleJoinOrganization(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: OrganizationRoom,
   ) {
@@ -36,15 +39,46 @@ export class EventsGateway {
       return { success: false, error: 'organizationId and userId required' };
     }
 
-    const roomName = `org:${payload.organizationId}`;
-    client.join(roomName);
-    this.userOrganizations.set(client.id, payload.organizationId);
+    try {
+      // Security: Verify user belongs to this organization
+      const user = await this.prisma.user.findFirst({
+        where: {
+          id: payload.userId,
+          organizationId: payload.organizationId,
+        },
+      });
 
-    this.logger.log(
-      `User ${payload.userId} joined organization room ${roomName}`,
-    );
+      if (!user) {
+        this.logger.warn(
+          `Unauthorized organization join attempt: userId=${payload.userId}, orgId=${payload.organizationId}`,
+        );
+        client.emit('error', {
+          code: 'UNAUTHORIZED',
+          message: 'Not authorized for this organization',
+        });
+        return { success: false, error: 'Not authorized for this organization' };
+      }
 
-    return { success: true, room: roomName };
+      const roomName = `org:${payload.organizationId}`;
+      client.join(roomName);
+      this.userOrganizations.set(client.id, payload.organizationId);
+
+      this.logger.log(
+        `User ${payload.userId} joined organization room ${roomName}`,
+      );
+
+      return { success: true, room: roomName };
+    } catch (error) {
+      this.logger.error(
+        `Error joining organization: userId=${payload.userId}, orgId=${payload.organizationId}`,
+        error,
+      );
+      client.emit('error', {
+        code: 'JOIN_ORG_FAILED',
+        message: 'Failed to join organization room',
+      });
+      return { success: false, error: 'Failed to join organization room' };
+    }
   }
 
   // Emit task created event to organization

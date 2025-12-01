@@ -163,7 +163,7 @@ export class ChatGateway
   }
 
   @SubscribeMessage('join_room')
-  handleJoinRoom(
+  async handleJoinRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { chatId: string; userId: string; userName: string },
   ) {
@@ -174,6 +174,27 @@ export class ChatGateway
           code: 'INVALID_CHAT_ID',
         });
         return { success: false, error: 'Chat ID is required' };
+      }
+
+      if (!payload?.userId) {
+        client.emit('error', {
+          message: 'User ID is required',
+          code: 'INVALID_USER_ID',
+        });
+        return { success: false, error: 'User ID is required' };
+      }
+
+      // Security: Verify user is a member of this chat before joining
+      const isMember = await this.chatService.isChatMember(payload.chatId, payload.userId);
+      if (!isMember) {
+        this.logger.warn(
+          `Unauthorized join attempt: userId=${payload.userId}, chatId=${payload.chatId}`,
+        );
+        client.emit('error', {
+          code: 'UNAUTHORIZED',
+          message: 'Not authorized for this chat',
+        });
+        return { success: false, error: 'Not authorized for this chat' };
       }
 
       // Update client data with user info
@@ -199,7 +220,10 @@ export class ChatGateway
 
       return { success: true, event: 'joined_room', data: payload.chatId };
     } catch (error) {
-      this.logger.error(`Error joining room for ${client.id}:`, error);
+      this.logger.error(
+        `Error joining room: chatId=${payload?.chatId}, userId=${payload?.userId}, clientId=${client.id}`,
+        error,
+      );
       client.emit('error', {
         message: 'Failed to join chat room',
         code: 'JOIN_ROOM_FAILED',
@@ -299,7 +323,7 @@ export class ChatGateway
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(
-        `Error handling message from ${client.id}:`,
+        `Error handling message: chatId=${payload?.chatId}, userId=${payload?.authorId}, clientId=${client.id}, error=${errorMessage}`,
         error,
       );
 
@@ -341,7 +365,10 @@ export class ChatGateway
 
       return { success: true };
     } catch (error) {
-      this.logger.error(`Error in typing_start for ${client.id}:`, error);
+      this.logger.error(
+        `Error in typing_start: chatId=${payload?.chatId}, userId=${payload?.userId}, clientId=${client.id}`,
+        error,
+      );
       return { success: false };
     }
   }
@@ -367,7 +394,10 @@ export class ChatGateway
 
       return { success: true };
     } catch (error) {
-      this.logger.error(`Error in typing_stop for ${client.id}:`, error);
+      this.logger.error(
+        `Error in typing_stop: chatId=${payload?.chatId}, userId=${payload?.userId}, clientId=${client.id}`,
+        error,
+      );
       return { success: false };
     }
   }
@@ -425,7 +455,10 @@ export class ChatGateway
         maxAttempts: this.MAX_RECONNECT_ATTEMPTS,
       };
     } catch (error) {
-      this.logger.error(`Error in reconnect_attempt for ${client.id}:`, error);
+      this.logger.error(
+        `Error in reconnect_attempt: userId=${payload?.userId}, clientId=${client.id}`,
+        error,
+      );
       client.emit('error', {
         message: 'Reconnection failed',
         code: 'RECONNECT_FAILED',

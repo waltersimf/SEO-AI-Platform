@@ -6,32 +6,60 @@ import { WsException } from '@nestjs/websockets';
 export class ChatService {
   constructor(private prisma: PrismaService) {}
 
+  /**
+   * Check if a user is a member of a chat
+   */
+  async isChatMember(chatId: string, userId: string): Promise<boolean> {
+    const membership = await this.prisma.chatMember.findFirst({
+      where: {
+        chatId,
+        userId,
+      },
+    });
+    return !!membership;
+  }
+
+  /**
+   * Private method to save message to database (DRY)
+   */
+  private async saveMessageToDb(data: {
+    chatId: string;
+    authorId: string;
+    content: string;
+    isAIResponse?: boolean;
+    aiModel?: string;
+    aiContext?: Record<string, any>;
+  }) {
+    return this.prisma.message.create({
+      data: {
+        chatId: data.chatId,
+        authorId: data.authorId,
+        content: data.content,
+        isAIResponse: data.isAIResponse ?? false,
+        aiModel: data.aiModel,
+        aiContext: data.aiContext || {},
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+            isAI: true,
+          },
+        },
+        chat: {
+          select: {
+            organizationId: true,
+          },
+        },
+      },
+    });
+  }
+
   async createMessage(chatId: string, authorId: string, content: string) {
     try {
-      const message = await this.prisma.message.create({
-        data: {
-          chatId,
-          authorId,
-          content,
-        },
-        include: {
-          author: {
-            select: {
-              id: true,
-              name: true,
-              avatar: true,
-              isAI: true,
-            },
-          },
-          chat: {
-            select: {
-              organizationId: true,
-            },
-          },
-        },
-      });
-
-      return message;
+      return await this.saveMessageToDb({ chatId, authorId, content });
     } catch (error) {
       console.error('Error creating message:', error);
       throw new WsException('Failed to create message');
@@ -46,41 +74,34 @@ export class ChatService {
     aiContext?: Record<string, any>,
   ) {
     try {
-      const message = await this.prisma.message.create({
-        data: {
-          chatId,
-          authorId,
-          content,
-          isAIResponse: true,
-          aiModel,
-          aiContext: aiContext || {},
-        },
-        include: {
-          author: {
-            select: {
-              id: true,
-              name: true,
-              avatar: true,
-              isAI: true,
-            },
-          },
-          chat: {
-            select: {
-              organizationId: true,
-            },
-          },
-        },
+      return await this.saveMessageToDb({
+        chatId,
+        authorId,
+        content,
+        isAIResponse: true,
+        aiModel,
+        aiContext,
       });
-
-      return message;
     } catch (error) {
       console.error('Error creating AI message:', error);
       throw new WsException('Failed to create AI message');
     }
   }
 
-  async getChatMessages(chatId: string, limit = 100) {
+  async getChatMessages(chatId: string, userId: string, limit = 100) {
     try {
+      // Security: Verify user is a member of this chat
+      const membership = await this.prisma.chatMember.findFirst({
+        where: {
+          chatId,
+          userId,
+        },
+      });
+
+      if (!membership) {
+        throw new ForbiddenException('Not a member of this chat');
+      }
+
       const messages = await this.prisma.message.findMany({
         where: { chatId },
         select: {
@@ -116,6 +137,9 @@ export class ChatService {
 
       return messages;
     } catch (error) {
+      if (error instanceof ForbiddenException) {
+        throw error;
+      }
       console.error('Error fetching messages:', error);
       throw new WsException('Failed to fetch messages');
     }
