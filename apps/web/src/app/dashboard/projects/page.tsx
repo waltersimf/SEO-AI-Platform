@@ -59,7 +59,7 @@ export default function ProjectsPage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="text-muted-foreground">Loading projects...</div>
+        <div className="text-muted-foreground">Завантаження проєктів...</div>
       </div>
     );
   }
@@ -72,14 +72,14 @@ export default function ProjectsPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
+                <h1 className="text-3xl font-bold tracking-tight">Проєкти</h1>
                 <p className="text-muted-foreground mt-1">
-                  Manage your SEO projects
+                  Керуйте своїми SEO проєктами
                 </p>
               </div>
               <Button onClick={() => router.push('/dashboard/projects/new')}>
                 <Plus className="h-4 w-4 mr-2" />
-                New Project
+                Новий проєкт
               </Button>
             </div>
 
@@ -105,13 +105,13 @@ export default function ProjectsPage() {
                     <FolderKanban className="h-8 w-8 text-muted-foreground" />
                   </div>
                 </div>
-                <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
+                <h3 className="text-lg font-semibold mb-2">Ще немає проєктів</h3>
                 <p className="text-muted-foreground mb-6">
-                  Create your first project to start tracking SEO performance.
+                  Створіть свій перший проєкт, щоб почати відстежувати SEO.
                 </p>
                 <Button onClick={() => router.push('/dashboard/projects/new')}>
                   <Plus className="h-4 w-4 mr-2" />
-                  New Project
+                  Новий проєкт
                 </Button>
               </div>
             )}

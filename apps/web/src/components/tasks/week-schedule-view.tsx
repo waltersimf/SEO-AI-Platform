@@ -153,11 +153,11 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
 
   // Format functions
   const formatMonthYear = (date: Date) => {
-    return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    return date.toLocaleDateString("uk-UA", { month: "long", year: "numeric" });
   };
 
   const formatDayName = (date: Date) => {
-    return date.toLocaleDateString("en-US", { weekday: "short" });
+    return date.toLocaleDateString("uk-UA", { weekday: "short" });
   };
 
   const formatDateKey = (date: Date) => {
@@ -591,7 +591,7 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-muted-foreground">Loading schedule...</div>
+        <div className="text-muted-foreground">Завантаження розкладу...</div>
       </div>
     );
   }
@@ -624,7 +624,7 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
               </Button>
             </div>
             <Button variant="outline" size="sm" onClick={goToToday}>
-              Today
+              Сьогодні
             </Button>
           </div>
 
@@ -641,7 +641,7 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
               ) : (
                 <Bot className="h-4 w-4 mr-2" />
               )}
-              Auto-plan
+              Авто-план
             </Button>
 
             {/* Filters Popover */}
@@ -649,7 +649,7 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm">
                   <Filter className="h-4 w-4 mr-2" />
-                  Filters
+                  Фільтри
                   {activeFilterCount > 0 && (
                     <Badge variant="secondary" className="ml-2 h-5 px-1.5">
                       {activeFilterCount}
@@ -660,7 +660,7 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
             <PopoverContent className="w-80" align="end">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium">Filters</h4>
+                  <h4 className="font-medium">Фільтри</h4>
                   {activeFilterCount > 0 && (
                     <Button
                       variant="ghost"
@@ -668,14 +668,14 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
                       onClick={clearFilters}
                       className="h-auto py-1 px-2 text-xs"
                     >
-                      Clear all
+                      Очистити
                     </Button>
                   )}
                 </div>
 
                 {/* Priority Filter */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Priority</Label>
+                  <Label className="text-sm font-medium">Пріоритет</Label>
                   <div className="grid grid-cols-2 gap-2">
                     {(["low", "medium", "high", "critical"] as TaskPriority[]).map(
                       (priority) => (
@@ -699,7 +699,7 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
 
                 {/* Assignee Filter */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Assignee</Label>
+                  <Label className="text-sm font-medium">Виконавець</Label>
                   <Select
                     value={filters.assigneeId || "all"}
                     onValueChange={(value) =>
@@ -710,10 +710,10 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="All assignees" />
+                      <SelectValue placeholder="Всі виконавці" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All assignees</SelectItem>
+                      <SelectItem value="all">Всі виконавці</SelectItem>
                       {users.map((user) => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.name} {user.isAI && "(AI)"}
@@ -725,7 +725,7 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
 
                 {/* Project Filter */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Project</Label>
+                  <Label className="text-sm font-medium">Проєкт</Label>
                   <Select
                     value={filters.projectId || "all"}
                     onValueChange={(value) =>
@@ -736,10 +736,10 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="All projects" />
+                      <SelectValue placeholder="Всі проєкти" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All projects</SelectItem>
+                      <SelectItem value="all">Всі проєкти</SelectItem>
                       {projects.map((project) => (
                         <SelectItem key={project.id} value={project.id}>
                           {project.name}
@@ -752,7 +752,7 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
                 {/* Tags Filter */}
                 {allTags.length > 0 && (
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">Tags</Label>
+                    <Label className="text-sm font-medium">Теги</Label>
                     <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
                       {allTags.map((tag) => (
                         <Badge
@@ -776,7 +776,7 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
                   className="w-full"
                   onClick={() => setFiltersOpen(false)}
                 >
-                  Apply Filters
+                  Застосувати
                 </Button>
               </div>
             </PopoverContent>
@@ -851,7 +851,7 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
                   ))}
                   {tasks.length === 0 && (
                     <div className="h-20 flex items-center justify-center text-muted-foreground text-sm">
-                      Drop tasks here
+                      Перетягніть завдання сюди
                     </div>
                   )}
                 </div>
@@ -864,18 +864,18 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
         <div className="flex justify-center">
           <Button onClick={onCreateTask} className="rounded-full px-6">
             <Plus className="h-4 w-4 mr-2" />
-            New Task
+            Нове завдання
           </Button>
         </div>
 
         {/* Backlog Section */}
         <div className="border-t pt-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Backlog</h3>
+            <h3 className="text-lg font-semibold">Беклог</h3>
             <div className="relative w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search backlog..."
+                placeholder="Пошук у беклозі..."
                 value={backlogSearch}
                 onChange={(e) => setBacklogSearch(e.target.value)}
                 className="pl-9"
@@ -894,12 +894,12 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
               ))}
               {filteredBacklog.length === 0 && backlogSearch && (
                 <div className="col-span-4 py-8 text-center text-muted-foreground text-sm">
-                  No tasks match your search
+                  Завдань не знайдено
                 </div>
               )}
               {filteredBacklog.length === 0 && !backlogSearch && (
                 <div className="col-span-4 py-8 text-center text-muted-foreground text-sm">
-                  No tasks in backlog
+                  Немає завдань у беклозі
                 </div>
               )}
               {/* Add to Backlog placeholder */}
@@ -908,7 +908,7 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
                 className="border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary hover:text-primary transition-colors min-h-[100px]"
               >
                 <Plus className="h-5 w-5" />
-                <span className="text-sm font-medium">Add to Backlog</span>
+                <span className="text-sm font-medium">Додати в беклог</span>
               </button>
             </div>
           </DroppableDay>

@@ -54,10 +54,10 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
   const [error, setError] = useState<string | null>(null);
 
   const recurrenceOptions = [
-    { value: "none", label: "Does not repeat" },
-    { value: "daily", label: "Daily" },
-    { value: "weekly", label: "Weekly" },
-    { value: "monthly", label: "Monthly" },
+    { value: "none", label: "Без повторення" },
+    { value: "daily", label: "Щодня" },
+    { value: "weekly", label: "Щотижня" },
+    { value: "monthly", label: "Щомісяця" },
   ];
 
   // Update form when task prop changes
@@ -104,13 +104,13 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
     setError(null);
 
     if (!title.trim()) {
-      setError("Title is required");
+      setError("Назва обов'язкова");
       return;
     }
 
     // Assignee is required unless assigning to all
     if (!assignToAll && !assignedToId) {
-      setError("Assignee is required");
+      setError("Виконавець обов'язковий");
       return;
     }
 
@@ -193,7 +193,7 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
         onSuccess?.(newTask);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : isEditMode ? "Failed to update task" : "Failed to create task");
+      setError(err instanceof Error ? err.message : isEditMode ? "Не вдалося оновити завдання" : "Не вдалося створити завдання");
     } finally {
       setSubmitting(false);
     }
@@ -203,7 +203,7 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEditMode ? "Edit Task" : "Create New Task"}</DialogTitle>
+          <DialogTitle>{isEditMode ? "Редагувати завдання" : "Створити завдання"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -216,25 +216,25 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
           {/* Title */}
           <div className="space-y-2">
             <Label htmlFor="title">
-              Title <span className="text-destructive">*</span>
+              Назва <span className="text-destructive">*</span>
             </Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter task title"
+              placeholder="Введіть назву завдання"
               disabled={submitting}
             />
           </div>
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Опис</Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter task description (optional)"
+              placeholder="Введіть опис (необов'язково)"
               rows={3}
               disabled={submitting}
             />
@@ -244,17 +244,17 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
           <div className="grid grid-cols-2 gap-4">
             {/* Project */}
             <div className="space-y-2">
-              <Label htmlFor="project">Project</Label>
+              <Label htmlFor="project">Проєкт</Label>
               <Select
                 value={projectId}
                 onValueChange={setProjectId}
                 disabled={submitting || projectsLoading}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select project" />
+                  <SelectValue placeholder="Оберіть проєкт" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="none">Немає</SelectItem>
                   {projects.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
@@ -267,7 +267,7 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
             {/* Assignee */}
             <div className="space-y-2">
               <Label htmlFor="assignee">
-                Assignee {!assignToAll && <span className="text-destructive">*</span>}
+                Виконавець {!assignToAll && <span className="text-destructive">*</span>}
               </Label>
               <Select
                 value={assignedToId}
@@ -275,7 +275,7 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
                 disabled={submitting || usersLoading || assignToAll}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={assignToAll ? "All team members" : "Select assignee"} />
+                  <SelectValue placeholder={assignToAll ? "Всі учасники команди" : "Оберіть виконавця"} />
                 </SelectTrigger>
                 <SelectContent>
                   {users.map((user) => (
@@ -299,7 +299,7 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
                   disabled={submitting}
                 />
                 <Label htmlFor="assignToAll" className="text-sm font-normal cursor-pointer">
-                  Assign to all team members
+                  Призначити всім учасникам команди
                 </Label>
               </div>
 
@@ -313,7 +313,7 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
                     disabled={submitting}
                   />
                   <Label htmlFor="includeSelf" className="text-sm font-normal cursor-pointer">
-                    Include myself
+                    Включити себе
                   </Label>
                 </div>
               )}
@@ -324,7 +324,7 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
           <div className="grid grid-cols-2 gap-4">
             {/* Priority */}
             <div className="space-y-2">
-              <Label htmlFor="priority">Priority</Label>
+              <Label htmlFor="priority">Пріоритет</Label>
               <Select
                 value={priority}
                 onValueChange={(value) => setPriority(value as TaskPriority)}
@@ -334,17 +334,17 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="critical">Critical</SelectItem>
+                  <SelectItem value="low">Низький</SelectItem>
+                  <SelectItem value="medium">Середній</SelectItem>
+                  <SelectItem value="high">Високий</SelectItem>
+                  <SelectItem value="critical">Критичний</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {/* Due Date */}
             <div className="space-y-2">
-              <Label htmlFor="dueDate">Due Date</Label>
+              <Label htmlFor="dueDate">Дедлайн</Label>
               <Input
                 id="dueDate"
                 type="date"
@@ -359,7 +359,7 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
           <div className="grid grid-cols-2 gap-4">
             {/* Time */}
             <div className="space-y-2">
-              <Label htmlFor="scheduledTime">Time</Label>
+              <Label htmlFor="scheduledTime">Час</Label>
               <TimePicker
                 value={scheduledTime}
                 onChange={setScheduledTime}
@@ -369,7 +369,7 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
 
             {/* Repeat */}
             <div className="space-y-2">
-              <Label htmlFor="recurrence">Repeat</Label>
+              <Label htmlFor="recurrence">Повторення</Label>
               <Select
                 value={recurrenceRule}
                 onValueChange={setRecurrenceRule}
@@ -396,7 +396,7 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
           <div className="grid grid-cols-2 gap-4">
             {/* Estimated Time */}
             <div className="space-y-2">
-              <Label htmlFor="estimatedTime">Estimated Time (hours)</Label>
+              <Label htmlFor="estimatedTime">Оцінка часу (год)</Label>
               <Input
                 id="estimatedTime"
                 type="number"
@@ -411,7 +411,7 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
 
             {/* Tags */}
             <div className="space-y-2">
-              <Label htmlFor="tags">Tags</Label>
+              <Label htmlFor="tags">Теги</Label>
               <Input
                 id="tags"
                 value={tags}
@@ -429,11 +429,11 @@ export function TaskForm({ open, onOpenChange, onSuccess, task }: TaskFormProps)
               onClick={handleClose}
               disabled={submitting}
             >
-              Cancel
+              Скасувати
             </Button>
             <Button type="submit" disabled={submitting}>
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditMode ? "Save Changes" : "Create Task"}
+              {isEditMode ? "Зберегти" : "Створити"}
             </Button>
           </DialogFooter>
         </form>
