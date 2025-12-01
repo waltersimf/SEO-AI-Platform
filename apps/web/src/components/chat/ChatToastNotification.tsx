@@ -99,7 +99,7 @@ export function ChatToastNotification() {
           key={toast.id}
           onClick={() => handleToastClick(toast)}
           className={cn(
-            'w-80 bg-white rounded-lg shadow-xl border border-gray-200 p-4 cursor-pointer',
+            'relative w-80 bg-white rounded-lg shadow-xl border border-gray-200 p-4 cursor-pointer',
             'transform transition-all duration-300 ease-out',
             'hover:shadow-2xl hover:border-blue-300',
             toast.isVisible
@@ -113,7 +113,7 @@ export function ChatToastNotification() {
               e.stopPropagation();
               dismissToast(toast.id);
             }}
-            className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+            className="absolute top-3 right-3 p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -122,11 +122,11 @@ export function ChatToastNotification() {
             {/* Avatar */}
             <div
               className={cn(
-                'w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0',
+                'w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0',
                 getColorClass(toast.message.senderName)
               )}
             >
-              {toast.message.senderAvatar || getInitials(toast.message.senderName)}
+              {getInitials(toast.message.senderName)}
             </div>
 
             {/* Content */}
@@ -134,7 +134,7 @@ export function ChatToastNotification() {
               <p className="text-sm font-semibold text-gray-900 truncate">
                 {toast.message.senderName}
               </p>
-              <p className="text-sm text-gray-600 line-clamp-2">
+              <p className="text-sm text-gray-600 line-clamp-2 mt-0.5">
                 {toast.message.message}
               </p>
             </div>
