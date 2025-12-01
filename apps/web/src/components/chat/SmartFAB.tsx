@@ -32,6 +32,15 @@ export function SmartFAB({ className }: SmartFABProps) {
 
   const hasUnread = state.totalUnreadCount > 0;
 
+  // Debug logging
+  console.log('🔔 SmartFAB Debug:', {
+    totalUnreadCount: state.totalUnreadCount,
+    unreadMessagesCount: state.unreadMessages.length,
+    uniqueSendersCount: uniqueSenders.length,
+    uniqueSenders: uniqueSenders.map(s => ({ id: s.senderId, name: s.senderName })),
+    hasUnread,
+  });
+
   // Don't render if sidebar is open
   if (state.isOpen) {
     return null;
