@@ -40,7 +40,11 @@ export function Sidebar() {
         <nav className="flex-1 space-y-1 px-4">
           {navigation.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+            // For Dashboard (/dashboard), use exact match only
+            // For other routes, allow sub-route matching
+            const isActive = item.href === '/dashboard'
+              ? pathname === '/dashboard'
+              : pathname === item.href || pathname.startsWith(item.href + '/');
             const isDisabled = item.disabled;
 
             return (
