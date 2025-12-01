@@ -70,22 +70,23 @@ export function ChatSidebar({
 
   return (
     <>
-      {/* Backdrop (mobile only) */}
+      {/* Backdrop - clickable overlay to close sidebar */}
       {state.isOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/20 md:hidden"
+          className="fixed inset-0 z-30 bg-black/20 transition-opacity duration-300"
           onClick={closeSidebar}
         />
       )}
 
       {/* Sidebar */}
       <div
+        onClick={(e) => e.stopPropagation()}
         className={cn(
           'fixed top-0 right-0 h-full bg-white border-l border-gray-200 shadow-xl z-40',
           'transform transition-transform duration-300 ease-out',
           state.isOpen ? 'translate-x-0' : 'translate-x-full',
-          // Width based on mode
-          isWide ? 'w-[700px]' : 'w-full md:w-[380px]'
+          // Width based on mode - Narrow: 400px, Wide: 50vw (min 700px, max 900px)
+          isWide ? 'w-[50vw] min-w-[700px] max-w-[900px]' : 'w-full md:w-[400px]'
         )}
       >
         {/* Narrow Mode */}
@@ -187,7 +188,7 @@ export function ChatSidebar({
         {isWide && (
           <div className="flex h-full">
             {/* Left Panel - Chat List */}
-            <div className="w-[280px] border-r border-gray-200 flex flex-col flex-shrink-0">
+            <div className="w-[300px] border-r border-gray-200 flex flex-col flex-shrink-0">
               {/* Header */}
               <div className="flex items-center justify-between px-4 h-14 border-b border-gray-200 flex-shrink-0">
                 <h2 className="text-lg font-semibold text-gray-900">Messages</h2>
