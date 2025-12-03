@@ -629,20 +629,22 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Auto-plan Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleGenerateAutoPlan}
-              disabled={autoPlanLoading}
-            >
-              {autoPlanLoading ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Bot className="h-4 w-4 mr-2" />
-              )}
-              Авто-план
-            </Button>
+            {/* Auto-plan Button - only show if onCreateTask is provided (user can edit) */}
+            {onCreateTask && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateAutoPlan}
+                disabled={autoPlanLoading}
+              >
+                {autoPlanLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Bot className="h-4 w-4 mr-2" />
+                )}
+                Авто-план
+              </Button>
+            )}
 
             {/* Filters Popover */}
             <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
@@ -860,13 +862,15 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
           })}
         </div>
 
-        {/* New Task Button */}
-        <div className="flex justify-center">
-          <Button onClick={onCreateTask} className="rounded-full px-6">
-            <Plus className="h-4 w-4 mr-2" />
-            Нове завдання
-          </Button>
-        </div>
+        {/* New Task Button - only show if onCreateTask is provided */}
+        {onCreateTask && (
+          <div className="flex justify-center">
+            <Button onClick={onCreateTask} className="rounded-full px-6">
+              <Plus className="h-4 w-4 mr-2" />
+              Нове завдання
+            </Button>
+          </div>
+        )}
 
         {/* Backlog Section */}
         <div className="border-t pt-6">
@@ -902,14 +906,16 @@ export function WeekScheduleView({ userId, onCreateTask }: WeekScheduleViewProps
                   Немає завдань у беклозі
                 </div>
               )}
-              {/* Add to Backlog placeholder */}
-              <button
-                onClick={onCreateTask}
-                className="border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary hover:text-primary transition-colors min-h-[100px]"
-              >
-                <Plus className="h-5 w-5" />
-                <span className="text-sm font-medium">Додати в беклог</span>
-              </button>
+              {/* Add to Backlog placeholder - only show if onCreateTask is provided */}
+              {onCreateTask && (
+                <button
+                  onClick={onCreateTask}
+                  className="border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary hover:text-primary transition-colors min-h-[100px]"
+                >
+                  <Plus className="h-5 w-5" />
+                  <span className="text-sm font-medium">Додати в беклог</span>
+                </button>
+              )}
             </div>
           </DroppableDay>
         </div>
