@@ -1,8 +1,9 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { randomBytes } from 'crypto'; // ← ДОДАНО для унікальних slugs
+import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -48,7 +49,8 @@ export class AuthService {
           email: data.email,
           name: data.name,
           passwordHash,
-          role: 'admin', // Users joining existing org are also admin for now
+          jobRole: 'seo',
+          role: Role.MEMBER, // Users joining existing org get MEMBER role
           organizationId: existingOrg.id, // Link to existing org
         },
         include: {
@@ -68,7 +70,8 @@ export class AuthService {
           email: data.email,
           name: data.name,
           passwordHash,
-          role: 'admin', // First user is admin
+          jobRole: 'admin',
+          role: Role.OWNER, // Organization creator is OWNER
           organization: {
             create: {
               name: data.organizationName,

@@ -13,6 +13,7 @@ export class UsersService {
         name: true,
         email: true,
         role: true,
+        jobRole: true,
         avatar: true,
         isAI: true,
         isOnline: true,
