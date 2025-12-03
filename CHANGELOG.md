@@ -1,19 +1,159 @@
-# 📦 CHANGELOG - v0.6 COMPLETE!
+# 📦 CHANGELOG - v0.6.1 UI & Security Update
 
-**Версія документу:** 8.0  
-**Останнє оновлення:** 30.11.2025  
-**Поточна версія:** v0.6 ✅ **COMPLETE** (100%)
+**Версія документу:** 9.0  
+**Останнє оновлення:** 03.12.2025  
+**Поточна версія:** v0.6.1 ✅ **COMPLETE**
 
 ---
 
 ## 📋 Зміст
 
-- [Поточна версія (v0.5)](#v05---projects-management--google-integration)
+- [v0.6.1 - UI & Security Update](#v061---ui--security-update)
+- [v0.6 - Tasks & Backlog](#v06---tasks--backlog)
+- [v0.5 - Projects Management & Google Integration](#v05---projects-management--google-integration)
 - [v0.4 - AI Teammate](#v04---ai-teammate)
 - [v0.3.1 - Production Ready](#v031---production-ready)
 - [v0.3 - Chat Infrastructure](#v03---chat-infrastructure)
 - [Наступні кроки](#-наступні-кроки)
-- [Історія версій](#-історія-версій)
+
+---
+
+## v0.6.1 - UI & Security Update
+
+**Дата:** 01.12.2025 - 03.12.2025  
+**Статус:** ✅ **COMPLETE**  
+**Мета:** Chat Sidebar Redesign, Security Fixes, Українізація
+
+---
+
+### 🎯 Що ЗРОБЛЕНО ✅
+
+#### 1. Chat Sidebar Redesign ✅ 🎨
+
+**Проблема:** Floating chat widget закривав контент і був незручним
+
+**Рішення:** Docked Messenger Sidebar (як Telegram Desktop)
+
+**Функціонал:**
+- Sidebar справа замість floating widget
+- **Narrow mode** (~30% екрану) — для швидких повідомлень
+- **Wide mode** (~60% екрану) — для Task Preview, довгих AI відповідей
+- Кнопки перемикання ↗ / ↙
+- Закриття по кліку поза sidebar (backdrop overlay)
+- Chat видалено з лівого меню (Sidebar)
+
+**FAB кнопка (Floating Action Button):**
+- Показує кількість непрочитаних повідомлень
+- Facepile аватарки відправників
+- "X нових повідомлень" текст
+- Правильна граматика (1 = повідомлення, 2-4 = повідомлення, 5+ = повідомлень)
+
+**Файли:**
+- `apps/web/src/components/chat/chat-sidebar.tsx` — redesigned
+- `apps/web/src/components/chat/chat-fab.tsx` — new FAB component
+- `apps/web/src/components/layout/sidebar.tsx` — removed Chat link
+
+---
+
+#### 2. Security Fixes ✅ 🔒
+
+**Проблема:** Потенційні вразливості в chat access control
+
+**Виправлення:**
+
+1. **Chat Access Check**
+   - Новий метод `isChatMember()` в `chat.service.ts`
+   - Перевірка membership перед доступом до чату
+   - 403 Forbidden якщо не член чату
+
+2. **WebSocket Validation**
+   - Валідація membership в `chat.gateway.ts`
+   - Перевірка при join room та send message
+
+3. **Online Users Isolation**
+   - `broadcastOnlineUsers` фільтрує по `organizationId`
+   - Користувачі бачать тільки онлайн-статус своєї організації
+
+4. **Database Indexes**
+   - Додано indexes для performance:
+   ```prisma
+   @@index([chatId])
+   @@index([authorId])
+   @@index([createdAt])
+   ```
+
+**Файли:**
+- `apps/api/src/chat/chat.service.ts` — isChatMember()
+- `apps/api/src/chat/chat.gateway.ts` — validation
+- `apps/api/src/events/events.gateway.ts` — org isolation
+- `packages/db/schema.prisma` — indexes
+
+---
+
+#### 3. Українізація інтерфейсу ✅ 🇺🇦
+
+**Мета:** Підготовка до демо — весь інтерфейс українською
+
+**Що перекладено:**
+
+**Sidebar (повністю):**
+- Dashboard → Головна
+- Projects → Проєкти
+- Tasks → Завдання
+- Knowledge Base → База знань
+- Browser → Браузер
+- Settings → Налаштування
+- Sign Out → Вийти
+
+**Chat Sidebar:**
+- Messages → Повідомлення
+- Search... → Пошук...
+- + New Chat → + Новий чат
+- PINNED → ЗАКРІПЛЕНІ
+- RECENT → ОСТАННІ
+- AI Teammate → AI Помічник
+- Active now → Зараз активний
+- Offline → Офлайн
+
+**Task Preview:**
+- Create Task → Створити завдання
+- Title → Назва
+- Assignee → Виконавець
+- Due Date → Дедлайн
+- Priority → Пріоритет
+- Cancel → Скасувати
+
+**Частково перекладено:**
+- Projects page
+- Tasks page
+- Settings page
+- Create Task modal
+
+---
+
+#### 4. Документація ✅ 📚
+
+- Оновлено Executive Summary (PDF)
+- Додано Dual-LLM Architecture в TechDoc
+- Security audit documentation
+
+---
+
+### 🐛 Bug Fixes
+
+1. **Chat Sidebar Width** — Tailwind динамічні класи не працювали, замінено на відсотки
+2. **FAB Avatars** — `unreadMessages` масив був пустий, виправлено fetchUnreadCount
+3. **getChatMessages** — Додано userId параметр для security check
+
+---
+
+### 📊 v0.6.1 Statistics
+
+- **Час роботи:** 3 дні
+- **Features:** 4 major (Sidebar, Security, i18n, Docs)
+- **Bug fixes:** 3
+- **Security improvements:** 4
+- **Files changed:** ~15
 
 ---
 
@@ -2535,52 +2675,46 @@ async deleteChat(@Param('id') id: string, @Req() req) {
 
 ## 🎯 Наступні кроки
 
-### Immediate (v0.3.1 завершено! ✅)
+### v0.7 - Roles & Invite System (Next)
 
-**Post-completion tasks:**
-1. ✅ v0.3.1 production ready fixes complete
-2. ✅ Ready for deployment
-3. ✅ Ready for demo
-4. ✅ Ready for v0.4 AI Teammate
+**Заплановано:**
+1. Role-based access control (Owner, Admin, Member)
+2. Invite system (email invitations)
+3. Team management UI
+4. Permission checks throughout app
 
-**v0.3 + v0.3.1 IS COMPLETE! 🎉**
+**Estimated:** 1 тиждень
 
 ---
 
-### v0.4 - AI Teammate (Наступна версія)
+### v0.8 - SEO API Integrations
 
-**Priority Features:**
-1. **@AI Mentions** - тегнути AI в чаті
-2. **AI Responses** - Claude API integration
-3. **Context Understanding** - AI розуміє контекст розмови
-4. **Task Creation** - AI створює tasks з чату
-
-**Estimated:** 2-3 тижні
-
-**Чому це killer feature:**
-- Жоден конкурент (Ahrefs, SEMrush) не має AI teammate в team chat
-- AI бере участь в обговореннях як член команди
-- Природна інтеграція через @mentions
-- Розуміє контекст проектів і даних
+**Заплановано:**
+1. Ahrefs API integration
+2. Serpstat API integration
+3. Data visualization in dashboard
+4. AI analysis of SEO data
 
 ---
 
 ## 🔮 Roadmap Overview
 
 ```
-✅ v0.1 - Auth & Database (5 днів)
-✅ v0.2 - Dashboard UI (5 днів)
-✅ v0.3 - Chat System (7 днів)
-✅ v0.3.1 - Production Ready (1 день) ← WE ARE HERE! 🎉
-📋 v0.4 - AI Teammate (14 днів)
-📋 v0.5 - Projects Management (8 днів)
-📋 v0.6 - Tasks & Backlog (7 днів)
-📋 v0.7 - Chat UI Polish + Invite System (10 днів)
-📋 v0.8 - AI Analysis + Morning Brief (8 днів)
-📋 v0.9 - Notifications + Security (10 днів)
-📋 v1.0 - Launch Preparation (10 днів)
-🎉 v1.1 - PUBLIC LAUNCH!
+✅ v0.1 - Auth & Database
+✅ v0.2 - Dashboard UI
+✅ v0.3 - Chat System
+✅ v0.3.1 - Production Ready
+✅ v0.4 - AI Teammate
+✅ v0.5 - Projects & Google Integration
+✅ v0.6 - Tasks & Backlog
+✅ v0.6.1 - UI & Security Update ← CURRENT
+📋 v0.7 - Roles & Invite System
+📋 v0.8 - SEO API Integrations
+📋 v0.9 - Notifications & Alerts
+📋 v1.0 - Public Launch MVP
 ```
+
+---
 
 **Timeline:**
 - v0.3 Complete: 22.11.2025 ✅
@@ -2626,9 +2760,9 @@ Ready for v0.4 - AI Teammate! 🤖
 
 ---
 
-**Last Updated:** 23.11.2025  
-**Next Milestone:** v0.4 - AI Teammate (2-3 weeks)  
-**Current Status:** ✅ v0.3.1 SHIPPED!
+**Last Updated:** 03.12.2025  
+**Next Milestone:** v0.7 - Roles & Invite System  
+**Current Status:** ✅ v0.6.1 COMPLETE!
 
 ---
 
