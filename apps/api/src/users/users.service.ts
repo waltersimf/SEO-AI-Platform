@@ -7,7 +7,10 @@ export class UsersService {
 
   async getOrganizationUsers(organizationId: string) {
     return this.prisma.user.findMany({
-      where: { organizationId },
+      where: {
+        organizationId,
+        isDeleted: false,
+      },
       select: {
         id: true,
         name: true,
