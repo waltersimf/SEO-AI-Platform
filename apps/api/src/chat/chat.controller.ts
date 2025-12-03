@@ -101,8 +101,8 @@ export class ChatController {
   }
 
   @Get(':id/messages')
-  async getChatMessages(@Param('id') chatId: string) {
-    return this.chatService.getChatMessages(chatId);
+  async getChatMessages(@Req() req, @Param('id') chatId: string) {
+    return this.chatService.getChatMessages(chatId, req.user.id);
   }
 
   @Post('direct/:userId')
