@@ -26,6 +26,14 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Users,
   Mail,
   Clock,
@@ -38,6 +46,8 @@ import {
   User,
   Eye,
   ArrowLeft,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { API_URL } from '@/config/api';
 import Link from 'next/link';
@@ -113,6 +123,11 @@ export default function TeamSettingsPage() {
   // Action states
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Invite link dialog state
+  const [inviteLinkDialogOpen, setInviteLinkDialogOpen] = useState(false);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -194,7 +209,10 @@ export default function TeamSettingsPage() {
       });
 
       if (response.ok) {
-        showToast('success', 'Запрошення надіслано успішно');
+        const data = await response.json();
+        setInviteToken(data.token);
+        setInviteLinkDialogOpen(true);
+        setCopied(false);
         setInviteEmail('');
         setInviteRole('MEMBER');
         fetchData(token);
@@ -306,6 +324,24 @@ export default function TeamSettingsPage() {
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const getInviteLink = () => {
+    if (typeof window === 'undefined' || !inviteToken) return '';
+    return `${window.location.origin}/invite/${inviteToken}`;
+  };
+
+  const handleCopyInviteLink = async () => {
+    const link = getInviteLink();
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      showToast('success', 'Посилання скопійовано!');
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      showToast('error', 'Не вдалося скопіювати посилання');
+    }
   };
 
   if (loading) {
@@ -620,6 +656,68 @@ export default function TeamSettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Invite Link Dialog */}
+      <Dialog open={inviteLinkDialogOpen} onOpenChange={setInviteLinkDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              Запрошення створено!
+            </DialogTitle>
+            <DialogDescription>
+              Надішліть це посилання користувачу:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center space-x-2">
+            <div className="grid flex-1 gap-2">
+              <Label htmlFor="invite-link" className="sr-only">
+                Посилання
+              </Label>
+              <Input
+                id="invite-link"
+                value={getInviteLink()}
+                readOnly
+                className="font-mono text-sm"
+              />
+            </div>
+            <Button
+              type="button"
+              size="icon"
+              onClick={handleCopyInviteLink}
+              className="shrink-0"
+            >
+              {copied ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
+              <span className="sr-only">Копіювати</span>
+            </Button>
+          </div>
+          <DialogFooter className="sm:justify-between">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleCopyInviteLink}
+              className="gap-2"
+            >
+              {copied ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
+              Копіювати
+            </Button>
+            <Button
+              type="button"
+              onClick={() => setInviteLinkDialogOpen(false)}
+            >
+              Готово
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
