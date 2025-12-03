@@ -27,7 +27,10 @@ import {
   X,
   Calendar,
   Clock,
+  Users,
+  ChevronRight,
 } from 'lucide-react';
+import Link from 'next/link';
 import { API_URL } from '@/config/api';
 
 interface GoogleIntegration {
@@ -753,6 +756,38 @@ export default function SettingsPage() {
                     )}
                   </>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Team Management Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <Users className="h-6 w-6 text-indigo-600" />
+                  Команда
+                </CardTitle>
+                <CardDescription>
+                  Керуйте учасниками команди, запрошеннями та ролями
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link
+                  href="/dashboard/settings/team"
+                  className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-900">
+                      <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Налаштування команди</p>
+                      <p className="text-sm text-muted-foreground">
+                        Запрошення, ролі та управління учасниками
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </Link>
               </CardContent>
             </Card>
           </div>

@@ -14,6 +14,7 @@ import { EventsModule } from './events/events.module';
 import { SettingsModule } from './settings/settings.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
 import { InviteModule } from './invite/invite.module';
+import { TeamModule } from './team/team.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { InviteModule } from './invite/invite.module';
     SettingsModule,
     SchedulerModule,
     InviteModule,
+    TeamModule,
   ],
 })
 export class AppModule {}
