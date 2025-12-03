@@ -1,8 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { usePermissions, Role } from '@/hooks/usePermissions';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -19,11 +21,39 @@ const navigation = [
   { name: 'Завдання', href: '/dashboard/tasks', icon: CheckSquare },
   { name: 'База знань', href: '/knowledge', icon: BookOpen, disabled: true, badge: 'Скоро' },
   { name: 'Браузер', href: '/browser', icon: Globe, disabled: true, badge: 'Скоро' },
-  { name: 'Налаштування', href: '/dashboard/settings', icon: Settings },
+  { name: 'Налаштування', href: '/dashboard/settings', icon: Settings, requiresEdit: true },
 ];
+
+const roleLabels: Record<Role, string> = {
+  OWNER: 'Власник',
+  ADMIN: 'Адмін',
+  MEMBER: 'Учасник',
+  VIEWER: 'Глядач',
+};
+
+const roleBadgeStyles: Record<Role, string> = {
+  OWNER: 'bg-amber-100 text-amber-800',
+  ADMIN: 'bg-blue-100 text-blue-800',
+  MEMBER: 'bg-green-100 text-green-800',
+  VIEWER: 'bg-gray-100 text-gray-800',
+};
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { role, canEdit } = usePermissions();
+  const [userName, setUserName] = useState<string>('');
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setUserName(payload.name || 'Користувач');
+      } catch {
+        setUserName('Користувач');
+      }
+    }
+  }, []);
 
   return (
     <aside className="w-64 border-r bg-muted/40">
@@ -40,48 +70,57 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 px-4">
-          {navigation.map((item) => {
-            const Icon = item.icon;
-            const isActive = item.href === '/dashboard'
-              ? pathname === '/dashboard'
-              : pathname === item.href || pathname.startsWith(item.href + '/');
-            const isDisabled = item.disabled;
+          {navigation
+            .filter((item) => !item.requiresEdit || canEdit)
+            .map((item) => {
+              const Icon = item.icon;
+              const isActive = item.href === '/dashboard'
+                ? pathname === '/dashboard'
+                : pathname === item.href || pathname.startsWith(item.href + '/');
+              const isDisabled = item.disabled;
 
-            return (
-              <Link
-                key={item.name}
-                href={isDisabled ? '#' : item.href}
-                className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                  isActive && 'bg-primary text-primary-foreground',
-                  !isActive && !isDisabled && 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                  isDisabled && 'cursor-not-allowed opacity-50'
-                )}
-                onClick={(e) => {
-                  if (isDisabled) {
-                    e.preventDefault();
-                  }
-                }}
-              >
-                <Icon className="h-4 w-4" />
-                {item.name}
-                {isDisabled && item.badge && (
-                  <span className="ml-auto text-xs text-muted-foreground">{item.badge}</span>
-                )}
-              </Link>
-            );
-          })}
+              return (
+                <Link
+                  key={item.name}
+                  href={isDisabled ? '#' : item.href}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                    isActive && 'bg-primary text-primary-foreground',
+                    !isActive && !isDisabled && 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                    isDisabled && 'cursor-not-allowed opacity-50'
+                  )}
+                  onClick={(e) => {
+                    if (isDisabled) {
+                      e.preventDefault();
+                    }
+                  }}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.name}
+                  {isDisabled && item.badge && (
+                    <span className="ml-auto text-xs text-muted-foreground">{item.badge}</span>
+                  )}
+                </Link>
+              );
+            })}
         </nav>
 
         {/* User section */}
         <div className="border-t px-4 pt-4">
           <div className="flex items-center gap-3 rounded-lg px-3 py-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-              V
+              {userName.charAt(0).toUpperCase() || 'U'}
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium">Володимир</p>
-              <p className="text-xs text-muted-foreground">Адмін</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{userName || 'Користувач'}</p>
+              {role && (
+                <span className={cn(
+                  'inline-block text-xs px-1.5 py-0.5 rounded',
+                  roleBadgeStyles[role]
+                )}>
+                  {roleLabels[role]}
+                </span>
+              )}
             </div>
           </div>
           <button

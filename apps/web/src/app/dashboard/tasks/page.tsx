@@ -2,18 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { WeekScheduleView } from "@/components/tasks/week-schedule-view";
 import { DoneView } from "@/components/tasks/done-view";
 import { TaskForm } from "@/components/tasks/task-form";
-import { Task, getTaskStats, TaskStats } from "@/lib/api/tasks";
+import { getTaskStats, TaskStats } from "@/lib/api/tasks";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/usePermissions";
 
 type TabType = "schedule" | "done";
 
 export default function TasksPage() {
   const router = useRouter();
+  const { canEdit } = usePermissions();
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<TabType>("schedule");
   const [stats, setStats] = useState<TaskStats | null>(null);
@@ -151,7 +151,7 @@ export default function TasksPage() {
               <WeekScheduleView
                 key={`schedule-${refreshKey}`}
                 userId={filterUserId}
-                onCreateTask={handleCreateTask}
+                onCreateTask={canEdit ? handleCreateTask : undefined}
               />
             )}
             {activeTab === "done" && (
@@ -165,12 +165,14 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* Create Task Modal */}
-      <TaskForm
-        open={isCreateModalOpen}
-        onOpenChange={setIsCreateModalOpen}
-        onSuccess={handleCreateSuccess}
-      />
+      {/* Create Task Modal - only for users with edit permissions */}
+      {canEdit && (
+        <TaskForm
+          open={isCreateModalOpen}
+          onOpenChange={setIsCreateModalOpen}
+          onSuccess={handleCreateSuccess}
+        />
+      )}
     </div>
   );
 }

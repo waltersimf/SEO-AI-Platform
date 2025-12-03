@@ -17,6 +17,7 @@ import { AiService } from '../ai/ai.service';
 import { AiContextService } from '../ai/ai-context.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TaskService } from '../task/task.service';
+import { Role } from '@prisma/client';
 
 interface ConnectedClient {
   socketId: string;
@@ -248,6 +249,21 @@ export class ChatGateway
           originalPayload: payload,
         });
         return { success: false, error: errorMsg };
+      }
+
+      // Check user role - VIEWER cannot send messages
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.authorId },
+        select: { role: true },
+      });
+
+      if (user?.role === Role.VIEWER) {
+        this.logger.warn(`VIEWER user ${payload.authorId} attempted to send message`);
+        client.emit('message_error', {
+          message: 'You do not have permission to send messages',
+          code: 'PERMISSION_DENIED',
+        });
+        return { success: false, error: 'Permission denied - VIEWER role cannot send messages' };
       }
 
       // Validate content length

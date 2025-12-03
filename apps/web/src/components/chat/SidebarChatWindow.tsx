@@ -9,6 +9,7 @@ import { AutoPlanPreviewCard } from './auto-plan-preview-card';
 import { API_URL } from '@/config/api';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface TaskPreviewData {
   type: 'task_preview';
@@ -97,6 +98,7 @@ export function SidebarChatWindow({
   organizationId,
   recipientName,
 }: SidebarChatWindowProps) {
+  const { canEdit } = usePermissions();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState<{ userId: string; userName: string } | null>(null);
@@ -582,24 +584,30 @@ export function SidebarChatWindow({
           </div>
         )}
 
-        <div className="flex gap-2 items-center">
-          <input
-            ref={inputRef}
-            type="text"
-            value={inputValue}
-            onChange={e => handleTyping(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={recipientName ? `Повідомлення для ${recipientName}...` : 'Введіть повідомлення...'}
-            className="flex-1 px-4 py-2.5 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors"
-          />
-          <button
-            onClick={handleSend}
-            disabled={!inputValue.trim()}
-            className="p-2.5 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <Send className="w-5 h-5" />
-          </button>
-        </div>
+        {canEdit ? (
+          <div className="flex gap-2 items-center">
+            <input
+              ref={inputRef}
+              type="text"
+              value={inputValue}
+              onChange={e => handleTyping(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={recipientName ? `Повідомлення для ${recipientName}...` : 'Введіть повідомлення...'}
+              className="flex-1 px-4 py-2.5 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors"
+            />
+            <button
+              onClick={handleSend}
+              disabled={!inputValue.trim()}
+              className="p-2.5 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <Send className="w-5 h-5" />
+            </button>
+          </div>
+        ) : (
+          <div className="text-center text-sm text-gray-500 py-2">
+            Тільки для перегляду. Ви не можете надсилати повідомлення.
+          </div>
+        )}
       </div>
     </div>
   );
