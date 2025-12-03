@@ -1,13 +1,14 @@
-# 📦 CHANGELOG - v0.6.1 UI & Security Update
+# 📦 CHANGELOG - v0.7 Roles & Invite System
 
-**Версія документу:** 9.0  
+**Версія документу:** 10.0  
 **Останнє оновлення:** 03.12.2025  
-**Поточна версія:** v0.6.1 ✅ **COMPLETE**
+**Поточна версія:** v0.7 ✅ **COMPLETE**
 
 ---
 
 ## 📋 Зміст
 
+- [v0.7 - Roles & Invite System](#v07---roles--invite-system)
 - [v0.6.1 - UI & Security Update](#v061---ui--security-update)
 - [v0.6 - Tasks & Backlog](#v06---tasks--backlog)
 - [v0.5 - Projects Management & Google Integration](#v05---projects-management--google-integration)
@@ -15,6 +16,357 @@
 - [v0.3.1 - Production Ready](#v031---production-ready)
 - [v0.3 - Chat Infrastructure](#v03---chat-infrastructure)
 - [Наступні кроки](#-наступні-кроки)
+
+---
+
+## v0.7 - Roles & Invite System
+
+**Дата:** 03.12.2025  
+**Статус:** ✅ **COMPLETE**  
+**Мета:** Role-based access control, Invite система, Team management
+
+---
+
+### 🎯 Що ЗРОБЛЕНО ✅
+
+#### 1. Role System ✅ 👥
+
+**Ієрархія ролей:**
+
+```
+OWNER (Власник)
+   ↓
+ADMIN (Адміністратор / Тімлід)
+   ↓
+MEMBER (Учасник)
+   ↓
+VIEWER (Глядач)
+```
+
+**Таблиця доступів:**
+
+| Дія | OWNER | ADMIN | MEMBER | VIEWER |
+|-----|-------|-------|--------|--------|
+| **Організація** |||||
+| Редагувати назву організації | ✅ | ❌ | ❌ | ❌ |
+| Видалити організацію | ✅ | ❌ | ❌ | ❌ |
+| **Команда** |||||
+| Запрошувати нових членів | ✅ | ✅ | ❌ | ❌ |
+| Змінювати ролі | ✅ | ✅* | ❌ | ❌ |
+| Видаляти членів | ✅ | ✅* | ❌ | ❌ |
+| Скасовувати запрошення | ✅ | ✅ | ❌ | ❌ |
+| Бачити Team Settings | ✅ | ✅ | ❌ | ❌ |
+| **Проєкти** |||||
+| Створювати проєкти | ✅ | ✅ | ✅ | ❌ |
+| Редагувати проєкти | ✅ | ✅ | ✅ | ❌ |
+| Видаляти проєкти | ✅ | ✅ | ✅ | ❌ |
+| Переглядати проєкти | ✅ | ✅ | ✅ | ✅ |
+| **Завдання** |||||
+| Створювати завдання | ✅ | ✅ | ✅ | ❌ |
+| Редагувати завдання | ✅ | ✅ | ✅ | ❌ |
+| Видаляти завдання | ✅ | ✅ | ✅ | ❌ |
+| Drag & drop в календарі | ✅ | ✅ | ✅ | ❌ |
+| Переглядати завдання | ✅ | ✅ | ✅ | ✅ |
+| **Чат** |||||
+| Писати повідомлення | ✅ | ✅ | ✅ | ❌ |
+| Читати повідомлення | ✅ | ✅ | ✅ | ✅ |
+| Викликати @AI | ✅ | ✅ | ✅ | ❌ |
+| **Налаштування** |||||
+| Доступ до Settings | ✅ | ✅ | ✅ | ❌ |
+| Google інтеграції | ✅ | ✅ | ✅ | ❌ |
+
+*ADMIN може змінювати ролі тільки MEMBER і VIEWER, не може змінювати OWNER або інших ADMIN
+
+**Опис ролей:**
+
+| Роль | Хто це | Приклади |
+|------|--------|----------|
+| **OWNER** | Творець організації, CEO | Власник агенції |
+| **ADMIN** | Керівник відділу, тімлід | Head of SEO, PPC Lead |
+| **MEMBER** | Звичайний член команди | SEO-спеціаліст, копірайтер |
+| **VIEWER** | Read-only доступ | Клієнт, стажер, стейкхолдер |
+
+**Приклад структури агенції:**
+
+```
+OWNER (Власник агенції / CEO)
+   │
+   ├── ADMIN (Head of SEO)
+   │      ├── MEMBER (SEO-спеціаліст)
+   │      ├── MEMBER (SEO-спеціаліст)
+   │      └── MEMBER (Лінкбілдер)
+   │
+   ├── ADMIN (PPC Team Lead)
+   │      ├── MEMBER (PPC-спеціаліст)
+   │      └── MEMBER (PPC-спеціаліст)
+   │
+   └── VIEWER (Клієнт)
+          └── Дивиться звіти, не втручається
+```
+
+**Database Schema:**
+
+```prisma
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+model User {
+  // ... existing fields
+  role      Role     @default(MEMBER)
+  jobRole   String?  // "seo", "ppc", "account" - job title
+  isDeleted Boolean  @default(false)
+  deletedAt DateTime?
+}
+```
+
+---
+
+#### 2. Invite System ✅ 📧
+
+**Функціонал:**
+- Генерація унікального invite token (64 символи)
+- Термін дії: 7 днів
+- Статуси: pending, accepted, expired, revoked
+- Можливість скасувати запрошення
+- Copy invite link для ручного поширення
+
+**API Endpoints:**
+
+| Method | Endpoint | Опис | Доступ |
+|--------|----------|------|--------|
+| POST | `/api/invites` | Створити запрошення | OWNER, ADMIN |
+| GET | `/api/invites` | Список pending invites | OWNER, ADMIN |
+| DELETE | `/api/invites/:id` | Скасувати запрошення | OWNER, ADMIN |
+| GET | `/api/invites/verify/:token` | Інфо про invite | Public |
+| POST | `/api/invites/accept/:token` | Прийняти запрошення | Auth required |
+
+**Database Schema:**
+
+```prisma
+model Invite {
+  id             String    @id @default(cuid())
+  email          String
+  token          String    @unique  // crypto.randomBytes(32).toString('hex')
+  role           Role      @default(MEMBER)
+  organizationId String
+  invitedById    String
+  expiresAt      DateTime  // 7 днів
+  usedAt         DateTime?
+  createdAt      DateTime  @default(now())
+  
+  organization   Organization @relation(...)
+  invitedBy      User         @relation(...)
+  
+  @@index([token])
+  @@index([email])
+  @@index([organizationId])
+}
+```
+
+**Файли:**
+- `apps/api/src/invite/invite.module.ts`
+- `apps/api/src/invite/invite.service.ts`
+- `apps/api/src/invite/invite.controller.ts`
+- `apps/api/src/invite/dto/create-invite.dto.ts`
+
+---
+
+#### 3. Team Settings UI ✅ ⚙️
+
+**Сторінка:** `/dashboard/settings/team`
+
+**Три секції:**
+
+1. **"Запросити нового члена"**
+   - Email input
+   - Role select (Адміністратор, Учасник, Глядач)
+   - "Надіслати запрошення" button
+   - Dialog з invite link після створення
+   - "Копіювати" кнопка
+
+2. **"Очікують на приєднання"**
+   - Таблиця pending invites
+   - Email | Role badge | "Закінчується через X днів" | "Скасувати"
+   - Empty state: "Немає активних запрошень"
+
+3. **"Члени команди"**
+   - Список всіх членів організації
+   - Avatar | Name | Email | Role badge | Actions
+   - Role dropdown для зміни ролі
+   - "Видалити" кнопка з confirmation
+
+**Role badges кольори:**
+- 👑 OWNER — gold/yellow
+- 🛡️ ADMIN — blue
+- 👤 MEMBER — green
+- 👁️ VIEWER — gray
+
+**Файли:**
+- `apps/web/src/app/dashboard/settings/team/page.tsx`
+
+---
+
+#### 4. Invite Accept Page ✅ 🔗
+
+**Сторінка:** `/invite/[token]`
+
+**Стани:**
+
+| Стан | UI |
+|------|-----|
+| Loading | Spinner "Завантаження..." |
+| Valid | Картка з деталями + кнопки |
+| Expired | Помилка "Запрошення закінчилось" |
+| Not Found | Помилка "Запрошення не знайдено" |
+| Used | Помилка "Запрошення вже використане" |
+
+**Valid invite картка показує:**
+- Forgeline logo
+- "Вас запрошено приєднатися до [Organization Name]"
+- Role badge: "Ви будете: [Role]"
+- "Запросив: [invitedBy.name]"
+- "Дійсне до: [date]"
+
+**Дії:**
+- Якщо залогінений → кнопка "Приєднатися"
+- Якщо не залогінений → "Увійти" / "Зареєструватися"
+- Email mismatch warning (але дозволяє приєднатись)
+
+**Auth redirect:**
+- Login/Signup сторінки підтримують `?redirect=` параметр
+- Після auth → повертає на invite сторінку
+
+**Файли:**
+- `apps/web/src/app/invite/[token]/page.tsx`
+- `apps/web/src/app/auth/login/page.tsx` (updated)
+- `apps/web/src/app/auth/signup/page.tsx` (updated)
+
+---
+
+#### 5. Permission Guards ✅ 🔒
+
+**Frontend — usePermissions hook:**
+
+```typescript
+// apps/web/src/hooks/usePermissions.ts
+export function usePermissions() {
+  const { role } = useAuth();
+  
+  return {
+    role,
+    isOwner: role === 'OWNER',
+    isAdmin: role === 'ADMIN',
+    canEdit: role !== 'VIEWER',
+    canManageTeam: role === 'OWNER' || role === 'ADMIN',
+  };
+}
+```
+
+**Застосування:**
+- Sidebar: приховано Settings для VIEWER
+- Sidebar: показує role badge біля імені
+- Tasks: приховано "Нове завдання" для VIEWER
+- Projects: приховано "New project" для VIEWER
+- Chat: disabled input для VIEWER ("Тільки перегляд")
+- Settings: Organization card (edit тільки для OWNER)
+
+**Backend — @Roles() decorator:**
+
+```typescript
+// apps/api/src/auth/decorators/roles.decorator.ts
+@Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
+@Post()
+async createTask() { ... }
+```
+
+**Захищені endpoints:**
+- POST/PATCH/DELETE `/api/tasks/*` — OWNER, ADMIN, MEMBER
+- POST/PATCH/DELETE `/api/projects/*` — OWNER, ADMIN, MEMBER
+- POST/PATCH/DELETE `/api/invites/*` — OWNER, ADMIN
+- PATCH `/api/organization` — OWNER only
+- WebSocket `send_message` — OWNER, ADMIN, MEMBER
+
+**Файли:**
+- `apps/api/src/auth/guards/roles.guard.ts`
+- `apps/api/src/auth/decorators/roles.decorator.ts`
+- `apps/web/src/hooks/usePermissions.ts`
+
+---
+
+#### 6. Organization Management ✅ 🏢
+
+**Settings page:**
+- Нова картка "Організація" зверху
+- Показує: назва, кількість членів, кількість проєктів
+- OWNER може редагувати назву (pencil icon)
+
+**API:**
+- GET `/api/organization` — інфо про організацію
+- PATCH `/api/organization` — оновити назву (OWNER only)
+
+**Файли:**
+- `apps/api/src/organization/organization.module.ts`
+- `apps/api/src/organization/organization.service.ts`
+- `apps/api/src/organization/organization.controller.ts`
+
+---
+
+#### 7. Team Management API ✅ 👥
+
+**Endpoints:**
+
+| Method | Endpoint | Опис | Доступ |
+|--------|----------|------|--------|
+| GET | `/api/team` | Список членів організації | All |
+| PATCH | `/api/team/:userId/role` | Змінити роль | OWNER, ADMIN |
+| DELETE | `/api/team/:userId` | Soft delete члена | OWNER, ADMIN |
+
+**Security rules:**
+- OWNER роль не можна змінити
+- Не можна змінити власну роль
+- ADMIN не може підвищити до OWNER
+- ADMIN не може модифікувати іншого ADMIN
+- OWNER не можна видалити
+- При signup creator організації → автоматично OWNER
+
+**Файли:**
+- `apps/api/src/team/team.module.ts`
+- `apps/api/src/team/team.service.ts`
+- `apps/api/src/team/team.controller.ts`
+
+---
+
+### ❌ Не реалізовано (Planned for later)
+
+| Функціонал | Причина | Коли |
+|------------|---------|------|
+| Email invites (SendGrid) | Немає домену | v1.0 |
+| Email notifications | Немає домену | v1.0 |
+
+**Workaround:** Copy invite link — працює для MVP
+
+---
+
+### 📊 v0.7 Statistics
+
+- **Час роботи:** 1 день
+- **Features:** 7 major
+- **New files:** ~15
+- **Database changes:** 2 (Role enum, Invite model)
+- **API endpoints:** 8 new
+- **Completion:** 17/19 tasks (90%)
+
+---
+
+### 🐛 Bug Fixes
+
+1. **Prisma migration conflict** — старе поле `role` (String) перейменовано в `jobRole`
+2. **PowerShell syntax** — `&&` не працює, команди виконуються окремо
+3. **Hidden button for VIEWER** — "+ Нове завдання" тепер прихована
 
 ---
 
@@ -2675,25 +3027,35 @@ async deleteChat(@Param('id') id: string, @Req() req) {
 
 ## 🎯 Наступні кроки
 
-### v0.7 - Roles & Invite System (Next)
+### v0.8 - AI Analysis & Morning Brief (Next)
 
 **Заплановано:**
-1. Role-based access control (Owner, Admin, Member)
-2. Invite system (email invitations)
-3. Team management UI
-4. Permission checks throughout app
+1. AI аналіз проєктів та завдань
+2. Morning Brief — щоденна сводка
+3. Payment Status tracking
+4. Ahrefs/Serpstat API інтеграція
 
-**Estimated:** 1 тиждень
+**Estimated:** 1-2 тижні
 
 ---
 
-### v0.8 - SEO API Integrations
+### v0.9 - Notifications & Polish
 
 **Заплановано:**
-1. Ahrefs API integration
-2. Serpstat API integration
-3. Data visualization in dashboard
-4. AI analysis of SEO data
+1. In-app notifications
+2. Email notifications (SendGrid)
+3. Performance optimization
+4. Bug fixes & polish
+
+---
+
+### v1.0 - Public Launch MVP
+
+**Заплановано:**
+1. Domain setup (forgeline.com)
+2. Production deployment
+3. Documentation
+4. Landing page
 
 ---
 
@@ -2707,10 +3069,10 @@ async deleteChat(@Param('id') id: string, @Req() req) {
 ✅ v0.4 - AI Teammate
 ✅ v0.5 - Projects & Google Integration
 ✅ v0.6 - Tasks & Backlog
-✅ v0.6.1 - UI & Security Update ← CURRENT
-📋 v0.7 - Roles & Invite System
-📋 v0.8 - SEO API Integrations
-📋 v0.9 - Notifications & Alerts
+✅ v0.6.1 - UI & Security Update
+✅ v0.7 - Roles & Invite System ← CURRENT
+📋 v0.8 - AI Analysis & Morning Brief
+📋 v0.9 - Notifications & Polish
 📋 v1.0 - Public Launch MVP
 ```
 
@@ -2761,9 +3123,9 @@ Ready for v0.4 - AI Teammate! 🤖
 ---
 
 **Last Updated:** 03.12.2025  
-**Next Milestone:** v0.7 - Roles & Invite System  
-**Current Status:** ✅ v0.6.1 COMPLETE!
+**Next Milestone:** v0.8 - AI Analysis & Morning Brief  
+**Current Status:** ✅ v0.7 COMPLETE!
 
 ---
 
-🎊 **Congratulations! v0.3.1 is complete! Ready for production!** 🎊
+🎊 **v0.7 Roles & Invite System завершено!** 🎊
