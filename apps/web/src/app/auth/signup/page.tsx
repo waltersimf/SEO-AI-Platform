@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,8 @@ import { API_URL } from '@/config/api';
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect');
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -46,12 +48,12 @@ export default function SignupPage() {
       }
 
       const data = await response.json();
-      
+
       // Зберігаємо token
       localStorage.setItem('token', data.token);
-      
-      // Redirect до onboarding або dashboard
-      router.push('/dashboard');
+
+      // Redirect до redirect URL або dashboard
+      router.push(redirectUrl || '/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -138,7 +140,10 @@ export default function SignupPage() {
         <CardFooter>
           <div className="text-sm text-muted-foreground text-center w-full">
             Already have an account?{' '}
-            <Link href="/auth/login" className="text-primary hover:underline">
+            <Link
+              href={redirectUrl ? `/auth/login?redirect=${encodeURIComponent(redirectUrl)}` : '/auth/login'}
+              className="text-primary hover:underline"
+            >
               Sign in
             </Link>
           </div>
