@@ -14,12 +14,15 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 
 @Controller('projects')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class ProjectsController {
   constructor(private projectsService: ProjectsService) {}
 
@@ -43,6 +46,7 @@ export class ProjectsController {
   }
 
   @Post()
+  @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   async create(@Req() req, @Body() dto: CreateProjectDto) {
     try {
       if (!req.user || !req.user.organizationId) {
@@ -85,6 +89,7 @@ export class ProjectsController {
   }
 
   @Patch(':id')
+  @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   async update(@Req() req, @Param('id') id: string, @Body() dto: UpdateProjectDto) {
     try {
       if (!req.user || !req.user.organizationId) {
@@ -108,6 +113,7 @@ export class ProjectsController {
   }
 
   @Delete(':id')
+  @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   async delete(@Req() req, @Param('id') id: string) {
     try {
       if (!req.user || !req.user.organizationId) {

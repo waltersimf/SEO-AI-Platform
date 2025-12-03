@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ProjectCard } from '@/components/projects/project-card';
 import { Plus, FolderKanban } from 'lucide-react';
 import { API_URL } from '@/config/api';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface Project {
   id: string;
@@ -19,6 +20,7 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { canEdit } = usePermissions();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -77,10 +79,12 @@ export default function ProjectsPage() {
                   Керуйте своїми SEO проєктами
                 </p>
               </div>
-              <Button onClick={() => router.push('/dashboard/projects/new')}>
-                <Plus className="h-4 w-4 mr-2" />
-                Новий проєкт
-              </Button>
+              {canEdit && (
+                <Button onClick={() => router.push('/dashboard/projects/new')}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Новий проєкт
+                </Button>
+              )}
             </div>
 
             {/* Error State */}
@@ -107,12 +111,16 @@ export default function ProjectsPage() {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Ще немає проєктів</h3>
                 <p className="text-muted-foreground mb-6">
-                  Створіть свій перший проєкт, щоб почати відстежувати SEO.
+                  {canEdit
+                    ? 'Створіть свій перший проєкт, щоб почати відстежувати SEO.'
+                    : 'Проєкти ще не створені. Зверніться до адміністратора.'}
                 </p>
-                <Button onClick={() => router.push('/dashboard/projects/new')}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Новий проєкт
-                </Button>
+                {canEdit && (
+                  <Button onClick={() => router.push('/dashboard/projects/new')}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Новий проєкт
+                  </Button>
+                )}
               </div>
             )}
           </div>

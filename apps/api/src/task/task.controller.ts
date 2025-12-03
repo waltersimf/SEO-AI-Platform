@@ -15,6 +15,9 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 import { TaskService } from './task.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -31,7 +34,7 @@ import { ManualTimeEntryDto } from './dto/time-entry.dto';
 import { TaskStatus } from '@prisma/client';
 
 @Controller('tasks')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class TaskController {
   constructor(private taskService: TaskService) {}
 
@@ -150,6 +153,7 @@ export class TaskController {
   // ==================== AUTO-PLANNING ====================
 
   @Post('auto-plan')
+  @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   async generateAutoPlan(@Req() req) {
     try {
       if (!req.user || !req.user.organizationId) {
@@ -171,6 +175,7 @@ export class TaskController {
   }
 
   @Post('apply-plan')
+  @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   async applyAutoPlan(
     @Req() req,
     @Body() body: { plan: Array<{ taskId: string; suggestedDate: string }> },
@@ -220,6 +225,7 @@ export class TaskController {
   }
 
   @Post()
+  @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   async create(@Req() req, @Body() dto: CreateTaskDto) {
     try {
       if (!req.user || !req.user.organizationId) {
@@ -272,6 +278,7 @@ export class TaskController {
   }
 
   @Patch(':id')
+  @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   async update(@Req() req, @Param('id') id: string, @Body() dto: UpdateTaskDto) {
     try {
       if (!req.user || !req.user.organizationId) {
@@ -296,6 +303,7 @@ export class TaskController {
   }
 
   @Delete(':id')
+  @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   async delete(@Req() req, @Param('id') id: string) {
     try {
       if (!req.user || !req.user.organizationId) {
@@ -320,6 +328,7 @@ export class TaskController {
   }
 
   @Post(':id/accept')
+  @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   async acceptTask(@Req() req, @Param('id') id: string, @Body() dto: AcceptTaskDto) {
     try {
       if (!req.user || !req.user.organizationId) {
@@ -345,6 +354,7 @@ export class TaskController {
   }
 
   @Post(':id/decline')
+  @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   async declineTask(@Req() req, @Param('id') id: string, @Body() dto: DeclineTaskDto) {
     try {
       if (!req.user || !req.user.organizationId) {
@@ -374,6 +384,7 @@ export class TaskController {
   }
 
   @Patch(':id/status')
+  @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   async changeStatus(@Req() req, @Param('id') id: string, @Body() dto: ChangeStatusDto) {
     try {
       if (!req.user || !req.user.organizationId) {
@@ -402,6 +413,7 @@ export class TaskController {
   }
 
   @Patch(':id/schedule')
+  @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   async scheduleTask(@Req() req, @Param('id') id: string, @Body() dto: ScheduleTaskDto) {
     try {
       if (!req.user || !req.user.organizationId) {
@@ -432,6 +444,7 @@ export class TaskController {
   // ==================== COMMENTS ====================
 
   @Post(':id/comments')
+  @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   async addComment(@Req() req, @Param('id') id: string, @Body() dto: CreateCommentDto) {
     try {
       if (!req.user || !req.user.organizationId) {
@@ -485,6 +498,7 @@ export class TaskController {
   }
 
   @Delete(':id/comments/:commentId')
+  @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   async deleteComment(@Req() req, @Param('commentId') commentId: string) {
     try {
       if (!req.user || !req.user.id) {
@@ -511,6 +525,7 @@ export class TaskController {
   // ==================== TIME ENTRIES ====================
 
   @Post(':id/time/start')
+  @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   async startTimer(@Req() req, @Param('id') id: string) {
     try {
       if (!req.user || !req.user.organizationId) {
@@ -536,6 +551,7 @@ export class TaskController {
   }
 
   @Post(':id/time/stop')
+  @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   async stopTimer(@Req() req, @Param('id') id: string) {
     try {
       if (!req.user || !req.user.organizationId) {
@@ -585,6 +601,7 @@ export class TaskController {
   }
 
   @Post(':id/time/manual')
+  @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   async addManualTimeEntry(@Req() req, @Param('id') id: string, @Body() dto: ManualTimeEntryDto) {
     try {
       if (!req.user || !req.user.organizationId) {

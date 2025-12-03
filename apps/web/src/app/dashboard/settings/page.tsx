@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -29,9 +30,13 @@ import {
   Clock,
   Users,
   ChevronRight,
+  Building2,
+  Pencil,
+  Check,
 } from 'lucide-react';
 import Link from 'next/link';
 import { API_URL } from '@/config/api';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface GoogleIntegration {
   connected: boolean;
@@ -60,6 +65,14 @@ interface DriveFile {
   webViewLink: string;
 }
 
+interface OrganizationInfo {
+  id: string;
+  name: string;
+  memberCount: number;
+  projectCount: number;
+  createdAt: string;
+}
+
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [googleIntegration, setGoogleIntegration] = useState<GoogleIntegration | null>(null);
@@ -80,7 +93,14 @@ export default function SettingsPage() {
   const [autoPlanLoading, setAutoPlanLoading] = useState(false);
   const [autoPlanSaving, setAutoPlanSaving] = useState(false);
 
+  // Organization state
+  const [organization, setOrganization] = useState<OrganizationInfo | null>(null);
+  const [isEditingOrgName, setIsEditingOrgName] = useState(false);
+  const [editedOrgName, setEditedOrgName] = useState('');
+  const [orgSaving, setOrgSaving] = useState(false);
+
   const router = useRouter();
+  const { isOwner } = usePermissions();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -90,6 +110,7 @@ export default function SettingsPage() {
     }
     checkGoogleConnection(token);
     fetchAutoPlanSettings(token);
+    fetchOrganization(token);
   }, [router]);
 
   const checkGoogleConnection = async (token: string) => {
@@ -140,6 +161,55 @@ export default function SettingsPage() {
       console.error('Error fetching auto-plan settings:', error);
     } finally {
       setAutoPlanLoading(false);
+    }
+  };
+
+  const fetchOrganization = async (token: string) => {
+    try {
+      const response = await fetch(`${API_URL}/api/organization`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setOrganization(data);
+        setEditedOrgName(data.name);
+      }
+    } catch (error) {
+      console.error('Error fetching organization:', error);
+    }
+  };
+
+  const saveOrganizationName = async () => {
+    const token = localStorage.getItem('token');
+    if (!token || !editedOrgName.trim()) return;
+
+    setOrgSaving(true);
+    try {
+      const response = await fetch(`${API_URL}/api/organization`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: editedOrgName.trim() }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setOrganization(prev => prev ? { ...prev, name: data.name } : null);
+        setIsEditingOrgName(false);
+        setActionResult({ type: 'success', message: 'Назву організації оновлено' });
+      } else {
+        throw new Error('Failed to save');
+      }
+    } catch (error) {
+      setActionResult({ type: 'error', message: 'Не вдалося зберегти назву організації' });
+    } finally {
+      setOrgSaving(false);
+      setTimeout(() => setActionResult(null), 3000);
     }
   };
 
@@ -378,6 +448,107 @@ export default function SettingsPage() {
                 </button>
               </div>
             )}
+
+            {/* Organization Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <Building2 className="h-6 w-6 text-emerald-600" />
+                  Організація
+                </CardTitle>
+                <CardDescription>
+                  Інформація про вашу організацію
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {organization ? (
+                  <>
+                    {/* Organization Name */}
+                    <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                      <div className="flex-1">
+                        <Label className="text-sm text-muted-foreground">Назва організації</Label>
+                        {isEditingOrgName && isOwner ? (
+                          <div className="flex items-center gap-2 mt-1">
+                            <Input
+                              value={editedOrgName}
+                              onChange={(e) => setEditedOrgName(e.target.value)}
+                              className="h-9 max-w-xs"
+                              disabled={orgSaving}
+                            />
+                            <Button
+                              size="sm"
+                              onClick={saveOrganizationName}
+                              disabled={orgSaving || !editedOrgName.trim()}
+                            >
+                              {orgSaving ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Check className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setIsEditingOrgName(false);
+                                setEditedOrgName(organization.name);
+                              }}
+                              disabled={orgSaving}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 mt-1">
+                            <p className="font-medium text-lg">{organization.name}</p>
+                            {isOwner && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setIsEditingOrgName(true)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Organization Stats */}
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="p-4 border rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-5 w-5 text-indigo-600" />
+                          <span className="text-sm text-muted-foreground">Учасники</span>
+                        </div>
+                        <p className="text-2xl font-bold mt-1">{organization.memberCount}</p>
+                      </div>
+                      <div className="p-4 border rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <HardDrive className="h-5 w-5 text-blue-600" />
+                          <span className="text-sm text-muted-foreground">Проєкти</span>
+                        </div>
+                        <p className="text-2xl font-bold mt-1">{organization.projectCount}</p>
+                      </div>
+                    </div>
+
+                    {/* Created Date */}
+                    <div className="text-sm text-muted-foreground">
+                      Створено: {new Date(organization.createdAt).toLocaleDateString('uk-UA', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Google Integration Card */}
             <Card>
