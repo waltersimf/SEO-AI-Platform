@@ -20,7 +20,8 @@ async function main() {
         name: userData.name,
         passwordHash: hashedPassword,
         organizationId: orgId,
-        role: 'admin',
+        jobRole: 'admin',
+        role: 'MEMBER',
       },
     });
     

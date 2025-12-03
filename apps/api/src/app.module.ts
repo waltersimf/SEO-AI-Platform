@@ -13,6 +13,7 @@ import { TaskModule } from './task/task.module';
 import { EventsModule } from './events/events.module';
 import { SettingsModule } from './settings/settings.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
+import { InviteModule } from './invite/invite.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { SchedulerModule } from './scheduler/scheduler.module';
     TaskModule,
     SettingsModule,
     SchedulerModule,
+    InviteModule,
   ],
 })
 export class AppModule {}
