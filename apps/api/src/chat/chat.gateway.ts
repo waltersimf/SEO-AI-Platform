@@ -600,8 +600,18 @@ export class ChatGateway
         return;
       }
 
-      // Generate AI response with full conversation context
-      const aiResponse = await this.aiService.generateResponse(lastMessage.content, context);
+      // Get chat to find organization ID for SEO tools access
+      const chat = await this.prisma.chat.findUnique({
+        where: { id: chatId },
+        select: { organizationId: true },
+      });
+
+      // Generate AI response with full conversation context and SEO tools
+      const aiResponse = await this.aiService.generateResponse(
+        lastMessage.content,
+        context,
+        chat?.organizationId,
+      );
 
       // Get AI model from config
       const aiModel = this.configService.get<string>('AI_MODEL') || 'claude-sonnet-4-20250514';
@@ -685,7 +695,7 @@ export class ChatGateway
       if (!parseResult.isTaskRequest || !parseResult.task) {
         // Not a valid task request, generate normal response
         this.logger.log('Not a valid task request, generating normal response');
-        const aiResponse = await this.aiService.generateResponse(message, context);
+        const aiResponse = await this.aiService.generateResponse(message, context, chat.organizationId);
         const aiModel = this.configService.get<string>('AI_MODEL') || 'claude-sonnet-4-20250514';
 
         const aiMessage = await this.chatService.createAIMessage(

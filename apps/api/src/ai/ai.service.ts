@@ -2,6 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
 import { AiContext } from './ai-context.service';
+import { AhrefsService } from '../integrations/ahrefs.service';
+import { SerpstatService } from '../integrations/serpstat.service';
+import { IntegrationsService } from '../integrations/integrations.service';
 
 export interface TaskParseResult {
   isTaskRequest: boolean;
@@ -19,12 +22,97 @@ export interface TaskParseResult {
   message?: string;
 }
 
+// SEO Tools definitions for Claude
+const SEO_TOOLS: Anthropic.Tool[] = [
+  {
+    name: 'get_domain_metrics',
+    description: 'Get SEO metrics for a domain using Ahrefs API. Returns Domain Rating, URL Rating, backlinks count, referring domains, organic keywords and traffic estimates.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        domain: {
+          type: 'string',
+          description: 'The domain to analyze (e.g., "example.com" or "https://example.com")',
+        },
+      },
+      required: ['domain'],
+    },
+  },
+  {
+    name: 'get_organic_keywords',
+    description: 'Get organic keywords that a domain ranks for using Ahrefs API. Returns keywords with search volume, difficulty, CPC, position and traffic.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        domain: {
+          type: 'string',
+          description: 'The domain to analyze',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of keywords to return (default: 20, max: 100)',
+        },
+        country: {
+          type: 'string',
+          description: 'Country code for search results (default: "us")',
+        },
+      },
+      required: ['domain'],
+    },
+  },
+  {
+    name: 'get_serpstat_overview',
+    description: 'Get domain overview from Serpstat API. Returns visibility index, organic traffic, keywords count, ad data and Serpstat rank.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        domain: {
+          type: 'string',
+          description: 'The domain to analyze',
+        },
+        search_engine: {
+          type: 'string',
+          description: 'Search engine code (e.g., "g_us" for Google US, "g_ua" for Google Ukraine)',
+        },
+      },
+      required: ['domain'],
+    },
+  },
+  {
+    name: 'get_serpstat_keywords',
+    description: 'Get keywords that a domain ranks for using Serpstat API. Returns keywords with position, volume, CPC and competition.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        domain: {
+          type: 'string',
+          description: 'The domain to analyze',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of keywords to return (default: 20)',
+        },
+        search_engine: {
+          type: 'string',
+          description: 'Search engine code (default: "g_us")',
+        },
+      },
+      required: ['domain'],
+    },
+  },
+];
+
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
   private readonly anthropic: Anthropic | null;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly ahrefsService: AhrefsService,
+    private readonly serpstatService: SerpstatService,
+    private readonly integrationsService: IntegrationsService,
+  ) {
     const apiKey = this.configService.get<string>('ANTHROPIC_API_KEY');
 
     if (!apiKey || apiKey === 'sk-ant-your-key-here') {
@@ -41,9 +129,104 @@ export class AiService {
   }
 
   /**
-   * Generate a response using Claude AI with conversation history
+   * Get available SEO tools based on connected integrations
    */
-  async generateResponse(currentMessage: string, context: AiContext): Promise<string> {
+  private async getAvailableTools(organizationId: string): Promise<Anthropic.Tool[]> {
+    const availableTools: Anthropic.Tool[] = [];
+
+    // Check Ahrefs integration
+    const ahrefsIntegration = await this.integrationsService.findOne(organizationId, 'ahrefs');
+    if (ahrefsIntegration) {
+      availableTools.push(
+        SEO_TOOLS.find(t => t.name === 'get_domain_metrics')!,
+        SEO_TOOLS.find(t => t.name === 'get_organic_keywords')!,
+      );
+    }
+
+    // Check Serpstat integration
+    const serpstatIntegration = await this.integrationsService.findOne(organizationId, 'serpstat');
+    if (serpstatIntegration) {
+      availableTools.push(
+        SEO_TOOLS.find(t => t.name === 'get_serpstat_overview')!,
+        SEO_TOOLS.find(t => t.name === 'get_serpstat_keywords')!,
+      );
+    }
+
+    return availableTools;
+  }
+
+  /**
+   * Execute a tool call and return the result
+   */
+  private async executeTool(
+    organizationId: string,
+    toolName: string,
+    toolInput: Record<string, unknown>,
+  ): Promise<string> {
+    try {
+      switch (toolName) {
+        case 'get_domain_metrics': {
+          const result = await this.ahrefsService.getDomainMetrics(
+            organizationId,
+            toolInput.domain as string,
+          );
+          return JSON.stringify(result, null, 2);
+        }
+
+        case 'get_organic_keywords': {
+          const result = await this.ahrefsService.getOrganicKeywords(
+            organizationId,
+            toolInput.domain as string,
+            {
+              limit: (toolInput.limit as number) || 20,
+              country: (toolInput.country as string) || 'us',
+            },
+          );
+          return JSON.stringify(result, null, 2);
+        }
+
+        case 'get_serpstat_overview': {
+          const result = await this.serpstatService.getDomainOverview(
+            organizationId,
+            toolInput.domain as string,
+            {
+              searchEngine: toolInput.search_engine as string,
+            },
+          );
+          return JSON.stringify(result, null, 2);
+        }
+
+        case 'get_serpstat_keywords': {
+          const result = await this.serpstatService.getKeywords(
+            organizationId,
+            toolInput.domain as string,
+            {
+              limit: (toolInput.limit as number) || 20,
+              searchEngine: toolInput.search_engine as string,
+            },
+          );
+          return JSON.stringify(result, null, 2);
+        }
+
+        default:
+          return JSON.stringify({ error: `Unknown tool: ${toolName}` });
+      }
+    } catch (error) {
+      this.logger.error(`Error executing tool ${toolName}:`, error);
+      return JSON.stringify({
+        error: error instanceof Error ? error.message : 'Tool execution failed',
+      });
+    }
+  }
+
+  /**
+   * Generate a response using Claude AI with conversation history and tool calling
+   */
+  async generateResponse(
+    currentMessage: string,
+    context: AiContext,
+    organizationId?: string,
+  ): Promise<string> {
     if (!this.anthropic) {
       this.logger.warn('AI service not configured, returning fallback message');
       return 'AI assistant is currently unavailable. Please configure ANTHROPIC_API_KEY.';
@@ -54,7 +237,12 @@ export class AiService {
       const maxTokens = this.configService.get<number>('AI_MAX_TOKENS') || 4096;
       const temperature = this.configService.get<number>('AI_TEMPERATURE') || 0.7;
 
-      const systemPrompt = this.buildSystemPrompt(context);
+      // Get available SEO tools based on connected integrations
+      const availableTools = organizationId
+        ? await this.getAvailableTools(organizationId)
+        : [];
+
+      const systemPrompt = this.buildSystemPrompt(context, availableTools.length > 0);
 
       // Build messages array from conversation history
       const messages: Anthropic.MessageParam[] = [];
@@ -74,21 +262,78 @@ export class AiService {
       });
 
       this.logger.debug(
-        `Generating AI response with model: ${model}, history: ${context.conversationHistory.length} messages`,
+        `Generating AI response with model: ${model}, history: ${context.conversationHistory.length} messages, tools: ${availableTools.length}`,
       );
 
-      const response = await this.anthropic.messages.create({
+      // Initial API call (with tools if available)
+      const requestParams: Anthropic.MessageCreateParams = {
         model,
         max_tokens: maxTokens,
         temperature,
         system: systemPrompt,
         messages,
-      });
+      };
 
-      // Extract text content from the response
+      if (availableTools.length > 0) {
+        requestParams.tools = availableTools;
+      }
+
+      let response = await this.anthropic.messages.create(requestParams);
+
+      // Handle tool use - loop until we get a final response
+      while (response.stop_reason === 'tool_use' && organizationId) {
+        const toolUseBlocks = response.content.filter(
+          (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use',
+        );
+
+        if (toolUseBlocks.length === 0) break;
+
+        // Add assistant's response with tool calls to messages
+        messages.push({
+          role: 'assistant',
+          content: response.content,
+        });
+
+        // Execute all tools and collect results
+        const toolResults: Anthropic.ToolResultBlockParam[] = [];
+
+        for (const toolUse of toolUseBlocks) {
+          this.logger.debug(`Executing tool: ${toolUse.name} with input: ${JSON.stringify(toolUse.input)}`);
+
+          const result = await this.executeTool(
+            organizationId,
+            toolUse.name,
+            toolUse.input as Record<string, unknown>,
+          );
+
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: result,
+          });
+        }
+
+        // Add tool results to messages
+        messages.push({
+          role: 'user',
+          content: toolResults,
+        });
+
+        // Get next response from Claude
+        response = await this.anthropic.messages.create({
+          model,
+          max_tokens: maxTokens,
+          temperature,
+          system: systemPrompt,
+          messages,
+          tools: availableTools,
+        });
+      }
+
+      // Extract text content from the final response
       const textContent = response.content
-        .filter((block) => block.type === 'text')
-        .map((block) => ('text' in block ? block.text : ''))
+        .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+        .map((block) => block.text)
         .join('\n');
 
       return textContent || 'I apologize, but I was unable to generate a response.';
@@ -101,7 +346,7 @@ export class AiService {
   /**
    * Build system prompt for the AI assistant
    */
-  private buildSystemPrompt(context: AiContext): string {
+  private buildSystemPrompt(context: AiContext, hasTools: boolean = false): string {
     let prompt = `You are an AI assistant for Forgeline, an SEO platform that helps teams collaborate on SEO projects.
 
 Your role is to:
@@ -118,6 +363,25 @@ Be concise, professional, and helpful. When discussing SEO topics:
 - Stay up-to-date with current SEO best practices
 
 Always maintain a friendly and supportive tone.`;
+
+    // Add SEO tools information if available
+    if (hasTools) {
+      prompt += `
+
+You have access to SEO analysis tools (Ahrefs and/or Serpstat APIs). When a user asks about:
+- Domain metrics, Domain Rating (DR), backlinks, referring domains
+- Organic keywords a site ranks for
+- SEO visibility, traffic estimates
+- Competitor analysis
+
+Use the available tools to fetch real data. After getting the data:
+- Present key metrics in a clear, structured format
+- Highlight important insights
+- Compare to industry benchmarks when relevant
+- Provide actionable recommendations based on the data
+
+If a tool returns an error, inform the user and suggest they check their API integration settings.`;
+    }
 
     // Add participants information if available
     if (context.participants && context.participants.length > 0) {
