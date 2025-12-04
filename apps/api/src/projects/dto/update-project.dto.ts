@@ -1,35 +1,35 @@
 import { IsString, IsArray, IsOptional, MinLength } from 'class-validator';
 
 export class UpdateProjectDto {
+  @IsOptional()
   @IsString()
   @MinLength(1)
-  @IsOptional()
   name?: string;
 
+  @IsOptional()
   @IsString()
   @MinLength(1)
-  @IsOptional()
   domain?: string;
 
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  @IsOptional()
   targetKeywords?: string[];
 
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  @IsOptional()
   competitors?: string[];
 
-  @IsString()
   @IsOptional()
+  @IsString()
   gscPropertyUrl?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   gaPropertyId?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   serpstatProjectId?: string;
 }
