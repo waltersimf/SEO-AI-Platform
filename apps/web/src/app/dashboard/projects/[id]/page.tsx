@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Globe, Calendar, Pencil, Trash2, Tag, Users, Link2, Check, Loader2 } from 'lucide-react';
 import { API_URL } from '@/config/api';
+import { ProjectSEODashboard } from '@/components/projects/project-seo-dashboard';
 
 interface Project {
   id: string;
@@ -542,6 +543,9 @@ export default function ProjectDetailPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* SEO Dashboard */}
+            <ProjectSEODashboard projectId={projectId} />
           </div>
         </div>
       </div>
