@@ -127,6 +127,15 @@ export class AhrefsService {
   }
 
   /**
+   * Get yesterday's date in YYYY-MM-DD format (Ahrefs data is delayed by 1 day)
+   */
+  private getYesterdayDate(): string {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.toISOString().split('T')[0];
+  }
+
+  /**
    * Get domain metrics (Domain Rating, backlinks, etc.)
    */
   async getDomainMetrics(
@@ -135,6 +144,7 @@ export class AhrefsService {
   ): Promise<AhrefsDomainMetrics> {
     // Clean domain (remove protocol and trailing slash)
     const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const date = this.getYesterdayDate();
 
     try {
       const data = await this.makeRequest<AhrefsApiResponse<any>>(
@@ -142,7 +152,8 @@ export class AhrefsService {
         '/site-explorer/domain-rating',
         {
           target: cleanDomain,
-          mode: 'domain',
+          date: date,
+          mode: 'subdomains',
         },
       );
 
@@ -152,7 +163,8 @@ export class AhrefsService {
         '/site-explorer/metrics',
         {
           target: cleanDomain,
-          mode: 'domain',
+          date: date,
+          mode: 'subdomains',
         },
       );
 
@@ -183,16 +195,19 @@ export class AhrefsService {
     } = {},
   ): Promise<{ keywords: AhrefsKeyword[]; total: number }> {
     const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const date = this.getYesterdayDate();
 
-    const data = await this.makeRequest<AhrefsApiResponse<AhrefsKeyword[]>>(
+    const data = await this.makeRequest<{ keywords?: any[] }>(
       organizationId,
       '/site-explorer/organic-keywords',
       {
         target: cleanDomain,
-        mode: 'domain',
-        country: options.country || 'us',
-        limit: String(options.limit || 100),
+        date: date,
+        select: 'keyword,best_position,volume,sum_traffic,keyword_difficulty',
+        country: options.country || 'ua',
+        limit: String(options.limit || 5),
         offset: String(options.offset || 0),
+        order_by: 'sum_traffic:desc',
       },
     );
 
@@ -201,9 +216,9 @@ export class AhrefsService {
       volume: kw.volume || 0,
       difficulty: kw.keyword_difficulty || 0,
       cpc: kw.cpc || 0,
-      position: kw.position || 0,
+      position: kw.best_position || kw.position || 0,
       url: kw.url || '',
-      traffic: kw.traffic || 0,
+      traffic: kw.sum_traffic || kw.traffic || 0,
     }));
 
     return {
