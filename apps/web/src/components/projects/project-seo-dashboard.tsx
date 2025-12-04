@@ -15,7 +15,11 @@ import {
   ExternalLink,
   Users,
   Clock,
-  FileText
+  FileText,
+  ArrowUp,
+  ArrowDown,
+  Minus,
+  Activity
 } from 'lucide-react';
 import { API_URL } from '@/config/api';
 
@@ -67,6 +71,28 @@ interface SerpstatKeyword {
   position: number;
   volume: number;
   trafficPercent: number;
+}
+
+interface SerpstatPositionKeyword {
+  keyword: string;
+  position: number;
+  previousPosition: number;
+  change: number;
+  volume: number;
+  url: string;
+}
+
+interface SerpstatProjectPositions {
+  keywords: SerpstatPositionKeyword[];
+  distribution: {
+    top1: number;
+    top3: number;
+    top5: number;
+    top10: number;
+    top20: number;
+    top100: number;
+  };
+  total: number;
 }
 
 interface Ga4Overview {
@@ -191,6 +217,9 @@ export function ProjectSEODashboard({ projectId }: ProjectSEODashboardProps) {
   const [data, setData] = useState<SeoMetricsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [projectPositions, setProjectPositions] = useState<SerpstatProjectPositions | null>(null);
+  const [positionsLoading, setPositionsLoading] = useState(false);
+  const [positionsError, setPositionsError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSeoMetrics = async () => {
@@ -219,6 +248,43 @@ export function ProjectSEODashboard({ projectId }: ProjectSEODashboardProps) {
 
     fetchSeoMetrics();
   }, [projectId]);
+
+  // Fetch Serpstat project positions separately
+  useEffect(() => {
+    const fetchProjectPositions = async () => {
+      const token = localStorage.getItem('token');
+      if (!token || !data?.serpstat?.connected) return;
+
+      setPositionsLoading(true);
+      try {
+        const response = await fetch(`${API_URL}/api/integrations/serpstat/project-positions?limit=10`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          setProjectPositions(result);
+        } else {
+          const errorData = await response.json();
+          // Only set error if it's not about missing project ID
+          if (!errorData.message?.includes('Project ID not configured')) {
+            setPositionsError(errorData.message || 'Failed to fetch positions');
+          }
+        }
+      } catch (err) {
+        // Don't show error for positions - it's optional
+        console.log('Project positions not available:', err);
+      } finally {
+        setPositionsLoading(false);
+      }
+    };
+
+    if (data?.serpstat?.connected) {
+      fetchProjectPositions();
+    }
+  }, [data?.serpstat?.connected]);
 
   if (loading) {
     return (
@@ -523,6 +589,103 @@ export function ProjectSEODashboard({ projectId }: ProjectSEODashboardProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Serpstat Rank Tracker Monitoring Section */}
+      {data.serpstat.connected && projectPositions && (
+        <Card className="mt-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Activity className="h-5 w-5 text-green-600" />
+              Моніторинг позицій (Serpstat)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Position Distribution */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium">Розподіл позицій</h4>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-green-600">{projectPositions.distribution.top1}</p>
+                    <p className="text-xs text-muted-foreground">Top 1</p>
+                  </div>
+                  <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-green-600">{projectPositions.distribution.top3}</p>
+                    <p className="text-xs text-muted-foreground">Top 3</p>
+                  </div>
+                  <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-blue-600">{projectPositions.distribution.top5}</p>
+                    <p className="text-xs text-muted-foreground">Top 5</p>
+                  </div>
+                  <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-blue-600">{projectPositions.distribution.top10}</p>
+                    <p className="text-xs text-muted-foreground">Top 10</p>
+                  </div>
+                  <div className="p-3 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-yellow-600">{projectPositions.distribution.top20}</p>
+                    <p className="text-xs text-muted-foreground">Top 20</p>
+                  </div>
+                  <div className="p-3 bg-muted/50 rounded-lg text-center">
+                    <p className="text-2xl font-bold">{projectPositions.distribution.top100}</p>
+                    <p className="text-xs text-muted-foreground">Top 100</p>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Всього ключових слів: {projectPositions.total}
+                </p>
+              </div>
+
+              {/* Top Keywords with Positions */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium">Топ-10 ключових слів</h4>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {projectPositions.keywords.map((kw, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between text-sm p-2 bg-muted/30 rounded"
+                    >
+                      <span className="truncate flex-1 mr-2" title={kw.keyword}>
+                        {kw.keyword}
+                      </span>
+                      <div className="flex items-center gap-2 whitespace-nowrap">
+                        <span className="font-medium">#{kw.position}</span>
+                        {kw.change !== 0 && (
+                          <span
+                            className={`flex items-center text-xs ${
+                              kw.change > 0 ? 'text-green-600' : 'text-red-600'
+                            }`}
+                          >
+                            {kw.change > 0 ? (
+                              <ArrowUp className="h-3 w-3" />
+                            ) : (
+                              <ArrowDown className="h-3 w-3" />
+                            )}
+                            {Math.abs(kw.change)}
+                          </span>
+                        )}
+                        {kw.change === 0 && (
+                          <span className="flex items-center text-xs text-muted-foreground">
+                            <Minus className="h-3 w-3" />
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Loading state for positions */}
+      {data.serpstat.connected && positionsLoading && !projectPositions && (
+        <Card className="mt-6">
+          <CardContent className="p-6">
+            <LoadingState />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

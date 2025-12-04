@@ -4,6 +4,7 @@ import {
   Get,
   Delete,
   Post,
+  Patch,
   Param,
   UseGuards,
   Req,
@@ -18,7 +19,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { google } from 'googleapis';
 import { AhrefsService } from './ahrefs.service';
 import { SerpstatService } from './serpstat.service';
-import { ConnectAhrefsDto, ConnectSerpstatDto } from './dto/seo-tools.dto';
+import { ConnectAhrefsDto, ConnectSerpstatDto, UpdateSerpstatSettingsDto } from './dto/seo-tools.dto';
 
 @Controller('integrations')
 export class IntegrationsController {
@@ -392,7 +393,7 @@ export class IntegrationsController {
   async connectSerpstat(@Req() req, @Body() dto: ConnectSerpstatDto) {
     const organizationId = req.user.organizationId;
 
-    await this.serpstatService.saveCredentials(organizationId, dto.apiKey, dto.accountId);
+    await this.serpstatService.saveCredentials(organizationId, dto.apiKey, dto.accountId, dto.projectId);
 
     // Test the connection
     const testResult = await this.serpstatService.testConnection(organizationId);
@@ -407,6 +408,28 @@ export class IntegrationsController {
       connected: true,
       message: testResult.message,
     };
+  }
+
+  // Update Serpstat settings (project ID, account ID)
+  @Patch('serpstat/settings')
+  @UseGuards(JwtAuthGuard)
+  async updateSerpstatSettings(@Req() req, @Body() dto: UpdateSerpstatSettingsDto) {
+    const organizationId = req.user.organizationId;
+    await this.serpstatService.updateSettings(organizationId, dto);
+    return { success: true, message: 'Settings updated' };
+  }
+
+  // Get Serpstat project positions (Rank Tracker)
+  @Get('serpstat/project-positions')
+  @UseGuards(JwtAuthGuard)
+  async getSerpstatProjectPositions(
+    @Req() req,
+    @Query('limit') limit?: string,
+  ) {
+    const organizationId = req.user.organizationId;
+    return this.serpstatService.getProjectPositions(organizationId, {
+      limit: limit ? parseInt(limit, 10) : undefined,
+    });
   }
 
   // Test Serpstat connection

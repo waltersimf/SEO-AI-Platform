@@ -38,7 +38,7 @@ export class SerpstatService {
 
   constructor(private integrationsService: IntegrationsService) {}
 
-  private async getCredentials(organizationId: string): Promise<{ apiKey: string; accountId: string }> {
+  private async getCredentials(organizationId: string): Promise<{ apiKey: string; accountId: string; projectId: string }> {
     const integration = await this.integrationsService.findOne(organizationId, 'serpstat');
 
     if (!integration) {
@@ -47,7 +47,7 @@ export class SerpstatService {
     }
 
     const apiKey = integration.accessToken?.trim();
-    const metadata = integration.metadata as { accountId?: string } || {};
+    const metadata = integration.metadata as { accountId?: string; projectId?: string } || {};
 
     console.log('[Serpstat] Decrypted key length:', apiKey?.length);
     console.log('[Serpstat] API Key (first 10 chars):', apiKey?.substring(0, 10) + '...');
@@ -55,6 +55,7 @@ export class SerpstatService {
     return {
       apiKey,
       accountId: metadata.accountId || '',
+      projectId: metadata.projectId || '',
     };
   }
 
@@ -258,17 +259,118 @@ export class SerpstatService {
     organizationId: string,
     apiKey: string,
     accountId?: string,
+    projectId?: string,
   ): Promise<void> {
     await this.integrationsService.createOrUpdate({
       organizationId,
       provider: 'serpstat',
       accessToken: apiKey,
-      scopes: ['domain-overview', 'keywords', 'competitors'],
+      scopes: ['domain-overview', 'keywords', 'competitors', 'rank-tracker'],
       metadata: {
         accountId: accountId || '',
+        projectId: projectId || '',
         connectedAt: new Date().toISOString(),
       },
     });
+  }
+
+  /**
+   * Update Serpstat settings (project ID, account ID)
+   */
+  async updateSettings(
+    organizationId: string,
+    settings: { projectId?: string; accountId?: string },
+  ): Promise<void> {
+    const integration = await this.integrationsService.findOne(organizationId, 'serpstat');
+    if (!integration) {
+      throw new UnauthorizedException('Serpstat not connected');
+    }
+
+    const currentMetadata = (integration.metadata as { accountId?: string; projectId?: string; connectedAt?: string }) || {};
+
+    await this.integrationsService.update(organizationId, 'serpstat', {
+      metadata: {
+        ...currentMetadata,
+        ...(settings.projectId !== undefined && { projectId: settings.projectId }),
+        ...(settings.accountId !== undefined && { accountId: settings.accountId }),
+      },
+    });
+  }
+
+  /**
+   * Get project positions from Serpstat Rank Tracker
+   */
+  async getProjectPositions(
+    organizationId: string,
+    options: {
+      limit?: number;
+    } = {},
+  ): Promise<{
+    keywords: Array<{
+      keyword: string;
+      position: number;
+      previousPosition: number;
+      change: number;
+      volume: number;
+      url: string;
+    }>;
+    distribution: {
+      top1: number;
+      top3: number;
+      top5: number;
+      top10: number;
+      top20: number;
+      top100: number;
+    };
+    total: number;
+  }> {
+    const { projectId } = await this.getCredentials(organizationId);
+
+    if (!projectId) {
+      throw new BadRequestException('Serpstat Project ID not configured. Please set it in Settings.');
+    }
+
+    console.log('[Serpstat] Fetching project positions for project:', projectId);
+
+    // Use RankTrackerProcedure.getProjectPositions or similar
+    // Note: Serpstat Rank Tracker API may have different method names
+    // This is based on typical Serpstat API structure
+    const data = await this.makeRequest<any>(
+      organizationId,
+      'RankTrackerProcedure.getProjectKeywords',
+      {
+        project_id: projectId,
+        size: options.limit || 100,
+        page: 1,
+      },
+    );
+
+    const keywordsData = Array.isArray(data) ? data : (data?.keywords || []);
+
+    const keywords = keywordsData.map((kw: any) => ({
+      keyword: kw.keyword || kw.query || '',
+      position: kw.position || kw.pos || 0,
+      previousPosition: kw.previous_position || kw.prev_pos || kw.position || 0,
+      change: (kw.previous_position || kw.prev_pos || kw.position || 0) - (kw.position || kw.pos || 0),
+      volume: kw.volume || kw.region_queries_count || 0,
+      url: kw.url || '',
+    }));
+
+    // Calculate distribution
+    const distribution = {
+      top1: keywords.filter((k: any) => k.position === 1).length,
+      top3: keywords.filter((k: any) => k.position >= 1 && k.position <= 3).length,
+      top5: keywords.filter((k: any) => k.position >= 1 && k.position <= 5).length,
+      top10: keywords.filter((k: any) => k.position >= 1 && k.position <= 10).length,
+      top20: keywords.filter((k: any) => k.position >= 1 && k.position <= 20).length,
+      top100: keywords.filter((k: any) => k.position >= 1 && k.position <= 100).length,
+    };
+
+    return {
+      keywords: keywords.slice(0, options.limit || 10),
+      distribution,
+      total: keywords.length,
+    };
   }
 
   /**
