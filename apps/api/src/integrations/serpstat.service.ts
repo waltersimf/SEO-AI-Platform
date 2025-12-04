@@ -68,10 +68,8 @@ export class SerpstatService {
     const body = {
       id: '1',
       method,
-      params: {
-        ...params,
-        token: apiKey,
-      },
+      params: { ...params },
+      token: apiKey,
     };
 
     console.log('[Serpstat] Request URL:', this.baseUrl);
@@ -119,9 +117,8 @@ export class SerpstatService {
       const body = {
         id: '1',
         method: 'SerpstatLimitsProcedure.getStats',
-        params: {
-          token: apiKey,
-        },
+        params: {},
+        token: apiKey,
       };
 
       const response = await fetch(this.baseUrl, {
@@ -170,7 +167,7 @@ export class SerpstatService {
     } = {},
   ): Promise<SerpstatDomainOverview> {
     const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
-    const se = options.searchEngine || 'g_us';
+    const se = options.searchEngine || 'g_ua';
 
     const data = await this.makeRequest<any>(
       organizationId,
@@ -210,7 +207,7 @@ export class SerpstatService {
     } = {},
   ): Promise<{ keywords: SerpstatKeyword[]; total: number }> {
     const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
-    const se = options.searchEngine || 'g_us';
+    const se = options.searchEngine || 'g_ua';
 
     const data = await this.makeRequest<any[]>(
       organizationId,
