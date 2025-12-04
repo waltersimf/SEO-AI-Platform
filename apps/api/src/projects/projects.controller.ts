@@ -169,6 +169,7 @@ export class ProjectsController {
 
       const domain = project.domain;
       const gscPropertyUrl = project.gscPropertyUrl;
+      const gaPropertyId = project.gaPropertyId;
 
       // Check which integrations are connected
       const [googleIntegration, ahrefsIntegration, serpstatIntegration] = await Promise.all([
@@ -185,6 +186,14 @@ export class ProjectsController {
           data?: {
             performance: any;
             topQueries: any[];
+          };
+          error?: string;
+        };
+        ga4: {
+          connected: boolean;
+          propertyId: string | null;
+          data?: {
+            overview: any;
           };
           error?: string;
         };
@@ -206,6 +215,7 @@ export class ProjectsController {
         };
       } = {
         gsc: { connected: false, propertyUrl: gscPropertyUrl },
+        ga4: { connected: false, propertyId: gaPropertyId },
         ahrefs: { connected: false },
         serpstat: { connected: false },
       };
@@ -231,6 +241,21 @@ export class ProjectsController {
       } else if (googleIntegration && !gscPropertyUrl) {
         result.gsc.connected = true;
         result.gsc.error = 'No GSC property selected for this project';
+      }
+
+      // Fetch GA4 data if connected and property is set
+      if (googleIntegration && gaPropertyId) {
+        result.ga4.connected = true;
+        try {
+          const overview = await this.gscService.getGa4Overview(organizationId, gaPropertyId);
+          result.ga4.data = { overview };
+        } catch (error) {
+          this.logger.error('GA4 fetch error:', error);
+          result.ga4.error = error instanceof Error ? error.message : 'Failed to fetch GA4 data';
+        }
+      } else if (googleIntegration && !gaPropertyId) {
+        result.ga4.connected = true;
+        result.ga4.error = 'No GA4 property selected for this project';
       }
 
       // Fetch Ahrefs data if connected
