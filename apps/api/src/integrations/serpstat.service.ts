@@ -122,7 +122,7 @@ export class SerpstatService {
         return { valid: false, message: `API error: ${response.statusText}` };
       }
 
-      const data = await response.json();
+      const data = await response.json() as SerpstatApiResponse<{ left_lines?: number }>;
 
       if (data.status_code && data.status_code !== 200) {
         return { valid: false, message: data.status_msg || 'Invalid API key' };
