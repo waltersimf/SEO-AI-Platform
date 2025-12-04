@@ -85,8 +85,9 @@ export class AhrefsService {
     try {
       const apiKey = await this.getApiKey(organizationId);
 
-      // Use subscription info endpoint to validate key
-      const response = await fetch(`${this.baseUrl}/subscription-info`, {
+      // Use limits-and-usage endpoint to validate key
+      // Docs: https://docs.ahrefs.com/reference/subscription-info-limits-and-usage
+      const response = await fetch(`${this.baseUrl}/subscription-info/limits-and-usage`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
@@ -95,10 +96,17 @@ export class AhrefsService {
       });
 
       if (response.ok) {
-        const data = await response.json() as { subscription?: { name?: string } };
+        const data = await response.json() as {
+          limits_and_usage?: {
+            subscription?: string;
+            units_usage?: number;
+            units_limit?: number;
+          };
+        };
+        const info = data.limits_and_usage;
         return {
           valid: true,
-          message: `Connected. Subscription: ${data.subscription?.name || 'Active'}`
+          message: `Connected. ${info?.subscription || 'Active'}. Usage: ${info?.units_usage || 0}/${info?.units_limit || 'N/A'}`
         };
       }
 
