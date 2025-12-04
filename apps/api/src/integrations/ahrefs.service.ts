@@ -37,10 +37,15 @@ export class AhrefsService {
     const integration = await this.integrationsService.findOne(organizationId, 'ahrefs');
 
     if (!integration) {
+      console.log('[Ahrefs] No integration found for organization:', organizationId);
       throw new UnauthorizedException('Ahrefs not connected. Please add your API key in settings.');
     }
 
-    return integration.accessToken; // Already decrypted by IntegrationsService
+    const apiKey = integration.accessToken?.trim(); // Trim whitespace
+    console.log('[Ahrefs] Decrypted key length:', apiKey?.length);
+    console.log('[Ahrefs] API Key (first 10 chars):', apiKey?.substring(0, 10) + '...');
+
+    return apiKey;
   }
 
   private async makeRequest<T>(
@@ -55,16 +60,31 @@ export class AhrefsService {
       url.searchParams.append(key, value);
     });
 
+    const headers = {
+      'Authorization': `Bearer ${apiKey}`,
+      'Accept': 'application/json',
+    };
+
+    console.log('[Ahrefs] Request URL:', url.toString());
+    console.log('[Ahrefs] Headers:', { ...headers, Authorization: `Bearer ${apiKey?.substring(0, 10)}...` });
+
     const response = await fetch(url.toString(), {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Accept': 'application/json',
-      },
+      headers,
     });
 
+    console.log('[Ahrefs] Response status:', response.status, response.statusText);
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({})) as { error?: string };
+      const errorText = await response.text();
+      console.log('[Ahrefs] Error response body:', errorText);
+
+      let errorData: { error?: string } = {};
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { error: errorText };
+      }
 
       if (response.status === 401 || response.status === 403) {
         throw new UnauthorizedException('Invalid Ahrefs API key');
@@ -75,7 +95,10 @@ export class AhrefsService {
       );
     }
 
-    return response.json() as Promise<T>;
+    const data = await response.json();
+    console.log('[Ahrefs] Response data keys:', Object.keys(data));
+
+    return data as T;
   }
 
   /**
