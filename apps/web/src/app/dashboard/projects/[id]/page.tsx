@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Globe, Calendar, Pencil, Trash2, Tag, Users, Link2, Check, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ArrowLeft, Globe, Calendar, Pencil, Trash2, Tag, Users, Link2, Check, Loader2, ChevronsUpDown, Search } from 'lucide-react';
 import { API_URL } from '@/config/api';
 import { ProjectSEODashboard } from '@/components/projects/project-seo-dashboard';
 
@@ -44,6 +46,8 @@ export default function ProjectDetailPage() {
   const [gaProperties, setGaProperties] = useState<GaProperty[]>([]);
   const [selectedGsc, setSelectedGsc] = useState<string>('');
   const [selectedGa, setSelectedGa] = useState<string>('');
+  const [gaSearchQuery, setGaSearchQuery] = useState('');
+  const [gaDropdownOpen, setGaDropdownOpen] = useState(false);
   const [savingIntegrations, setSavingIntegrations] = useState(false);
   const [integrationError, setIntegrationError] = useState<string | null>(null);
   const [integrationSuccess, setIntegrationSuccess] = useState(false);
@@ -51,6 +55,22 @@ export default function ProjectDetailPage() {
   const router = useRouter();
   const params = useParams();
   const projectId = params.id as string;
+
+  // Filter GA4 properties based on search query
+  const filteredGaProperties = useMemo(() => {
+    if (!gaSearchQuery.trim()) return gaProperties;
+    const query = gaSearchQuery.toLowerCase();
+    return gaProperties.filter(
+      (prop) =>
+        prop.displayName.toLowerCase().includes(query) ||
+        prop.propertyId.toLowerCase().includes(query)
+    );
+  }, [gaProperties, gaSearchQuery]);
+
+  // Get selected GA4 property display name
+  const selectedGaProperty = useMemo(() => {
+    return gaProperties.find((p) => p.propertyId === selectedGa);
+  }, [gaProperties, selectedGa]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -494,22 +514,71 @@ export default function ProjectDetailPage() {
                         )}
                       </div>
 
-                      {/* GA4 Property Selection */}
+                      {/* GA4 Property Selection with Search */}
                       <div className="space-y-2">
                         <label className="text-sm font-medium">Google Analytics 4</label>
                         {gaProperties.length > 0 ? (
-                          <select
-                            value={selectedGa}
-                            onChange={(e) => setSelectedGa(e.target.value)}
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          >
-                            <option value="">Select a property...</option>
-                            {gaProperties.map((prop) => (
-                              <option key={prop.propertyId} value={prop.propertyId}>
-                                {prop.displayName} ({prop.propertyId})
-                              </option>
-                            ))}
-                          </select>
+                          <Popover open={gaDropdownOpen} onOpenChange={setGaDropdownOpen}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={gaDropdownOpen}
+                                className="w-full justify-between font-normal"
+                              >
+                                {selectedGaProperty
+                                  ? `${selectedGaProperty.displayName} (${selectedGaProperty.propertyId})`
+                                  : 'Select a property...'}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-full p-0" align="start">
+                              <div className="flex items-center border-b px-3">
+                                <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                                <Input
+                                  placeholder="Пошук GA4 property..."
+                                  value={gaSearchQuery}
+                                  onChange={(e) => setGaSearchQuery(e.target.value)}
+                                  className="flex h-10 w-full border-0 bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
+                                />
+                              </div>
+                              <div className="max-h-60 overflow-y-auto">
+                                {filteredGaProperties.length === 0 ? (
+                                  <div className="py-6 text-center text-sm text-muted-foreground">
+                                    Не знайдено
+                                  </div>
+                                ) : (
+                                  <div className="p-1">
+                                    {filteredGaProperties.map((prop) => (
+                                      <button
+                                        key={prop.propertyId}
+                                        onClick={() => {
+                                          setSelectedGa(prop.propertyId);
+                                          setGaDropdownOpen(false);
+                                          setGaSearchQuery('');
+                                        }}
+                                        className={`relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground ${
+                                          selectedGa === prop.propertyId ? 'bg-accent' : ''
+                                        }`}
+                                      >
+                                        <Check
+                                          className={`mr-2 h-4 w-4 ${
+                                            selectedGa === prop.propertyId ? 'opacity-100' : 'opacity-0'
+                                          }`}
+                                        />
+                                        <div className="flex flex-col items-start">
+                                          <span>{prop.displayName}</span>
+                                          <span className="text-xs text-muted-foreground">
+                                            {prop.propertyId}
+                                          </span>
+                                        </div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
                         ) : (
                           <p className="text-sm text-muted-foreground">
                             No Analytics properties found
