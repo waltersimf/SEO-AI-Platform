@@ -28,4 +28,8 @@ export class UpdateProjectDto {
   @IsString()
   @IsOptional()
   gaPropertyId?: string;
+
+  @IsString()
+  @IsOptional()
+  serpstatProjectId?: string;
 }

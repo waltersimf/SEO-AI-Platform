@@ -75,7 +75,7 @@ export class SerpstatService {
 
     console.log('[Serpstat] Request URL:', this.baseUrl);
     console.log('[Serpstat] Request method:', method);
-    console.log('[Serpstat] Request params:', { ...params, token: apiKey?.substring(0, 10) + '...' });
+    console.log('[Serpstat] Request params:', params);
 
     const response = await fetch(this.baseUrl, {
       method: 'POST',
@@ -302,6 +302,7 @@ export class SerpstatService {
    */
   async getProjectPositions(
     organizationId: string,
+    projectId: string,
     options: {
       limit?: number;
     } = {},
@@ -324,10 +325,8 @@ export class SerpstatService {
     };
     total: number;
   }> {
-    const { projectId } = await this.getCredentials(organizationId);
-
     if (!projectId) {
-      throw new BadRequestException('Serpstat Project ID not configured. Please set it in Settings.');
+      throw new BadRequestException('Serpstat Project ID not configured for this project.');
     }
 
     console.log('[Serpstat] Fetching project positions for project:', projectId);

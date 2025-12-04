@@ -18,6 +18,7 @@ interface Project {
   competitors: string[];
   gscPropertyUrl: string | null;
   gaPropertyId: string | null;
+  serpstatProjectId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -48,6 +49,7 @@ export default function ProjectDetailPage() {
   const [selectedGa, setSelectedGa] = useState<string>('');
   const [gaSearchQuery, setGaSearchQuery] = useState('');
   const [gaDropdownOpen, setGaDropdownOpen] = useState(false);
+  const [selectedSerpstatProjectId, setSelectedSerpstatProjectId] = useState<string>('');
   const [savingIntegrations, setSavingIntegrations] = useState(false);
   const [integrationError, setIntegrationError] = useState<string | null>(null);
   const [integrationSuccess, setIntegrationSuccess] = useState(false);
@@ -108,6 +110,7 @@ export default function ProjectDetailPage() {
       // Initialize selected values from project data
       setSelectedGsc(data.gscPropertyUrl || '');
       setSelectedGa(data.gaPropertyId || '');
+      setSelectedSerpstatProjectId(data.serpstatProjectId || '');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -180,6 +183,7 @@ export default function ProjectDetailPage() {
         body: JSON.stringify({
           gscPropertyUrl: selectedGsc || null,
           gaPropertyId: selectedGa || null,
+          serpstatProjectId: selectedSerpstatProjectId || null,
         }),
       });
 
@@ -447,7 +451,7 @@ export default function ProjectDetailPage() {
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Link2 className="h-5 w-5" />
-                    Google Integration
+                    SEO Integrations
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -588,6 +592,29 @@ export default function ProjectDetailPage() {
                           <p className="text-xs text-green-600 flex items-center gap-1">
                             <Check className="h-3 w-3" />
                             Connected: {project.gaPropertyId}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Serpstat Project ID */}
+                      <div className="space-y-2 pt-4 border-t">
+                        <label className="text-sm font-medium flex items-center gap-2">
+                          <Search className="h-4 w-4 text-green-600" />
+                          Serpstat Project ID
+                        </label>
+                        <Input
+                          type="text"
+                          placeholder="ID проекту для моніторингу позицій"
+                          value={selectedSerpstatProjectId}
+                          onChange={(e) => setSelectedSerpstatProjectId(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Знайдіть ID в URL проекту Serpstat: serpstat.com/rank-tracker/project/<strong>ID</strong>/
+                        </p>
+                        {project.serpstatProjectId && (
+                          <p className="text-xs text-green-600 flex items-center gap-1">
+                            <Check className="h-3 w-3" />
+                            Connected: {project.serpstatProjectId}
                           </p>
                         )}
                       </div>

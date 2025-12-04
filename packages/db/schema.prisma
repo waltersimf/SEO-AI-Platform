@@ -72,8 +72,9 @@ model Project {
   targetKeywords String[]
   competitors    String[]
 
-  gscPropertyUrl String? // GSC property URL
-  gaPropertyId   String? // GA4 property ID
+  gscPropertyUrl    String? // GSC property URL
+  gaPropertyId      String? // GA4 property ID
+  serpstatProjectId String? // Serpstat Rank Tracker project ID
 
   isDeleted Boolean   @default(false)
   deletedAt DateTime?
