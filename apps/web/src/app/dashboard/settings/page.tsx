@@ -118,7 +118,6 @@ export default function SettingsPage() {
   const [ahrefsApiKey, setAhrefsApiKey] = useState('');
   const [serpstatApiKey, setSerpstatApiKey] = useState('');
   const [serpstatAccountId, setSerpstatAccountId] = useState('');
-  const [serpstatProjectId, setSerpstatProjectId] = useState('');
   const [showAhrefsKey, setShowAhrefsKey] = useState(false);
   const [showSerpstatKey, setShowSerpstatKey] = useState(false);
   const [seoToolsLoading, setSeoToolsLoading] = useState<string | null>(null);
@@ -231,10 +230,6 @@ export default function SettingsPage() {
       if (serpstatResponse.ok) {
         const data = await serpstatResponse.json();
         setSerpstatIntegration(data);
-        // Load project ID from metadata if available
-        if (data.metadata?.projectId) {
-          setSerpstatProjectId(data.metadata.projectId);
-        }
       } else {
         setSerpstatIntegration(null);
       }
@@ -401,34 +396,6 @@ export default function SettingsPage() {
       });
     } catch (error) {
       setActionResult({ type: 'error', message: 'Не вдалося перевірити підключення' });
-    } finally {
-      setSeoToolsLoading(null);
-      setTimeout(() => setActionResult(null), 5000);
-    }
-  };
-
-  const handleUpdateSerpstatSettings = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
-    setSeoToolsLoading('serpstat-settings');
-    try {
-      const response = await fetch(`${API_URL}/api/integrations/serpstat/settings`, {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ projectId: serpstatProjectId }),
-      });
-
-      if (response.ok) {
-        setActionResult({ type: 'success', message: 'Serpstat Project ID збережено' });
-      } else {
-        throw new Error('Не вдалося зберегти налаштування');
-      }
-    } catch (error) {
-      setActionResult({ type: 'error', message: error instanceof Error ? error.message : 'Помилка' });
     } finally {
       setSeoToolsLoading(null);
       setTimeout(() => setActionResult(null), 5000);
@@ -1154,63 +1121,32 @@ export default function SettingsPage() {
                   </div>
 
                   {serpstatIntegration?.connected ? (
-                    <div className="space-y-4">
-                      {/* Project ID for Rank Tracker */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Serpstat Project ID (для моніторингу позицій)</label>
-                        <div className="flex gap-2">
-                          <Input
-                            type="text"
-                            placeholder="Введіть Project ID"
-                            value={serpstatProjectId}
-                            onChange={(e) => setSerpstatProjectId(e.target.value)}
-                            className="flex-1"
-                          />
-                          <Button
-                            size="sm"
-                            onClick={handleUpdateSerpstatSettings}
-                            disabled={seoToolsLoading === 'serpstat-settings'}
-                          >
-                            {seoToolsLoading === 'serpstat-settings' ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              'Зберегти'
-                            )}
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Знайдіть ID в URL проекту Serpstat: serpstat.com/rank-tracker/project/<strong>ID</strong>/
-                        </p>
-                      </div>
-
-                      {/* Action buttons */}
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleTestSerpstat}
-                          disabled={seoToolsLoading === 'serpstat-test'}
-                        >
-                          {seoToolsLoading === 'serpstat-test' ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          ) : (
-                            <RefreshCw className="h-4 w-4 mr-2" />
-                          )}
-                          Перевірити
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={handleDisconnectSerpstat}
-                          disabled={seoToolsLoading === 'serpstat-disconnect'}
-                        >
-                          {seoToolsLoading === 'serpstat-disconnect' ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            'Відключити'
-                          )}
-                        </Button>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleTestSerpstat}
+                        disabled={seoToolsLoading === 'serpstat-test'}
+                      >
+                        {seoToolsLoading === 'serpstat-test' ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                        )}
+                        Перевірити
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={handleDisconnectSerpstat}
+                        disabled={seoToolsLoading === 'serpstat-disconnect'}
+                      >
+                        {seoToolsLoading === 'serpstat-disconnect' ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          'Відключити'
+                        )}
+                      </Button>
                     </div>
                   ) : (
                     <div className="space-y-3">

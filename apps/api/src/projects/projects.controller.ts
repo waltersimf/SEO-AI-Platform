@@ -170,6 +170,7 @@ export class ProjectsController {
       const domain = project.domain;
       const gscPropertyUrl = project.gscPropertyUrl;
       const gaPropertyId = project.gaPropertyId;
+      const serpstatProjectId = project.serpstatProjectId;
 
       // Check which integrations are connected
       const [googleIntegration, ahrefsIntegration, serpstatIntegration] = await Promise.all([
@@ -207,9 +208,15 @@ export class ProjectsController {
         };
         serpstat: {
           connected: boolean;
+          projectId: string | null;
           data?: {
             overview: any;
             topKeywords: any[];
+            rankTracker?: {
+              keywords: any[];
+              distribution: any;
+              total: number;
+            };
           };
           error?: string;
         };
@@ -217,7 +224,7 @@ export class ProjectsController {
         gsc: { connected: false, propertyUrl: gscPropertyUrl },
         ga4: { connected: false, propertyId: gaPropertyId },
         ahrefs: { connected: false },
-        serpstat: { connected: false },
+        serpstat: { connected: false, projectId: serpstatProjectId },
       };
 
       // Fetch GSC data if connected and property is set
@@ -288,6 +295,21 @@ export class ProjectsController {
             overview,
             topKeywords: keywords.keywords,
           };
+
+          // Fetch Rank Tracker data if project ID is configured
+          if (serpstatProjectId) {
+            try {
+              const rankTracker = await this.serpstatService.getProjectPositions(
+                organizationId,
+                serpstatProjectId,
+                { limit: 10 },
+              );
+              result.serpstat.data.rankTracker = rankTracker;
+            } catch (rankError) {
+              this.logger.error('Serpstat Rank Tracker fetch error:', rankError);
+              // Don't fail the whole request if rank tracker fails
+            }
+          }
         } catch (error) {
           this.logger.error('Serpstat fetch error:', error);
           result.serpstat.error = error instanceof Error ? error.message : 'Failed to fetch Serpstat data';

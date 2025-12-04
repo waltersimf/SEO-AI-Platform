@@ -32,3 +32,4 @@ Thumbs.db
 # Misc
 .cache/
 tsconfig.tsbuildinfo
+packages/db/package-lock.json
