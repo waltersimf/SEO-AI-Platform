@@ -42,13 +42,18 @@ export class SerpstatService {
     const integration = await this.integrationsService.findOne(organizationId, 'serpstat');
 
     if (!integration) {
+      console.log('[Serpstat] No integration found for organization:', organizationId);
       throw new UnauthorizedException('Serpstat not connected. Please add your API key in settings.');
     }
 
+    const apiKey = integration.accessToken?.trim();
     const metadata = integration.metadata as { accountId?: string } || {};
 
+    console.log('[Serpstat] Decrypted key length:', apiKey?.length);
+    console.log('[Serpstat] API Key (first 10 chars):', apiKey?.substring(0, 10) + '...');
+
     return {
-      apiKey: integration.accessToken, // Already decrypted
+      apiKey,
       accountId: metadata.accountId || '',
     };
   }
@@ -69,6 +74,10 @@ export class SerpstatService {
       },
     };
 
+    console.log('[Serpstat] Request URL:', this.baseUrl);
+    console.log('[Serpstat] Request method:', method);
+    console.log('[Serpstat] Request params:', { ...params, token: apiKey?.substring(0, 10) + '...' });
+
     const response = await fetch(this.baseUrl, {
       method: 'POST',
       headers: {
@@ -78,13 +87,19 @@ export class SerpstatService {
       body: JSON.stringify(body),
     });
 
+    console.log('[Serpstat] Response status:', response.status, response.statusText);
+
     if (!response.ok) {
+      const errorText = await response.text();
+      console.log('[Serpstat] Error response body:', errorText);
       throw new BadRequestException(`Serpstat API error: ${response.statusText}`);
     }
 
     const data: SerpstatApiResponse<T> = await response.json();
+    console.log('[Serpstat] Response:', JSON.stringify(data).substring(0, 500));
 
     if (data.status_code && data.status_code !== 200) {
+      console.log('[Serpstat] API error:', data.status_code, data.status_msg);
       if (data.status_code === 401 || data.status_code === 403) {
         throw new UnauthorizedException('Invalid Serpstat API key');
       }

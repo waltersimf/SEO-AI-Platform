@@ -27,6 +27,16 @@ export interface GscPageData {
   position: number;
 }
 
+export interface Ga4OverviewData {
+  users: number;
+  sessions: number;
+  pageviews: number;
+  bounceRate: number;
+  avgSessionDuration: number;
+  startDate: string;
+  endDate: string;
+}
+
 @Injectable()
 export class GscService {
   constructor(
@@ -245,6 +255,74 @@ export class GscService {
     } catch (error: any) {
       if (error?.response?.status === 401) {
         throw new UnauthorizedException('Google token expired. Please reconnect.');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get GA4 overview metrics (users, sessions, pageviews)
+   */
+  async getGa4Overview(
+    organizationId: string,
+    propertyId: string,
+    options: {
+      startDate?: string;
+      endDate?: string;
+    } = {},
+  ): Promise<Ga4OverviewData> {
+    const oauth2Client = await this.createOAuth2Client(organizationId);
+
+    // Default to last 28 days
+    const endDate = options.endDate || new Date().toISOString().split('T')[0];
+    const startDate = options.startDate || new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // Clean property ID (remove 'properties/' prefix if present)
+    const cleanPropertyId = propertyId.replace('properties/', '');
+
+    console.log('[GA4] Fetching data for property:', cleanPropertyId, 'dates:', startDate, '-', endDate);
+
+    const analyticsdata = google.analyticsdata({
+      version: 'v1beta',
+      auth: oauth2Client,
+    });
+
+    try {
+      const response = await analyticsdata.properties.runReport({
+        property: `properties/${cleanPropertyId}`,
+        requestBody: {
+          dateRanges: [{ startDate, endDate }],
+          metrics: [
+            { name: 'activeUsers' },
+            { name: 'sessions' },
+            { name: 'screenPageViews' },
+            { name: 'bounceRate' },
+            { name: 'averageSessionDuration' },
+          ],
+        },
+      });
+
+      console.log('[GA4] Response:', JSON.stringify(response.data).substring(0, 500));
+
+      const row = response.data.rows?.[0];
+      const metrics = row?.metricValues || [];
+
+      return {
+        users: parseInt(metrics[0]?.value || '0', 10),
+        sessions: parseInt(metrics[1]?.value || '0', 10),
+        pageviews: parseInt(metrics[2]?.value || '0', 10),
+        bounceRate: Math.round(parseFloat(metrics[3]?.value || '0') * 100) / 100,
+        avgSessionDuration: Math.round(parseFloat(metrics[4]?.value || '0')),
+        startDate,
+        endDate,
+      };
+    } catch (error: any) {
+      console.log('[GA4] Error:', error?.message || error);
+      if (error?.response?.status === 401) {
+        throw new UnauthorizedException('Google token expired. Please reconnect.');
+      }
+      if (error?.response?.status === 403) {
+        throw new UnauthorizedException('No access to GA4 property. Please check permissions.');
       }
       throw error;
     }

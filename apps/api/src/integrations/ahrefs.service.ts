@@ -87,12 +87,16 @@ export class AhrefsService {
       }
 
       if (response.status === 401 || response.status === 403) {
-        throw new UnauthorizedException('Invalid Ahrefs API key');
+        throw new UnauthorizedException('Ahrefs API requires Enterprise plan. Please upgrade your subscription.');
       }
 
-      throw new BadRequestException(
-        errorData.error || `Ahrefs API error: ${response.statusText}`
-      );
+      // Check for specific error messages
+      const errorMessage = errorData.error || `Ahrefs API error: ${response.statusText}`;
+      if (errorMessage.includes('forbidden') || errorMessage.includes('not allowed')) {
+        throw new UnauthorizedException('Ahrefs API requires Enterprise plan. Please upgrade your subscription.');
+      }
+
+      throw new BadRequestException(errorMessage);
     }
 
     const data = await response.json();

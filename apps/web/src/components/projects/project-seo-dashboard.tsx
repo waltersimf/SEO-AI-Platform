@@ -12,7 +12,10 @@ import {
   Link2,
   AlertCircle,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  Users,
+  Clock,
+  FileText
 } from 'lucide-react';
 import { API_URL } from '@/config/api';
 
@@ -66,6 +69,16 @@ interface SerpstatKeyword {
   trafficPercent: number;
 }
 
+interface Ga4Overview {
+  users: number;
+  sessions: number;
+  pageviews: number;
+  bounceRate: number;
+  avgSessionDuration: number;
+  startDate: string;
+  endDate: string;
+}
+
 interface SeoMetricsResponse {
   gsc: {
     connected: boolean;
@@ -73,6 +86,14 @@ interface SeoMetricsResponse {
     data?: {
       performance: GscPerformance;
       topQueries: GscQuery[];
+    };
+    error?: string;
+  };
+  ga4: {
+    connected: boolean;
+    propertyId: string | null;
+    data?: {
+      overview: Ga4Overview;
     };
     error?: string;
   };
@@ -201,8 +222,8 @@ export function ProjectSEODashboard({ projectId }: ProjectSEODashboardProps) {
 
   if (loading) {
     return (
-      <div className="grid gap-6 md:grid-cols-3">
-        {[1, 2, 3].map((i) => (
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
           <Card key={i}>
             <CardHeader>
               <CardTitle className="text-lg">Loading...</CardTitle>
@@ -228,11 +249,18 @@ export function ProjectSEODashboard({ projectId }: ProjectSEODashboardProps) {
 
   if (!data) return null;
 
+  // Helper to format duration
+  const formatDuration = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">SEO Dashboard</h2>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {/* Google Search Console Card */}
         <Card>
           <CardHeader className="pb-3">
@@ -296,6 +324,59 @@ export function ProjectSEODashboard({ projectId }: ProjectSEODashboardProps) {
                     </div>
                   </div>
                 )}
+
+                <p className="text-xs text-muted-foreground mt-2">
+                  Data for last 28 days
+                </p>
+              </>
+            ) : (
+              <LoadingState />
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Google Analytics 4 Card */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-yellow-600" />
+              Google Analytics 4
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!data.ga4?.connected ? (
+              <NotConnectedState service="GA4" settingsLink="/dashboard/settings" />
+            ) : data.ga4.error ? (
+              <ErrorState message={data.ga4.error} />
+            ) : data.ga4.data ? (
+              <>
+                {/* Metrics */}
+                <div className="grid grid-cols-2 gap-3">
+                  <MetricCard
+                    label="Users"
+                    value={data.ga4.data.overview.users}
+                    icon={Users}
+                  />
+                  <MetricCard
+                    label="Sessions"
+                    value={data.ga4.data.overview.sessions}
+                    icon={MousePointerClick}
+                  />
+                  <MetricCard
+                    label="Pageviews"
+                    value={data.ga4.data.overview.pageviews}
+                    icon={FileText}
+                  />
+                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                      <Clock className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Avg Duration</p>
+                      <p className="text-lg font-semibold">{formatDuration(data.ga4.data.overview.avgSessionDuration)}</p>
+                    </div>
+                  </div>
+                </div>
 
                 <p className="text-xs text-muted-foreground mt-2">
                   Data for last 28 days
