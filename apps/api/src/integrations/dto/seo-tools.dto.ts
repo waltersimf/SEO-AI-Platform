@@ -14,4 +14,18 @@ export class ConnectSerpstatDto {
   @IsString()
   @IsOptional()
   accountId?: string;
+
+  @IsString()
+  @IsOptional()
+  projectId?: string;
+}
+
+export class UpdateSerpstatSettingsDto {
+  @IsString()
+  @IsOptional()
+  projectId?: string;
+
+  @IsString()
+  @IsOptional()
+  accountId?: string;
 }
