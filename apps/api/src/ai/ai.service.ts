@@ -5,6 +5,7 @@ import { AiContext } from './ai-context.service';
 import { AhrefsService } from '../integrations/ahrefs.service';
 import { SerpstatService } from '../integrations/serpstat.service';
 import { IntegrationsService } from '../integrations/integrations.service';
+import { GscService } from '../gsc/gsc.service';
 
 export interface TaskParseResult {
   isTaskRequest: boolean;
@@ -100,6 +101,81 @@ const SEO_TOOLS: Anthropic.Tool[] = [
       required: ['domain'],
     },
   },
+  // Google Search Console tools
+  {
+    name: 'get_gsc_performance',
+    description: 'Get overall search performance metrics from Google Search Console for a domain. Returns total clicks, impressions, CTR percentage, and average position for the specified date range.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        domain: {
+          type: 'string',
+          description: 'The domain/site URL (e.g., "https://example.com" or "sc-domain:example.com")',
+        },
+        start_date: {
+          type: 'string',
+          description: 'Start date in YYYY-MM-DD format (default: 28 days ago)',
+        },
+        end_date: {
+          type: 'string',
+          description: 'End date in YYYY-MM-DD format (default: today)',
+        },
+      },
+      required: ['domain'],
+    },
+  },
+  {
+    name: 'get_gsc_top_queries',
+    description: 'Get top search queries from Google Search Console. Shows which search terms bring traffic to the site, with clicks, impressions, CTR and average position for each query.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        domain: {
+          type: 'string',
+          description: 'The domain/site URL (e.g., "https://example.com" or "sc-domain:example.com")',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of queries to return (default: 20, max: 100)',
+        },
+        start_date: {
+          type: 'string',
+          description: 'Start date in YYYY-MM-DD format (default: 28 days ago)',
+        },
+        end_date: {
+          type: 'string',
+          description: 'End date in YYYY-MM-DD format (default: today)',
+        },
+      },
+      required: ['domain'],
+    },
+  },
+  {
+    name: 'get_gsc_top_pages',
+    description: 'Get top pages from Google Search Console. Shows which pages get the most search traffic, with clicks, impressions, CTR and average position for each page.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        domain: {
+          type: 'string',
+          description: 'The domain/site URL (e.g., "https://example.com" or "sc-domain:example.com")',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of pages to return (default: 20, max: 100)',
+        },
+        start_date: {
+          type: 'string',
+          description: 'Start date in YYYY-MM-DD format (default: 28 days ago)',
+        },
+        end_date: {
+          type: 'string',
+          description: 'End date in YYYY-MM-DD format (default: today)',
+        },
+      },
+      required: ['domain'],
+    },
+  },
 ];
 
 @Injectable()
@@ -112,6 +188,7 @@ export class AiService {
     private readonly ahrefsService: AhrefsService,
     private readonly serpstatService: SerpstatService,
     private readonly integrationsService: IntegrationsService,
+    private readonly gscService: GscService,
   ) {
     const apiKey = this.configService.get<string>('ANTHROPIC_API_KEY');
 
@@ -149,6 +226,16 @@ export class AiService {
       availableTools.push(
         SEO_TOOLS.find(t => t.name === 'get_serpstat_overview')!,
         SEO_TOOLS.find(t => t.name === 'get_serpstat_keywords')!,
+      );
+    }
+
+    // Check Google integration (for GSC tools)
+    const googleIntegration = await this.integrationsService.findOne(organizationId, 'google');
+    if (googleIntegration) {
+      availableTools.push(
+        SEO_TOOLS.find(t => t.name === 'get_gsc_performance')!,
+        SEO_TOOLS.find(t => t.name === 'get_gsc_top_queries')!,
+        SEO_TOOLS.find(t => t.name === 'get_gsc_top_pages')!,
       );
     }
 
@@ -203,6 +290,45 @@ export class AiService {
             {
               limit: (toolInput.limit as number) || 20,
               searchEngine: toolInput.search_engine as string,
+            },
+          );
+          return JSON.stringify(result, null, 2);
+        }
+
+        // Google Search Console tools
+        case 'get_gsc_performance': {
+          const endDate = (toolInput.end_date as string) || new Date().toISOString().split('T')[0];
+          const startDate = (toolInput.start_date as string) || new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          const result = await this.gscService.getPerformance(
+            organizationId,
+            toolInput.domain as string,
+            startDate,
+            endDate,
+          );
+          return JSON.stringify(result, null, 2);
+        }
+
+        case 'get_gsc_top_queries': {
+          const result = await this.gscService.getTopQueries(
+            organizationId,
+            toolInput.domain as string,
+            {
+              limit: (toolInput.limit as number) || 20,
+              startDate: toolInput.start_date as string,
+              endDate: toolInput.end_date as string,
+            },
+          );
+          return JSON.stringify(result, null, 2);
+        }
+
+        case 'get_gsc_top_pages': {
+          const result = await this.gscService.getTopPages(
+            organizationId,
+            toolInput.domain as string,
+            {
+              limit: (toolInput.limit as number) || 20,
+              startDate: toolInput.start_date as string,
+              endDate: toolInput.end_date as string,
             },
           );
           return JSON.stringify(result, null, 2);
@@ -368,19 +494,30 @@ Always maintain a friendly and supportive tone.`;
     if (hasTools) {
       prompt += `
 
-You have access to SEO analysis tools (Ahrefs and/or Serpstat APIs). When a user asks about:
+You have access to SEO analysis tools. Depending on what integrations the user has connected, you may have:
+
+**Ahrefs/Serpstat tools** (for competitive analysis):
 - Domain metrics, Domain Rating (DR), backlinks, referring domains
 - Organic keywords a site ranks for
 - SEO visibility, traffic estimates
 - Competitor analysis
 
-Use the available tools to fetch real data. After getting the data:
+**Google Search Console tools** (for actual site performance data):
+- Search performance metrics (clicks, impressions, CTR, average position)
+- Top search queries that bring traffic to the site
+- Top pages by search traffic
+
+When a user asks about their site's performance, search traffic, or ranking queries - prefer using Google Search Console tools as they provide actual data from Google.
+
+When a user asks about competitor analysis, domain authority, or third-party metrics - use Ahrefs or Serpstat tools.
+
+After getting the data:
 - Present key metrics in a clear, structured format
-- Highlight important insights
+- Highlight important insights and trends
 - Compare to industry benchmarks when relevant
 - Provide actionable recommendations based on the data
 
-If a tool returns an error, inform the user and suggest they check their API integration settings.`;
+If a tool returns an error, inform the user and suggest they check their integration settings.`;
     }
 
     // Add participants information if available
