@@ -33,6 +33,10 @@ import {
   Building2,
   Pencil,
   Check,
+  Link2,
+  Eye,
+  EyeOff,
+  RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
 import { API_URL } from '@/config/api';
@@ -73,6 +77,15 @@ interface OrganizationInfo {
   createdAt: string;
 }
 
+interface SeoToolIntegration {
+  connected: boolean;
+  provider: string;
+  metadata?: {
+    connectedAt?: string;
+    accountId?: string;
+  };
+}
+
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [googleIntegration, setGoogleIntegration] = useState<GoogleIntegration | null>(null);
@@ -99,6 +112,16 @@ export default function SettingsPage() {
   const [editedOrgName, setEditedOrgName] = useState('');
   const [orgSaving, setOrgSaving] = useState(false);
 
+  // SEO Tools state
+  const [ahrefsIntegration, setAhrefsIntegration] = useState<SeoToolIntegration | null>(null);
+  const [serpstatIntegration, setSerpstatIntegration] = useState<SeoToolIntegration | null>(null);
+  const [ahrefsApiKey, setAhrefsApiKey] = useState('');
+  const [serpstatApiKey, setSerpstatApiKey] = useState('');
+  const [serpstatAccountId, setSerpstatAccountId] = useState('');
+  const [showAhrefsKey, setShowAhrefsKey] = useState(false);
+  const [showSerpstatKey, setShowSerpstatKey] = useState(false);
+  const [seoToolsLoading, setSeoToolsLoading] = useState<string | null>(null);
+
   const router = useRouter();
   const { isOwner } = usePermissions();
 
@@ -111,6 +134,7 @@ export default function SettingsPage() {
     checkGoogleConnection(token);
     fetchAutoPlanSettings(token);
     fetchOrganization(token);
+    checkSeoToolsConnection(token);
   }, [router]);
 
   const checkGoogleConnection = async (token: string) => {
@@ -179,6 +203,202 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error('Error fetching organization:', error);
+    }
+  };
+
+  const checkSeoToolsConnection = async (token: string) => {
+    // Check Ahrefs
+    try {
+      const ahrefsResponse = await fetch(`${API_URL}/api/integrations/ahrefs`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (ahrefsResponse.ok) {
+        const data = await ahrefsResponse.json();
+        setAhrefsIntegration(data);
+      } else {
+        setAhrefsIntegration(null);
+      }
+    } catch {
+      setAhrefsIntegration(null);
+    }
+
+    // Check Serpstat
+    try {
+      const serpstatResponse = await fetch(`${API_URL}/api/integrations/serpstat`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (serpstatResponse.ok) {
+        const data = await serpstatResponse.json();
+        setSerpstatIntegration(data);
+      } else {
+        setSerpstatIntegration(null);
+      }
+    } catch {
+      setSerpstatIntegration(null);
+    }
+  };
+
+  const handleConnectAhrefs = async () => {
+    const token = localStorage.getItem('token');
+    if (!token || !ahrefsApiKey.trim()) return;
+
+    setSeoToolsLoading('ahrefs-connect');
+    try {
+      const response = await fetch(`${API_URL}/api/integrations/ahrefs/connect`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ apiKey: ahrefsApiKey }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAhrefsIntegration({ connected: true, provider: 'ahrefs' });
+        setAhrefsApiKey('');
+        setActionResult({ type: 'success', message: data.message || 'Ahrefs підключено' });
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Не вдалося підключити Ahrefs');
+      }
+    } catch (error) {
+      setActionResult({ type: 'error', message: error instanceof Error ? error.message : 'Помилка підключення' });
+    } finally {
+      setSeoToolsLoading(null);
+      setTimeout(() => setActionResult(null), 5000);
+    }
+  };
+
+  const handleDisconnectAhrefs = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    setSeoToolsLoading('ahrefs-disconnect');
+    try {
+      const response = await fetch(`${API_URL}/api/integrations/ahrefs`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        setAhrefsIntegration(null);
+        setActionResult({ type: 'success', message: 'Ahrefs відключено' });
+      } else {
+        throw new Error('Не вдалося відключити Ahrefs');
+      }
+    } catch (error) {
+      setActionResult({ type: 'error', message: error instanceof Error ? error.message : 'Помилка' });
+    } finally {
+      setSeoToolsLoading(null);
+      setTimeout(() => setActionResult(null), 5000);
+    }
+  };
+
+  const handleTestAhrefs = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    setSeoToolsLoading('ahrefs-test');
+    try {
+      const response = await fetch(`${API_URL}/api/integrations/ahrefs/test`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await response.json();
+      setActionResult({
+        type: data.valid ? 'success' : 'error',
+        message: data.message,
+      });
+    } catch (error) {
+      setActionResult({ type: 'error', message: 'Не вдалося перевірити підключення' });
+    } finally {
+      setSeoToolsLoading(null);
+      setTimeout(() => setActionResult(null), 5000);
+    }
+  };
+
+  const handleConnectSerpstat = async () => {
+    const token = localStorage.getItem('token');
+    if (!token || !serpstatApiKey.trim()) return;
+
+    setSeoToolsLoading('serpstat-connect');
+    try {
+      const response = await fetch(`${API_URL}/api/integrations/serpstat/connect`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          apiKey: serpstatApiKey,
+          accountId: serpstatAccountId || undefined,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSerpstatIntegration({ connected: true, provider: 'serpstat' });
+        setSerpstatApiKey('');
+        setSerpstatAccountId('');
+        setActionResult({ type: 'success', message: data.message || 'Serpstat підключено' });
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Не вдалося підключити Serpstat');
+      }
+    } catch (error) {
+      setActionResult({ type: 'error', message: error instanceof Error ? error.message : 'Помилка підключення' });
+    } finally {
+      setSeoToolsLoading(null);
+      setTimeout(() => setActionResult(null), 5000);
+    }
+  };
+
+  const handleDisconnectSerpstat = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    setSeoToolsLoading('serpstat-disconnect');
+    try {
+      const response = await fetch(`${API_URL}/api/integrations/serpstat`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        setSerpstatIntegration(null);
+        setActionResult({ type: 'success', message: 'Serpstat відключено' });
+      } else {
+        throw new Error('Не вдалося відключити Serpstat');
+      }
+    } catch (error) {
+      setActionResult({ type: 'error', message: error instanceof Error ? error.message : 'Помилка' });
+    } finally {
+      setSeoToolsLoading(null);
+      setTimeout(() => setActionResult(null), 5000);
+    }
+  };
+
+  const handleTestSerpstat = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    setSeoToolsLoading('serpstat-test');
+    try {
+      const response = await fetch(`${API_URL}/api/integrations/serpstat/test`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await response.json();
+      setActionResult({
+        type: data.valid ? 'success' : 'error',
+        message: data.message,
+      });
+    } catch (error) {
+      setActionResult({ type: 'error', message: 'Не вдалося перевірити підключення' });
+    } finally {
+      setSeoToolsLoading(null);
+      setTimeout(() => setActionResult(null), 5000);
     }
   };
 
@@ -766,6 +986,224 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* SEO Tools Integration Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <Link2 className="h-6 w-6 text-orange-600" />
+                  SEO Інструменти
+                </CardTitle>
+                <CardDescription>
+                  Підключіть API ключі для Ahrefs та Serpstat для аналізу SEO метрик
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Ahrefs Integration */}
+                <div className="p-4 border rounded-lg space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900">
+                        <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium">Ahrefs</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Domain Rating, Backlinks, Organic Keywords
+                        </p>
+                      </div>
+                    </div>
+                    {ahrefsIntegration?.connected && (
+                      <span className="inline-flex items-center gap-1 text-green-600 text-sm">
+                        <CheckCircle2 className="h-4 w-4" /> Підключено
+                      </span>
+                    )}
+                  </div>
+
+                  {ahrefsIntegration?.connected ? (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleTestAhrefs}
+                        disabled={seoToolsLoading === 'ahrefs-test'}
+                      >
+                        {seoToolsLoading === 'ahrefs-test' ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                        )}
+                        Перевірити
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={handleDisconnectAhrefs}
+                        disabled={seoToolsLoading === 'ahrefs-disconnect'}
+                      >
+                        {seoToolsLoading === 'ahrefs-disconnect' ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          'Відключити'
+                        )}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Input
+                            type={showAhrefsKey ? 'text' : 'password'}
+                            placeholder="Введіть API ключ Ahrefs"
+                            value={ahrefsApiKey}
+                            onChange={(e) => setAhrefsApiKey(e.target.value)}
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowAhrefsKey(!showAhrefsKey)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            {showAhrefsKey ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                        <Button
+                          onClick={handleConnectAhrefs}
+                          disabled={!ahrefsApiKey.trim() || seoToolsLoading === 'ahrefs-connect'}
+                        >
+                          {seoToolsLoading === 'ahrefs-connect' ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            'Підключити'
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Отримайте API ключ у{' '}
+                        <a
+                          href="https://ahrefs.com/api"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline inline-flex items-center gap-1"
+                        >
+                          Ahrefs API <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Serpstat Integration */}
+                <div className="p-4 border rounded-lg space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900">
+                        <Search className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium">Serpstat</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Domain Overview, Keywords, Visibility
+                        </p>
+                      </div>
+                    </div>
+                    {serpstatIntegration?.connected && (
+                      <span className="inline-flex items-center gap-1 text-green-600 text-sm">
+                        <CheckCircle2 className="h-4 w-4" /> Підключено
+                      </span>
+                    )}
+                  </div>
+
+                  {serpstatIntegration?.connected ? (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleTestSerpstat}
+                        disabled={seoToolsLoading === 'serpstat-test'}
+                      >
+                        {seoToolsLoading === 'serpstat-test' ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                        )}
+                        Перевірити
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={handleDisconnectSerpstat}
+                        disabled={seoToolsLoading === 'serpstat-disconnect'}
+                      >
+                        {seoToolsLoading === 'serpstat-disconnect' ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          'Відключити'
+                        )}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Input
+                            type={showSerpstatKey ? 'text' : 'password'}
+                            placeholder="Введіть API ключ Serpstat"
+                            value={serpstatApiKey}
+                            onChange={(e) => setSerpstatApiKey(e.target.value)}
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowSerpstatKey(!showSerpstatKey)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            {showSerpstatKey ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      <Input
+                        type="text"
+                        placeholder="Account ID (необов'язково)"
+                        value={serpstatAccountId}
+                        onChange={(e) => setSerpstatAccountId(e.target.value)}
+                      />
+                      <div className="flex justify-between items-center">
+                        <p className="text-xs text-muted-foreground">
+                          Отримайте API ключ у{' '}
+                          <a
+                            href="https://serpstat.com/api/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-green-600 hover:underline inline-flex items-center gap-1"
+                          >
+                            Serpstat API <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </p>
+                        <Button
+                          onClick={handleConnectSerpstat}
+                          disabled={!serpstatApiKey.trim() || seoToolsLoading === 'serpstat-connect'}
+                        >
+                          {seoToolsLoading === 'serpstat-connect' ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            'Підключити'
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
