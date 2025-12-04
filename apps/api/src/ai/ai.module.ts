@@ -4,9 +4,10 @@ import { AiContextService } from './ai-context.service';
 import { AiController } from './ai.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
+import { GscModule } from '../gsc/gsc.module';
 
 @Module({
-  imports: [PrismaModule, IntegrationsModule],
+  imports: [PrismaModule, IntegrationsModule, GscModule],
   controllers: [AiController],
   providers: [AiService, AiContextService],
   exports: [AiService, AiContextService],
