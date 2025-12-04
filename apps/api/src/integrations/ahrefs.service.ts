@@ -64,7 +64,7 @@ export class AhrefsService {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = await response.json().catch(() => ({})) as { error?: string };
 
       if (response.status === 401 || response.status === 403) {
         throw new UnauthorizedException('Invalid Ahrefs API key');
@@ -75,7 +75,7 @@ export class AhrefsService {
       );
     }
 
-    return response.json();
+    return response.json() as Promise<T>;
   }
 
   /**
@@ -95,7 +95,7 @@ export class AhrefsService {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.json() as { subscription?: { name?: string } };
         return {
           valid: true,
           message: `Connected. Subscription: ${data.subscription?.name || 'Active'}`
