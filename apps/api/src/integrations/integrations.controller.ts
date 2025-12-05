@@ -424,10 +424,11 @@ export class IntegrationsController {
   @UseGuards(JwtAuthGuard)
   async getSerpstatProjectPositions(
     @Req() req,
+    @Query('projectId') projectId: string,
     @Query('limit') limit?: string,
   ) {
     const organizationId = req.user.organizationId;
-    return this.serpstatService.getProjectPositions(organizationId, {
+    return this.serpstatService.getProjectPositions(organizationId, projectId, {
       limit: limit ? parseInt(limit, 10) : undefined,
     });
   }

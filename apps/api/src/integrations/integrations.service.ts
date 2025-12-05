@@ -93,9 +93,18 @@ export class IntegrationsService {
     });
   }
 
-  async update(organizationId: string, provider: string, data: { accessToken: string }) {
-    // Encrypt token before saving
-    const encryptedToken = this.encryptionService.encrypt(data.accessToken);
+  async update(organizationId: string, provider: string, data: { accessToken?: string; metadata?: any }) {
+    const updateData: any = {
+      updatedAt: new Date(),
+    };
+
+    if (data.accessToken) {
+      updateData.accessToken = this.encryptionService.encrypt(data.accessToken);
+    }
+
+    if (data.metadata !== undefined) {
+      updateData.metadata = data.metadata;
+    }
 
     return this.prisma.integration.update({
       where: {
@@ -104,10 +113,7 @@ export class IntegrationsService {
           provider,
         },
       },
-      data: {
-        accessToken: encryptedToken,
-        updatedAt: new Date(),
-      },
+      data: updateData,
     });
   }
 
