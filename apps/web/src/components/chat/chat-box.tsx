@@ -449,18 +449,25 @@ export function ChatBox({
     const afterMention = inputValue.substring(mentionStartPos + mentionSearchQuery.length + 1);
     const mentionText = `@${user.name} `;
     const newValue = `${beforeMention}${mentionText}${afterMention}`;
+
+    // Calculate cursor position: mentionStartPos + "@" (1) + user.name + " " (1)
+    const newCursorPos = mentionStartPos + user.name.length + 2;
+
+    // Set state
     setInputValue(newValue);
     setMentionDropdownVisible(false);
     setMentionSearchQuery('');
 
-    // Focus input and set cursor position AFTER the inserted mention
-    const cursorPosition = mentionStartPos + mentionText.length;
-    setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-        inputRef.current.setSelectionRange(cursorPosition, cursorPosition);
-      }
-    }, 0);
+    // Use requestAnimationFrame to wait for React to update the DOM,
+    // then set cursor position after the value is actually in the input
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
+        }
+      });
+    });
   };
 
   const handleTyping = (value: string) => {
