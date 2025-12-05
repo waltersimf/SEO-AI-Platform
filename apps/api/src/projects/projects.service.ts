@@ -70,6 +70,7 @@ export class ProjectsService {
         ...(dto.competitors !== undefined && { competitors: dto.competitors }),
         ...(dto.gscPropertyUrl !== undefined && { gscPropertyUrl: dto.gscPropertyUrl }),
         ...(dto.gaPropertyId !== undefined && { gaPropertyId: dto.gaPropertyId }),
+        ...(dto.serpstatProjectId !== undefined && { serpstatProjectId: dto.serpstatProjectId }),
       },
     });
 
