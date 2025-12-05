@@ -1,13 +1,14 @@
-# 📦 CHANGELOG - v0.7 Roles & Invite System
+# 📦 CHANGELOG - v0.8 SEO Integrations
 
-**Версія документу:** 10.0  
-**Останнє оновлення:** 03.12.2025  
-**Поточна версія:** v0.7 ✅ **COMPLETE**
+**Версія документу:** 11.0  
+**Останнє оновлення:** 05.12.2025  
+**Поточна версія:** v0.8 🔄 **IN PROGRESS**
 
 ---
 
 ## 📋 Зміст
 
+- [v0.8 - SEO Integrations](#v08---seo-integrations)
 - [v0.7 - Roles & Invite System](#v07---roles--invite-system)
 - [v0.6.1 - UI & Security Update](#v061---ui--security-update)
 - [v0.6 - Tasks & Backlog](#v06---tasks--backlog)
@@ -16,6 +17,246 @@
 - [v0.3.1 - Production Ready](#v031---production-ready)
 - [v0.3 - Chat Infrastructure](#v03---chat-infrastructure)
 - [Наступні кроки](#-наступні-кроки)
+
+---
+
+## v0.8 - SEO Integrations
+
+**Дата:** 04-05.12.2025  
+**Статус:** 🔄 **IN PROGRESS**  
+**Мета:** SEO tools інтеграції, AI tools для аналітики, Project SEO Dashboard
+
+---
+
+### 🎯 Що ЗРОБЛЕНО ✅
+
+#### 1. Google Search Console Dashboard ✅ 📊
+
+**SEO Dashboard на сторінці проекту:**
+- Clicks, Impressions, CTR, Average Position
+- Top 5 queries з кліками
+- Період: останні 28 днів
+- Real-time дані з GSC API
+
+**Файли:**
+- `apps/web/src/components/projects/project-seo-dashboard.tsx`
+- `apps/api/src/integrations/gsc.service.ts`
+
+---
+
+#### 2. Google Analytics 4 Dashboard ✅ 📈
+
+**GA4 метрики на дашборді:**
+- Users, Sessions, Pageviews
+- Average Session Duration
+- Bounce Rate (через engagement rate)
+- Період: останні 28 днів
+
+**Searchable Dropdown для GA4 Properties:**
+- Пошук по назві та ID
+- Фільтрація в реальному часі
+- useMemo для оптимізації
+
+**Файли:**
+- `apps/web/src/app/dashboard/projects/[id]/page.tsx`
+- `apps/api/src/integrations/gsc.service.ts` (getGa4Overview method)
+
+---
+
+#### 3. AI Tools - GSC ✅ 🤖
+
+**Tool definitions для Claude API:**
+
+| Tool | Опис |
+|------|------|
+| `get_gsc_overview` | Загальні метрики GSC |
+| `get_gsc_top_queries` | Топ пошукові запити |
+| `get_gsc_top_pages` | Найпопулярніші сторінки |
+
+**AI може:**
+- Аналізувати пошуковий трафік
+- Виявляти проблемні запити
+- Давати рекомендації по CTR
+- Порівнювати періоди
+
+**Приклад використання:**
+```
+User: "@AI покажи дані консолі для ingo.ua"
+AI: [викликає get_gsc_overview] 
+    "Аналіз GSC для ingo.ua:
+     - 9,131 кліків
+     - 559K показів
+     - CTR 1.63%
+     - Позиція 12.6
+     
+     Рекомендації:
+     1. Покращити CTR для топ запитів
+     2. Оптимізувати title/description..."
+```
+
+**Файли:**
+- `apps/api/src/ai/ai.service.ts` (tool definitions)
+
+---
+
+#### 4. AI Tools - GA4 ✅ 🤖
+
+**Tool definition:**
+
+| Tool | Опис |
+|------|------|
+| `get_ga4_overview` | Метрики GA4: users, sessions, pageviews, duration |
+
+**Auto-detection Property ID:**
+- AI шукає проект по домену з контексту чату
+- Автоматично бере gaPropertyId з налаштувань проекту
+- Не питає користувача якщо дані вже є
+
+**Приклад використання:**
+```
+User: "@AI покажи статистику Google Analytics для ingo.ua"
+AI: [автоматично знаходить property_id]
+    [викликає get_ga4_overview]
+    "📊 Google Analytics 4 - ingo.ua
+     Період: 7 листопада - 5 грудня 2025
+     
+     - Користувачі: 30,495
+     - Сесії: 45,886
+     - Перегляди: 60,973
+     - Bounce Rate: 55%
+     
+     Рекомендації:
+     1. Зменшити відмови - покращити UX
+     2. Збільшити час на сайті..."
+```
+
+**Файли:**
+- `apps/api/src/ai/ai.service.ts`
+- `apps/api/src/ai/ai.module.ts` (ProjectsModule import)
+
+---
+
+#### 5. Ahrefs Integration ✅ (код готовий)
+
+**Реалізовано:**
+- AhrefsService з методами для API
+- Dashboard card з метриками
+- Підтримка Domain Rating, Backlinks, Keywords
+
+**Статус:** ⚠️ Потребує Enterprise план ($15K/рік)
+
+**Fallback UI:**
+- Показує повідомлення про необхідність Enterprise плану
+- Посилання на ahrefs.com/api
+
+**Файли:**
+- `apps/api/src/integrations/ahrefs.service.ts`
+- `apps/web/src/components/projects/project-seo-dashboard.tsx`
+
+---
+
+#### 6. Serpstat Integration ✅ (код готовий)
+
+**Реалізовано:**
+- SerpstatService з JSON-RPC API
+- Domain Analysis (visibility, traffic, keywords)
+- Project Monitoring (keyword positions)
+- Serpstat Project ID на рівні проекту
+
+**Database Schema:**
+```prisma
+model Project {
+  // ... existing fields
+  serpstatProjectId  String?
+}
+```
+
+**Статус:** ⚠️ Проблема з API токеном (головний акаунт)
+
+**Файли:**
+- `apps/api/src/integrations/serpstat.service.ts`
+- `apps/web/src/app/dashboard/projects/[id]/page.tsx`
+- Migration: `20251204150035_add_serpstat_project_id`
+
+---
+
+#### 7. Notifications Fix ✅ 🔔
+
+**Проблема:** Badge непрочитаних повідомлень не зникав після перегляду
+
+**Виправлено:**
+- При відкритті чату маркуються всі повідомлення як прочитані
+- WebSocket подія `mark_as_read`
+- Оновлення unreadCount в реальному часі
+
+---
+
+### 📊 SEO Dashboard Overview
+
+**Сторінка:** `/dashboard/projects/[id]`
+
+**4 картки з метриками:**
+
+| Сервіс | Метрики | Статус |
+|--------|---------|--------|
+| Google Search Console | Clicks, Impressions, CTR, Position, Top Queries | ✅ Працює |
+| Google Analytics 4 | Users, Sessions, Pageviews, Duration | ✅ Працює |
+| Ahrefs | DR, Backlinks, Keywords, Traffic | ⚠️ Enterprise only |
+| Serpstat | Visibility, Traffic, Keywords, Rank | ⚠️ Token issue |
+
+---
+
+### 🔧 Technical Details
+
+**API Endpoints додані:**
+
+| Method | Endpoint | Опис |
+|--------|----------|------|
+| GET | `/api/integrations/gsc/metrics` | GSC метрики |
+| GET | `/api/integrations/ga4/overview` | GA4 метрики |
+| GET | `/api/integrations/ahrefs/overview` | Ahrefs метрики |
+| GET | `/api/integrations/serpstat/overview` | Serpstat метрики |
+| PATCH | `/api/integrations/serpstat/settings` | Serpstat Project ID |
+
+**AI System Prompt оновлено:**
+- Інформація про доступні GSC tools
+- Інформація про доступні GA4 tools
+- Інструкції коли використовувати які tools
+
+---
+
+### ❌ Що НЕ зроблено (backlog)
+
+#### Chat Polish
+- [ ] @mention cursor position fix (3 спроби, потребує глибшого дебагу)
+- [ ] Markdown таблиці рендеринг
+- [ ] Message reactions (emoji)
+- [ ] Reply threads
+- [ ] Message editing/deletion
+- [ ] File attachments
+
+#### AI Analysis
+- [ ] Scheduled jobs (BullMQ)
+- [ ] Daily data fetch
+- [ ] AI analysis of changes
+- [ ] Auto-detect issues
+
+#### Morning Brief
+- [ ] Generate morning brief
+- [ ] Email delivery (SendGrid)
+
+#### Payment Status
+- [ ] Project payment status tracking
+- [ ] Budget tracking
+
+---
+
+### 📈 Statistics
+
+**Дата:** 04-05.12.2025  
+**Час:** ~8 годин  
+**Файлів змінено:** ~15  
+**Нових features:** 7
 
 ---
 
