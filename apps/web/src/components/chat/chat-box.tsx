@@ -8,6 +8,7 @@ import { TaskPreviewCard } from './task-preview-card';
 import { AutoPlanPreviewCard } from './auto-plan-preview-card';
 import { API_URL } from '@/config/api';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface TaskPreviewData {
   type: 'task_preview';
@@ -111,6 +112,7 @@ export function ChatBox({
   const inputRef = useRef<HTMLInputElement>(null);
   const isInitialLoad = useRef(true);
   const previousMessageCount = useRef(0);
+  const pendingCursorPos = useRef<number | null>(null);
 
   // Handle task creation from preview
   const handleTaskCreated = (messageId: string, info: {
@@ -387,6 +389,21 @@ export function ChatBox({
     }
   }, [messages]);
 
+  // Effect to set cursor position after inputValue changes (for @mention insertion)
+  useEffect(() => {
+    if (pendingCursorPos.current !== null && inputRef.current) {
+      const pos = pendingCursorPos.current;
+      pendingCursorPos.current = null;
+      // Use requestAnimationFrame to ensure DOM is updated
+      requestAnimationFrame(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          inputRef.current.setSelectionRange(pos, pos);
+        }
+      });
+    }
+  }, [inputValue]);
+
   const handleSend = () => {
     if (!inputValue.trim()) return;
 
@@ -453,21 +470,13 @@ export function ChatBox({
     // Calculate cursor position: mentionStartPos + "@" (1) + user.name + " " (1)
     const newCursorPos = mentionStartPos + user.name.length + 2;
 
-    // Set state
+    // Store pending cursor position - will be applied by useEffect after state update
+    pendingCursorPos.current = newCursorPos;
+
+    // Set state - useEffect will handle cursor positioning after React updates DOM
     setInputValue(newValue);
     setMentionDropdownVisible(false);
     setMentionSearchQuery('');
-
-    // Use requestAnimationFrame to wait for React to update the DOM,
-    // then set cursor position after the value is actually in the input
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-          inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
-        }
-      });
-    });
   };
 
   const handleTyping = (value: string) => {
@@ -593,8 +602,8 @@ export function ChatBox({
               </div>
               {/* Render markdown for AI messages, plain text for others */}
               {(message.author.isAI || message.author.name === 'AI Assistant') ? (
-                <div className="text-sm prose prose-sm max-w-none dark:prose-invert">
-                  <ReactMarkdown>{message.content}</ReactMarkdown>
+                <div className="text-sm prose prose-sm max-w-none dark:prose-invert prose-table:border-collapse prose-td:border prose-td:border-gray-300 prose-td:p-2 prose-th:border prose-th:border-gray-300 prose-th:p-2 prose-th:bg-gray-100">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
                 </div>
               ) : (
                 <p className="text-sm">{message.content}</p>
