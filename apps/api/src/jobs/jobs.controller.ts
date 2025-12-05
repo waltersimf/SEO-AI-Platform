@@ -8,7 +8,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { JobsService } from './jobs.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('jobs')
 @UseGuards(JwtAuthGuard)

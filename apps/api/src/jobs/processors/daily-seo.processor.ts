@@ -36,6 +36,13 @@ interface MetricsData {
   serpstatTraffic?: number;
 }
 
+interface GscPerformanceData {
+  clicks?: number;
+  impressions?: number;
+  ctr?: number;
+  position?: number;
+}
+
 @Processor('daily-seo')
 export class DailySeoProcessor extends WorkerHost {
   private readonly logger = new Logger(DailySeoProcessor.name);
@@ -132,7 +139,6 @@ export class DailySeoProcessor extends WorkerHost {
     // Calculate date range (yesterday to get complete data)
     const endDate = new Date();
     endDate.setDate(endDate.getDate() - 1);
-    const startDate = new Date(endDate);
     const dateStr = endDate.toISOString().split('T')[0];
 
     // 1. Fetch GSC metrics
@@ -144,7 +150,7 @@ export class DailySeoProcessor extends WorkerHost {
           project.gscPropertyUrl,
           dateStr,
           dateStr,
-        );
+        ) as GscPerformanceData | null;
 
         if (gscData) {
           metrics.gscClicks = gscData.clicks || 0;
@@ -170,9 +176,9 @@ export class DailySeoProcessor extends WorkerHost {
         );
 
         if (ga4Data) {
-          metrics.ga4Users = ga4Data.totalUsers || 0;
+          metrics.ga4Users = ga4Data.users || 0;
           metrics.ga4Sessions = ga4Data.sessions || 0;
-          metrics.ga4Pageviews = ga4Data.screenPageViews || 0;
+          metrics.ga4Pageviews = ga4Data.pageviews || 0;
           metrics.ga4BounceRate = ga4Data.bounceRate || 0;
         }
         this.logger.debug(`GA4 metrics fetched: users=${metrics.ga4Users}, sessions=${metrics.ga4Sessions}`);
@@ -193,7 +199,7 @@ export class DailySeoProcessor extends WorkerHost {
         if (ahrefsData) {
           metrics.ahrefsDr = ahrefsData.domainRating || 0;
           metrics.ahrefsBacklinks = ahrefsData.backlinks || 0;
-          metrics.ahrefsRefDomains = ahrefsData.refDomains || 0;
+          metrics.ahrefsRefDomains = ahrefsData.referringDomains || 0;
           metrics.ahrefsOrgKeywords = ahrefsData.organicKeywords || 0;
           metrics.ahrefsOrgTraffic = ahrefsData.organicTraffic || 0;
         }
@@ -213,9 +219,9 @@ export class DailySeoProcessor extends WorkerHost {
         );
 
         if (serpstatData) {
-          metrics.serpstatVisibility = serpstatData.visibility || 0;
-          metrics.serpstatKeywords = serpstatData.keywords || 0;
-          metrics.serpstatTraffic = serpstatData.trafficCost || 0;
+          metrics.serpstatVisibility = serpstatData.visibilityIndex || 0;
+          metrics.serpstatKeywords = serpstatData.organicKeywords || 0;
+          metrics.serpstatTraffic = serpstatData.organicTraffic || 0;
         }
         this.logger.debug(`Serpstat metrics fetched: visibility=${metrics.serpstatVisibility}, keywords=${metrics.serpstatKeywords}`);
       } catch (error) {
