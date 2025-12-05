@@ -47,6 +47,8 @@ export default function ProjectDetailPage() {
   const [gaProperties, setGaProperties] = useState<GaProperty[]>([]);
   const [selectedGsc, setSelectedGsc] = useState<string>('');
   const [selectedGa, setSelectedGa] = useState<string>('');
+  const [gscSearchQuery, setGscSearchQuery] = useState('');
+  const [gscDropdownOpen, setGscDropdownOpen] = useState(false);
   const [gaSearchQuery, setGaSearchQuery] = useState('');
   const [gaDropdownOpen, setGaDropdownOpen] = useState(false);
   const [selectedSerpstatProjectId, setSelectedSerpstatProjectId] = useState<string>('');
@@ -57,6 +59,20 @@ export default function ProjectDetailPage() {
   const router = useRouter();
   const params = useParams();
   const projectId = params.id as string;
+
+  // Filter GSC properties based on search query
+  const filteredGscProperties = useMemo(() => {
+    if (!gscSearchQuery.trim()) return gscProperties;
+    const query = gscSearchQuery.toLowerCase();
+    return gscProperties.filter((prop) =>
+      prop.siteUrl.toLowerCase().includes(query)
+    );
+  }, [gscProperties, gscSearchQuery]);
+
+  // Get selected GSC property
+  const selectedGscProperty = useMemo(() => {
+    return gscProperties.find((p) => p.siteUrl === selectedGsc);
+  }, [gscProperties, selectedGsc]);
 
   // Filter GA4 properties based on search query
   const filteredGaProperties = useMemo(() => {
@@ -489,22 +505,66 @@ export default function ProjectDetailPage() {
                         </div>
                       )}
 
-                      {/* GSC Property Selection */}
+                      {/* GSC Property Selection with Search */}
                       <div className="space-y-2">
                         <label className="text-sm font-medium">Google Search Console</label>
                         {gscProperties.length > 0 ? (
-                          <select
-                            value={selectedGsc}
-                            onChange={(e) => setSelectedGsc(e.target.value)}
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          >
-                            <option value="">Select a property...</option>
-                            {gscProperties.map((prop) => (
-                              <option key={prop.siteUrl} value={prop.siteUrl}>
-                                {prop.siteUrl}
-                              </option>
-                            ))}
-                          </select>
+                          <Popover open={gscDropdownOpen} onOpenChange={setGscDropdownOpen}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={gscDropdownOpen}
+                                className="w-full justify-between font-normal"
+                              >
+                                {selectedGscProperty
+                                  ? selectedGscProperty.siteUrl
+                                  : 'Select a property...'}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-full p-0" align="start">
+                              <div className="flex items-center border-b px-3">
+                                <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                                <Input
+                                  placeholder="Пошук GSC property..."
+                                  value={gscSearchQuery}
+                                  onChange={(e) => setGscSearchQuery(e.target.value)}
+                                  className="flex h-10 w-full border-0 bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
+                                />
+                              </div>
+                              <div className="max-h-60 overflow-y-auto">
+                                {filteredGscProperties.length === 0 ? (
+                                  <div className="py-6 text-center text-sm text-muted-foreground">
+                                    Не знайдено
+                                  </div>
+                                ) : (
+                                  <div className="p-1">
+                                    {filteredGscProperties.map((prop) => (
+                                      <button
+                                        key={prop.siteUrl}
+                                        onClick={() => {
+                                          setSelectedGsc(prop.siteUrl);
+                                          setGscDropdownOpen(false);
+                                          setGscSearchQuery('');
+                                        }}
+                                        className={`relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground ${
+                                          selectedGsc === prop.siteUrl ? 'bg-accent' : ''
+                                        }`}
+                                      >
+                                        <Check
+                                          className={`mr-2 h-4 w-4 ${
+                                            selectedGsc === prop.siteUrl ? 'opacity-100' : 'opacity-0'
+                                          }`}
+                                        />
+                                        <span className="truncate">{prop.siteUrl}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
                         ) : (
                           <p className="text-sm text-muted-foreground">
                             No Search Console properties found
