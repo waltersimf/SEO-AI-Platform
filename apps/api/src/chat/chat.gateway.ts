@@ -212,11 +212,28 @@ export class ChatGateway
         `Client ${client.id} (${payload.userName}) joined room ${payload.chatId}`,
       );
 
+      // Mark chat as read when user joins
+      await this.chatService.markChatAsRead(payload.chatId, payload.userId);
+      this.logger.log(`Marked chat ${payload.chatId} as read for user ${payload.userId}`);
+
       // Notify others in the room
       client.to(payload.chatId).emit('user_joined', {
         userId: payload.userId,
         userName: payload.userName,
         joinedAt: new Date().toISOString(),
+      });
+
+      // Emit updated unread count to the user who joined
+      client.emit('unread_updated', {
+        chatId: payload.chatId,
+        unreadCount: 0,
+      });
+
+      // Broadcast refresh to update chat list for all connected clients
+      this.server.emit('refresh_chat_list', {
+        chatId: payload.chatId,
+        userId: payload.userId,
+        timestamp: new Date(),
       });
 
       return { success: true, event: 'joined_room', data: payload.chatId };
@@ -492,6 +509,57 @@ export class ChatGateway
       serverTime: new Date().toISOString(),
       connectedClients: this.connectedClients.size,
     };
+  }
+
+  @SubscribeMessage('mark_as_read')
+  async handleMarkAsRead(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { chatId: string; userId: string },
+  ) {
+    try {
+      if (!payload?.chatId || !payload?.userId) {
+        client.emit('error', {
+          message: 'Chat ID and User ID are required',
+          code: 'INVALID_PAYLOAD',
+        });
+        return { success: false };
+      }
+
+      // Verify user is a member of this chat
+      const isMember = await this.chatService.isChatMember(payload.chatId, payload.userId);
+      if (!isMember) {
+        client.emit('error', {
+          code: 'UNAUTHORIZED',
+          message: 'Not authorized for this chat',
+        });
+        return { success: false };
+      }
+
+      // Mark chat as read
+      await this.chatService.markChatAsRead(payload.chatId, payload.userId);
+      this.logger.log(`Chat ${payload.chatId} marked as read by user ${payload.userId}`);
+
+      // Emit updated unread count to the user
+      client.emit('unread_updated', {
+        chatId: payload.chatId,
+        unreadCount: 0,
+      });
+
+      // Broadcast refresh to update chat list for all connected clients of this user
+      this.server.emit('refresh_chat_list', {
+        chatId: payload.chatId,
+        userId: payload.userId,
+        timestamp: new Date(),
+      });
+
+      return { success: true };
+    } catch (error) {
+      this.logger.error(
+        `Error marking chat as read: chatId=${payload?.chatId}, userId=${payload?.userId}`,
+        error,
+      );
+      return { success: false };
+    }
   }
 
   /**
