@@ -171,8 +171,7 @@ export class DailySeoProcessor extends WorkerHost {
         const ga4Data = await this.gscService.getGa4Overview(
           organizationId,
           project.gaPropertyId,
-          dateStr,
-          dateStr,
+          { startDate: dateStr, endDate: dateStr },
         );
 
         if (ga4Data) {
