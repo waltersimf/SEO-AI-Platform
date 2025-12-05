@@ -447,13 +447,20 @@ export function ChatBox({
   const insertMention = (user: OrganizationUser) => {
     const beforeMention = inputValue.substring(0, mentionStartPos);
     const afterMention = inputValue.substring(mentionStartPos + mentionSearchQuery.length + 1);
-    const newValue = `${beforeMention}@${user.name} ${afterMention}`;
+    const mentionText = `@${user.name} `;
+    const newValue = `${beforeMention}${mentionText}${afterMention}`;
     setInputValue(newValue);
     setMentionDropdownVisible(false);
     setMentionSearchQuery('');
 
-    // Focus input after insertion
-    setTimeout(() => inputRef.current?.focus(), 0);
+    // Focus input and set cursor position AFTER the inserted mention
+    const cursorPosition = mentionStartPos + mentionText.length;
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.setSelectionRange(cursorPosition, cursorPosition);
+      }
+    }, 0);
   };
 
   const handleTyping = (value: string) => {

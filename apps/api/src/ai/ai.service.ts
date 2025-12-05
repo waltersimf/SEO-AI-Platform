@@ -176,6 +176,29 @@ const SEO_TOOLS: Anthropic.Tool[] = [
       required: ['domain'],
     },
   },
+  // Google Analytics 4 tools
+  {
+    name: 'get_ga4_overview',
+    description: 'Get Google Analytics 4 overview metrics including total users, new users, sessions, pageviews, average session duration, and engagement rate for the specified date range.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        property_id: {
+          type: 'string',
+          description: 'The GA4 property ID (e.g., "properties/123456789")',
+        },
+        start_date: {
+          type: 'string',
+          description: 'Start date in YYYY-MM-DD format (default: 28 days ago)',
+        },
+        end_date: {
+          type: 'string',
+          description: 'End date in YYYY-MM-DD format (default: today)',
+        },
+      },
+      required: ['property_id'],
+    },
+  },
 ];
 
 @Injectable()
@@ -229,13 +252,14 @@ export class AiService {
       );
     }
 
-    // Check Google integration (for GSC tools)
+    // Check Google integration (for GSC and GA4 tools)
     const googleIntegration = await this.integrationsService.findOne(organizationId, 'google');
     if (googleIntegration) {
       availableTools.push(
         SEO_TOOLS.find(t => t.name === 'get_gsc_performance')!,
         SEO_TOOLS.find(t => t.name === 'get_gsc_top_queries')!,
         SEO_TOOLS.find(t => t.name === 'get_gsc_top_pages')!,
+        SEO_TOOLS.find(t => t.name === 'get_ga4_overview')!,
       );
     }
 
@@ -330,6 +354,15 @@ export class AiService {
               startDate: toolInput.start_date as string,
               endDate: toolInput.end_date as string,
             },
+          );
+          return JSON.stringify(result, null, 2);
+        }
+
+        // Google Analytics 4 tools
+        case 'get_ga4_overview': {
+          const result = await this.gscService.getGa4Overview(
+            organizationId,
+            toolInput.property_id as string,
           );
           return JSON.stringify(result, null, 2);
         }
@@ -507,7 +540,14 @@ You have access to SEO analysis tools. Depending on what integrations the user h
 - Top search queries that bring traffic to the site
 - Top pages by search traffic
 
+**Google Analytics 4 tools** (for website traffic and user behavior):
+- Total users, new users, sessions
+- Pageviews and average session duration
+- Engagement rate and user behavior metrics
+
 When a user asks about their site's performance, search traffic, or ranking queries - prefer using Google Search Console tools as they provide actual data from Google.
+
+When a user asks about website traffic, user behavior, sessions, or general analytics - use Google Analytics 4 tools.
 
 When a user asks about competitor analysis, domain authority, or third-party metrics - use Ahrefs or Serpstat tools.
 
