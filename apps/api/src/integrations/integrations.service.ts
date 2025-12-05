@@ -42,10 +42,13 @@ export class IntegrationsService {
     }
 
     // Decrypt tokens before returning
+    const decryptedToken = this.encryptionService.decrypt(integration.accessToken);
+    console.log(`[IntegrationsService] findOne ${provider}: encrypted length=${integration.accessToken?.length}, decrypted length=${decryptedToken?.length}`);
+
     return {
       ...integration,
-      accessToken: this.encryptionService.decrypt(integration.accessToken),
-      refreshToken: integration.refreshToken 
+      accessToken: decryptedToken,
+      refreshToken: integration.refreshToken
         ? this.encryptionService.decrypt(integration.refreshToken)
         : null,
     };

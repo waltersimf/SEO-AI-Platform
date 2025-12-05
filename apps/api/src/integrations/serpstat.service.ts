@@ -66,6 +66,11 @@ export class SerpstatService {
   ): Promise<T> {
     const { apiKey } = await this.getCredentials(organizationId);
 
+    if (!apiKey) {
+      console.log('[Serpstat] ERROR: API key is empty or undefined!');
+      throw new UnauthorizedException('Serpstat API key is missing');
+    }
+
     const body = {
       id: '1',
       method,
@@ -76,6 +81,8 @@ export class SerpstatService {
     console.log('[Serpstat] Request URL:', this.baseUrl);
     console.log('[Serpstat] Request method:', method);
     console.log('[Serpstat] Request params:', params);
+    console.log('[Serpstat] Token present:', !!apiKey, 'length:', apiKey?.length);
+    console.log('[Serpstat] Full body:', JSON.stringify({ ...body, token: apiKey?.substring(0, 10) + '...' }));
 
     const response = await fetch(this.baseUrl, {
       method: 'POST',
