@@ -1,6 +1,6 @@
-# 📦 CHANGELOG - v0.8 SEO Integrations
+# 📦 CHANGELOG - v0.8 SEO Integrations & Scheduled Jobs
 
-**Версія документу:** 11.0  
+**Версія документу:** 11.1  
 **Останнє оновлення:** 05.12.2025  
 **Поточна версія:** v0.8 🔄 **IN PROGRESS**
 
@@ -188,6 +188,90 @@ model Project {
 - При відкритті чату маркуються всі повідомлення як прочитані
 - WebSocket подія `mark_as_read`
 - Оновлення unreadCount в реальному часі
+
+---
+
+#### 8. BullMQ Scheduled Jobs ✅ ⏰
+
+**Інфраструктура:**
+- BullMQ queue `daily-seo` з Redis
+- Cron job о 6:00 AM (Kyiv timezone)
+- Worker processor для обробки jobs
+
+**Daily SEO Fetch:**
+- Автоматичний збір даних для всіх проектів
+- GSC metrics: clicks, impressions, CTR, position
+- GA4 metrics: users, sessions, pageviews, bounce rate
+- Ahrefs metrics: DR, backlinks, ref domains (готово)
+- Serpstat metrics: visibility, keywords, traffic (готово)
+
+**Database:**
+```prisma
+model ProjectMetricsHistory {
+  id          String   @id @default(cuid())
+  projectId   String
+  date        DateTime @db.Date
+  
+  // GSC
+  gscClicks      Int?
+  gscImpressions Int?
+  gscCtr         Float?
+  gscPosition    Float?
+  
+  // GA4
+  ga4Users       Int?
+  ga4Sessions    Int?
+  ga4Pageviews   Int?
+  ga4BounceRate  Float?
+  
+  // Ahrefs
+  ahrefsDr           Int?
+  ahrefsBacklinks    Int?
+  ahrefsRefDomains   Int?
+  ahrefsOrgKeywords  Int?
+  ahrefsOrgTraffic   Int?
+  
+  // Serpstat
+  serpstatVisibility  Float?
+  serpstatKeywords    Int?
+  serpstatTraffic     Int?
+  
+  @@unique([projectId, date])
+}
+```
+
+**API Endpoints:**
+| Method | Endpoint | Опис |
+|--------|----------|------|
+| POST | `/api/jobs/trigger-daily-seo` | Запустити job (auth required) |
+| POST | `/api/jobs/dev/trigger` | Dev trigger (no auth) |
+| GET | `/api/jobs/dev/status` | Queue status |
+| GET | `/api/jobs/history/:projectId` | Історія метрик проекту |
+| GET | `/api/jobs/latest-metrics` | Останні метрики всіх проектів |
+
+**Файли:**
+- `apps/api/src/jobs/jobs.module.ts`
+- `apps/api/src/jobs/jobs.service.ts`
+- `apps/api/src/jobs/jobs.controller.ts`
+- `apps/api/src/jobs/processors/daily-seo.processor.ts`
+- Migration: `20251205143019_add_metrics_history`
+
+---
+
+### 📊 Тестування Jobs
+
+**Результат тесту:**
+```
+✅ Processing daily SEO job for TestOrg
+✅ Found 3 projects to process
+✅ GSC metrics fetched
+✅ GA4 metrics fetched: users=3567, sessions=5227
+✅ Job completed: 3/3 projects successful
+```
+
+**Дані в ProjectMetricsHistory:**
+- 3 записи з GA4 метриками
+- Ahrefs/Serpstat — null (очікувано)
 
 ---
 
