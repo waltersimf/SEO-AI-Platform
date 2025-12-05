@@ -394,11 +394,19 @@ export function ChatBox({
     if (pendingCursorPos.current !== null && inputRef.current) {
       const pos = pendingCursorPos.current;
       pendingCursorPos.current = null;
+      console.log('=== CURSOR EFFECT DEBUG ===');
+      console.log('Pending cursor pos was:', pos);
+      console.log('inputRef.current:', inputRef.current);
+      console.log('Current input value:', inputRef.current.value);
       // Use requestAnimationFrame to ensure DOM is updated
       requestAnimationFrame(() => {
+        console.log('=== RAF CALLBACK ===');
+        console.log('inputRef.current in RAF:', inputRef.current);
         if (inputRef.current) {
+          console.log('Calling focus() and setSelectionRange(', pos, ',', pos, ')');
           inputRef.current.focus();
           inputRef.current.setSelectionRange(pos, pos);
+          console.log('After setSelectionRange, selectionStart:', inputRef.current.selectionStart);
         }
       });
     }
@@ -462,6 +470,13 @@ export function ChatBox({
 
   // Insert mention into input
   const insertMention = (user: OrganizationUser) => {
+    console.log('=== MENTION DEBUG ===');
+    console.log('Function called');
+    console.log('User:', user);
+    console.log('Current inputValue:', inputValue);
+    console.log('mentionStartPos:', mentionStartPos);
+    console.log('mentionSearchQuery:', mentionSearchQuery);
+
     const beforeMention = inputValue.substring(0, mentionStartPos);
     const afterMention = inputValue.substring(mentionStartPos + mentionSearchQuery.length + 1);
     const mentionText = `@${user.name} `;
@@ -470,13 +485,21 @@ export function ChatBox({
     // Calculate cursor position: mentionStartPos + "@" (1) + user.name + " " (1)
     const newCursorPos = mentionStartPos + user.name.length + 2;
 
+    console.log('beforeMention:', JSON.stringify(beforeMention));
+    console.log('afterMention:', JSON.stringify(afterMention));
+    console.log('mentionText:', JSON.stringify(mentionText));
+    console.log('New value:', JSON.stringify(newValue));
+    console.log('New cursor position:', newCursorPos);
+
     // Store pending cursor position - will be applied by useEffect after state update
     pendingCursorPos.current = newCursorPos;
+    console.log('Set pendingCursorPos.current to:', pendingCursorPos.current);
 
     // Set state - useEffect will handle cursor positioning after React updates DOM
     setInputValue(newValue);
     setMentionDropdownVisible(false);
     setMentionSearchQuery('');
+    console.log('State updated, waiting for useEffect...');
   };
 
   const handleTyping = (value: string) => {
