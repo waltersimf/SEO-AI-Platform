@@ -6,6 +6,7 @@ import { AhrefsService } from '../integrations/ahrefs.service';
 import { SerpstatService } from '../integrations/serpstat.service';
 import { IntegrationsService } from '../integrations/integrations.service';
 import { GscService } from '../gsc/gsc.service';
+import { ProjectsService } from '../projects/projects.service';
 
 export interface TaskParseResult {
   isTaskRequest: boolean;
@@ -179,13 +180,17 @@ const SEO_TOOLS: Anthropic.Tool[] = [
   // Google Analytics 4 tools
   {
     name: 'get_ga4_overview',
-    description: 'Get Google Analytics 4 overview metrics including total users, new users, sessions, pageviews, average session duration, and engagement rate for the specified date range.',
+    description: 'Get Google Analytics 4 overview metrics including total users, new users, sessions, pageviews, average session duration, and engagement rate for the specified date range. If property_id is not provided, the system will auto-detect it from the project settings.',
     input_schema: {
       type: 'object' as const,
       properties: {
         property_id: {
           type: 'string',
-          description: 'The GA4 property ID (e.g., "properties/123456789")',
+          description: 'The GA4 property ID (e.g., "properties/123456789"). Optional - will be auto-detected from project if not provided.',
+        },
+        domain: {
+          type: 'string',
+          description: 'The domain to look up GA4 property for (e.g., "example.com"). Used for auto-detection when property_id is not provided.',
         },
         start_date: {
           type: 'string',
@@ -196,7 +201,7 @@ const SEO_TOOLS: Anthropic.Tool[] = [
           description: 'End date in YYYY-MM-DD format (default: today)',
         },
       },
-      required: ['property_id'],
+      required: [],
     },
   },
 ];
@@ -212,6 +217,7 @@ export class AiService {
     private readonly serpstatService: SerpstatService,
     private readonly integrationsService: IntegrationsService,
     private readonly gscService: GscService,
+    private readonly projectsService: ProjectsService,
   ) {
     const apiKey = this.configService.get<string>('ANTHROPIC_API_KEY');
 
@@ -360,9 +366,48 @@ export class AiService {
 
         // Google Analytics 4 tools
         case 'get_ga4_overview': {
+          let propertyId = toolInput.property_id as string | undefined;
+
+          // Auto-detect property_id if not provided
+          if (!propertyId) {
+            this.logger.debug('GA4: property_id not provided, attempting auto-detection');
+
+            // Try to find project by domain if provided
+            const domain = toolInput.domain as string | undefined;
+            if (domain) {
+              const projects = await this.projectsService.findAll(organizationId);
+              const matchingProject = projects.find(p =>
+                p.domain && (
+                  p.domain.includes(domain) ||
+                  domain.includes(p.domain.replace(/^https?:\/\//, '').replace(/\/$/, ''))
+                )
+              );
+              if (matchingProject?.gaPropertyId) {
+                propertyId = matchingProject.gaPropertyId;
+                this.logger.debug(`GA4: Auto-detected property_id ${propertyId} from project ${matchingProject.name}`);
+              }
+            }
+
+            // If still no property_id, try to find any project with gaPropertyId
+            if (!propertyId) {
+              const projects = await this.projectsService.findAll(organizationId);
+              const projectWithGa = projects.find(p => p.gaPropertyId);
+              if (projectWithGa?.gaPropertyId) {
+                propertyId = projectWithGa.gaPropertyId;
+                this.logger.debug(`GA4: Using property_id ${propertyId} from first configured project ${projectWithGa.name}`);
+              }
+            }
+
+            if (!propertyId) {
+              return JSON.stringify({
+                error: 'No GA4 Property ID found. Please configure GA4 Property ID in your project settings or provide it directly.',
+              });
+            }
+          }
+
           const result = await this.gscService.getGa4Overview(
             organizationId,
-            toolInput.property_id as string,
+            propertyId,
           );
           return JSON.stringify(result, null, 2);
         }
