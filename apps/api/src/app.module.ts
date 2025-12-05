@@ -16,6 +16,7 @@ import { SchedulerModule } from './scheduler/scheduler.module';
 import { InviteModule } from './invite/invite.module';
 import { TeamModule } from './team/team.module';
 import { OrganizationModule } from './organization/organization.module';
+import { JobsModule } from './jobs/jobs.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { OrganizationModule } from './organization/organization.module';
     InviteModule,
     TeamModule,
     OrganizationModule,
+    JobsModule,
   ],
 })
 export class AppModule {}
