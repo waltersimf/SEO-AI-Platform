@@ -79,7 +79,8 @@ model Project {
   isDeleted Boolean   @default(false)
   deletedAt DateTime?
 
-  tasks Task[]
+  tasks          Task[]
+  metricsHistory ProjectMetricsHistory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -366,4 +367,43 @@ model Invite {
   @@index([email])
   @@index([organizationId])
   @@map("invites")
+}
+
+// Daily SEO Metrics History
+model ProjectMetricsHistory {
+  id        String   @id @default(cuid())
+  projectId String
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  // GSC metrics
+  gscClicks      Int?
+  gscImpressions Int?
+  gscCtr         Float?
+  gscPosition    Float?
+
+  // GA4 metrics
+  ga4Users      Int?
+  ga4Sessions   Int?
+  ga4Pageviews  Int?
+  ga4BounceRate Float?
+
+  // Ahrefs metrics
+  ahrefsDr          Int?
+  ahrefsBacklinks   Int?
+  ahrefsRefDomains  Int?
+  ahrefsOrgKeywords Int?
+  ahrefsOrgTraffic  Int?
+
+  // Serpstat metrics
+  serpstatVisibility Float?
+  serpstatKeywords   Int?
+  serpstatTraffic    Int?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, date])
+  @@index([projectId])
+  @@index([date])
+  @@map("project_metrics_history")
 }
