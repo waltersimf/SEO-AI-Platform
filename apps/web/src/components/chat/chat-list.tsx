@@ -125,6 +125,20 @@ export function ChatList({ activeChatId, onChatSelect, onCreateChat, onRefresh, 
       loadChats(); // Refresh to update unread counts
     });
 
+    // Listen for unread_updated event (when user marks a chat as read)
+    socket.on("unread_updated", (data: { chatId: string; unreadCount: number }) => {
+      console.log('📖 ChatList: Received unread_updated event:', data);
+      setChats(prevChats =>
+        prevChats.map(chat => {
+          if (chat.id === data.chatId) {
+            console.log(`📖 ChatList: Updating unread count for chat "${chat.name}" to ${data.unreadCount}`);
+            return { ...chat, unreadCount: data.unreadCount };
+          }
+          return chat;
+        })
+      );
+    });
+
     // Listen for online users updates
     const handleOnlineUsersChanged = (event: any) => {
       setOnlineUsers(event.detail?.userIds || []);
