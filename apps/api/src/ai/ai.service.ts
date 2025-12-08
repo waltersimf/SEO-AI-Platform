@@ -453,10 +453,31 @@ export class AiService {
 
           const analysis = await this.analyticsService.getDetailedAnalysis(project.id);
 
+          // Check if we actually have data (not just connected)
+          const latestMetrics = analysis.latestMetrics;
+          const gscHasData = latestMetrics && (
+            latestMetrics.gscClicks !== null ||
+            latestMetrics.gscImpressions !== null
+          );
+          const ga4HasData = latestMetrics && (
+            latestMetrics.ga4Users !== null ||
+            latestMetrics.ga4Sessions !== null
+          );
+
           return JSON.stringify({
             projectName: project.name,
             domain: project.domain,
-            integrations: analysis.integrations,
+            integrations: {
+              gsc: {
+                connected: analysis.integrations.gscConnected,
+                hasData: gscHasData,
+              },
+              ga4: {
+                connected: analysis.integrations.ga4Connected,
+                hasData: ga4HasData,
+              },
+            },
+            hasHistoricalData: !!latestMetrics,
             insights: analysis.insights,
             latestMetrics: analysis.latestMetrics,
             previousMetrics: analysis.previousMetrics,
