@@ -2,6 +2,7 @@
 
 import { GoogleConnectButton } from "@/components/integrations/google-connect-button";
 import { GscMetricsCard } from "@/components/gsc-metrics-card";
+import { InsightsWidget } from "@/components/dashboard/insights-widget";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSocket } from "@/contexts/socket-context";
@@ -147,10 +148,16 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Google Integration */}
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Інтеграція з Google</h2>
-              <GoogleConnectButton />
+            {/* Insights and Google Integration Grid */}
+            <div className="grid gap-6 lg:grid-cols-2">
+              {/* Insights Widget */}
+              <InsightsWidget />
+
+              {/* Google Integration */}
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="text-lg font-semibold mb-4">Інтеграція з Google</h3>
+                <GoogleConnectButton />
+              </div>
             </div>
 
             {/* GSC Metrics */}

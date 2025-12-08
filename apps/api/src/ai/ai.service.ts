@@ -7,6 +7,7 @@ import { SerpstatService } from '../integrations/serpstat.service';
 import { IntegrationsService } from '../integrations/integrations.service';
 import { GscService } from '../gsc/gsc.service';
 import { ProjectsService } from '../projects/projects.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 export interface TaskParseResult {
   isTaskRequest: boolean;
@@ -204,6 +205,21 @@ const SEO_TOOLS: Anthropic.Tool[] = [
       required: [],
     },
   },
+  // Analytics tool
+  {
+    name: 'analyze_project_changes',
+    description: 'Аналізує зміни метрик проекту за останній тиждень. Порівнює поточний тиждень з минулим та виявляє значні зміни (>=10%). Використовуй коли користувач питає про зміни, тренди, аналіз метрик, "що змінилось", "як справи з метриками".',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        projectDomain: {
+          type: 'string',
+          description: 'Домен проекту для аналізу (наприклад: example.com)',
+        },
+      },
+      required: ['projectDomain'],
+    },
+  },
 ];
 
 @Injectable()
@@ -218,6 +234,7 @@ export class AiService {
     private readonly integrationsService: IntegrationsService,
     private readonly gscService: GscService,
     private readonly projectsService: ProjectsService,
+    private readonly analyticsService: AnalyticsService,
   ) {
     const apiKey = this.configService.get<string>('ANTHROPIC_API_KEY');
 
@@ -239,6 +256,9 @@ export class AiService {
    */
   private async getAvailableTools(organizationId: string): Promise<Anthropic.Tool[]> {
     const availableTools: Anthropic.Tool[] = [];
+
+    // Analytics tool is always available (uses internal data)
+    availableTools.push(SEO_TOOLS.find(t => t.name === 'analyze_project_changes')!);
 
     // Check Ahrefs integration
     const ahrefsIntegration = await this.integrationsService.findOne(organizationId, 'ahrefs');
@@ -412,6 +432,36 @@ export class AiService {
           return JSON.stringify(result, null, 2);
         }
 
+        // Analytics tool
+        case 'analyze_project_changes': {
+          const domain = toolInput.projectDomain as string;
+
+          // Find project by domain
+          const projects = await this.projectsService.findAll(organizationId);
+          const project = projects.find(p =>
+            p.domain && (
+              p.domain.includes(domain) ||
+              domain.includes(p.domain.replace(/^https?:\/\//, '').replace(/\/$/, ''))
+            )
+          );
+
+          if (!project) {
+            return JSON.stringify({
+              error: `Проект з доменом "${domain}" не знайдено. Перевірте правильність домену.`,
+            });
+          }
+
+          const analysis = await this.analyticsService.getDetailedAnalysis(project.id);
+
+          return JSON.stringify({
+            projectName: project.name,
+            domain: project.domain,
+            insights: analysis.insights,
+            latestMetrics: analysis.latestMetrics,
+            recommendations: analysis.recommendations,
+          }, null, 2);
+        }
+
         default:
           return JSON.stringify({ error: `Unknown tool: ${toolName}` });
       }
@@ -574,6 +624,10 @@ Always maintain a friendly and supportive tone.`;
 
 You have access to SEO analysis tools. Depending on what integrations the user has connected, you may have:
 
+**Аналітичний інструмент** (завжди доступний):
+- analyze_project_changes: аналізує зміни метрик за тиждень, виявляє тренди та проблеми
+- Коли користувач питає "проаналізуй", "що змінилось", "покажи тренди", "як справи з метриками" - використовуй цей інструмент
+
 **Ahrefs/Serpstat tools** (for competitive analysis):
 - Domain metrics, Domain Rating (DR), backlinks, referring domains
 - Organic keywords a site ranks for
@@ -595,6 +649,8 @@ When a user asks about their site's performance, search traffic, or ranking quer
 When a user asks about website traffic, user behavior, sessions, or general analytics - use Google Analytics 4 tools.
 
 When a user asks about competitor analysis, domain authority, or third-party metrics - use Ahrefs or Serpstat tools.
+
+When a user asks about changes, trends, or weekly analysis - use analyze_project_changes tool.
 
 After getting the data:
 - Present key metrics in a clear, structured format
