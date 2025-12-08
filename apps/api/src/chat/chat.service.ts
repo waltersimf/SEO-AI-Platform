@@ -451,6 +451,14 @@ export class ChatService {
             emoji,
           },
         },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
       });
 
       if (existing) {
