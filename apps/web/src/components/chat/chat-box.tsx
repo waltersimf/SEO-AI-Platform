@@ -138,6 +138,7 @@ export function ChatBox({
   const [editContent, setEditContent] = useState('');
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [showEmojiSubmenu, setShowEmojiSubmenu] = useState(false);
+  const [emojiSubmenuPosition, setEmojiSubmenuPosition] = useState<'right' | 'left'>('right');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
@@ -1061,14 +1062,26 @@ export function ChatBox({
           {!contextMenu.isDeleted && (
             <div className="relative">
               <button
-                onClick={() => setShowEmojiSubmenu(!showEmojiSubmenu)}
+                onClick={() => {
+                  if (!showEmojiSubmenu) {
+                    // Check available space on the right before showing
+                    const menuWidth = 180; // context menu width
+                    const submenuWidth = 200; // emoji submenu approximate width
+                    const availableRight = window.innerWidth - contextMenu.x - menuWidth;
+                    setEmojiSubmenuPosition(availableRight >= submenuWidth ? 'right' : 'left');
+                  }
+                  setShowEmojiSubmenu(!showEmojiSubmenu);
+                }}
                 className="w-full px-4 py-2 hover:bg-gray-100 flex items-center gap-3 text-left text-sm"
               >
                 <span className="text-base">😀</span>
                 <span>Реакції</span>
+                <span className="ml-auto text-gray-400">{emojiSubmenuPosition === 'right' ? '›' : '‹'}</span>
               </button>
               {showEmojiSubmenu && (
-                <div className="absolute left-full top-0 ml-1 bg-white rounded-lg shadow-xl border p-2 flex gap-1">
+                <div className={`absolute top-0 bg-white rounded-lg shadow-xl border p-2 flex gap-1 ${
+                  emojiSubmenuPosition === 'right' ? 'left-full ml-1' : 'right-full mr-1'
+                }`}>
                   {QUICK_EMOJIS.map((emoji) => (
                     <button
                       key={emoji}
