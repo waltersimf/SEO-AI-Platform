@@ -17,6 +17,7 @@ import { InviteModule } from './invite/invite.module';
 import { TeamModule } from './team/team.module';
 import { OrganizationModule } from './organization/organization.module';
 import { JobsModule } from './jobs/jobs.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { JobsModule } from './jobs/jobs.module';
     TeamModule,
     OrganizationModule,
     JobsModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}
