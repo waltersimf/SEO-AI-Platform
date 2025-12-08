@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { Send } from 'lucide-react';
+import { Send, Smile, Pencil, Trash2, X, Check } from 'lucide-react';
 import { initSocket, getSocket } from './socket';
 import { TypingIndicator } from './typing-indicator';
 import { TaskPreviewCard } from './task-preview-card';
@@ -10,6 +10,9 @@ import { API_URL } from '@/config/api';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import { usePermissions } from '@/hooks/usePermissions';
+
+// Quick emoji reactions
+const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 
 interface TaskPreviewData {
   type: 'task_preview';
@@ -59,6 +62,16 @@ interface AutoPlanPreviewData {
   status: 'pending' | 'applied';
 }
 
+interface MessageReaction {
+  id: string;
+  emoji: string;
+  userId: string;
+  user: {
+    id: string;
+    name: string;
+  };
+}
+
 interface Message {
   id: string;
   content: string;
@@ -69,6 +82,9 @@ interface Message {
     isAI?: boolean;
   };
   createdAt: string;
+  editedAt?: string;
+  deletedAt?: string;
+  reactions?: MessageReaction[];
   aiContext?: {
     taskPreview?: TaskPreviewData;
     autoPlanPreview?: AutoPlanPreviewData;
@@ -111,6 +127,13 @@ export function SidebarChatWindow({
   const [createdTaskIds, setCreatedTaskIds] = useState<Set<string>>(new Set());
   const [appliedPlanIds, setAppliedPlanIds] = useState<Set<string>>(new Set());
   const [dismissedPreviews, setDismissedPreviews] = useState<Set<string>>(new Set());
+
+  // Edit, delete, and reaction states
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [showEmojiPickerFor, setShowEmojiPickerFor] = useState<string | null>(null);
+  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
@@ -273,9 +296,80 @@ export function SidebarChatWindow({
       }
     });
 
+    // Listen for reaction added
+    socket.on('reaction_added', (data: { messageId: string; reaction: MessageReaction }) => {
+      setMessages(prev =>
+        prev.map(msg => {
+          if (msg.id === data.messageId) {
+            const existingReaction = msg.reactions?.find(
+              r => r.emoji === data.reaction.emoji && r.userId === data.reaction.userId
+            );
+            if (existingReaction) return msg;
+            return {
+              ...msg,
+              reactions: [...(msg.reactions || []), data.reaction],
+            };
+          }
+          return msg;
+        })
+      );
+    });
+
+    // Listen for reaction removed
+    socket.on('reaction_removed', (data: { messageId: string; userId: string; emoji: string }) => {
+      setMessages(prev =>
+        prev.map(msg => {
+          if (msg.id === data.messageId) {
+            return {
+              ...msg,
+              reactions: (msg.reactions || []).filter(
+                r => !(r.emoji === data.emoji && r.userId === data.userId)
+              ),
+            };
+          }
+          return msg;
+        })
+      );
+    });
+
+    // Listen for message edited
+    socket.on('message_edited', (data: { messageId: string; content: string; editedAt: string }) => {
+      setMessages(prev =>
+        prev.map(msg => {
+          if (msg.id === data.messageId) {
+            return {
+              ...msg,
+              content: data.content,
+              editedAt: data.editedAt,
+            };
+          }
+          return msg;
+        })
+      );
+    });
+
+    // Listen for message deleted
+    socket.on('message_deleted', (data: { messageId: string; deletedAt: string }) => {
+      setMessages(prev =>
+        prev.map(msg => {
+          if (msg.id === data.messageId) {
+            return {
+              ...msg,
+              deletedAt: data.deletedAt,
+            };
+          }
+          return msg;
+        })
+      );
+    });
+
     return () => {
       socket.off('receive_message');
       socket.off('user_typing');
+      socket.off('reaction_added');
+      socket.off('reaction_removed');
+      socket.off('message_edited');
+      socket.off('message_deleted');
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       if (hideTypingTimeoutRef.current) clearTimeout(hideTypingTimeoutRef.current);
     };
@@ -431,6 +525,85 @@ export function SidebarChatWindow({
     return <span className="text-xs font-semibold text-white">{getInitials(user.name)}</span>;
   };
 
+  // ==========================================
+  // Reaction, Edit, and Delete handlers
+  // ==========================================
+
+  // Toggle reaction (add if not exists, remove if exists)
+  const handleToggleReaction = (messageId: string, emoji: string) => {
+    const socket = socketRef.current;
+    if (!socket) return;
+
+    const message = messages.find(m => m.id === messageId);
+    const existingReaction = message?.reactions?.find(
+      r => r.emoji === emoji && r.userId === userId
+    );
+
+    if (existingReaction) {
+      socket.emit('remove_reaction', { messageId, userId, emoji, chatId });
+    } else {
+      socket.emit('add_reaction', { messageId, userId, emoji, chatId });
+    }
+    setShowEmojiPickerFor(null);
+  };
+
+  // Start editing a message
+  const handleStartEdit = (message: Message) => {
+    setEditingMessageId(message.id);
+    setEditContent(message.content);
+  };
+
+  // Cancel editing
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditContent('');
+  };
+
+  // Save edited message
+  const handleSaveEdit = () => {
+    const socket = socketRef.current;
+    if (!socket || !editingMessageId || !editContent.trim()) return;
+
+    socket.emit('edit_message', {
+      messageId: editingMessageId,
+      userId,
+      content: editContent.trim(),
+      chatId,
+    });
+    setEditingMessageId(null);
+    setEditContent('');
+  };
+
+  // Delete message
+  const handleDeleteMessage = (messageId: string) => {
+    const socket = socketRef.current;
+    if (!socket) return;
+
+    socket.emit('delete_message', { messageId, userId, chatId });
+    setDeleteConfirmId(null);
+  };
+
+  // Group reactions by emoji with count
+  const groupReactions = (reactions: MessageReaction[] = []): { emoji: string; count: number; users: string[]; hasUserReacted: boolean }[] => {
+    const grouped: Record<string, { count: number; users: string[]; hasUserReacted: boolean }> = {};
+
+    reactions.forEach(r => {
+      if (!grouped[r.emoji]) {
+        grouped[r.emoji] = { count: 0, users: [], hasUserReacted: false };
+      }
+      grouped[r.emoji].count++;
+      grouped[r.emoji].users.push(r.user.name);
+      if (r.userId === userId) {
+        grouped[r.emoji].hasUserReacted = true;
+      }
+    });
+
+    return Object.entries(grouped).map(([emoji, data]) => ({
+      emoji,
+      ...data,
+    }));
+  };
+
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Messages */}
@@ -439,6 +612,11 @@ export function SidebarChatWindow({
           <div
             key={message.id}
             className={cn('flex', message.author.id === userId ? 'justify-end' : 'justify-start')}
+            onMouseEnter={() => setHoveredMessageId(message.id)}
+            onMouseLeave={() => {
+              setHoveredMessageId(null);
+              setShowEmojiPickerFor(null);
+            }}
           >
             {/* Avatar for others */}
             {message.author.id !== userId && (
@@ -456,65 +634,213 @@ export function SidebarChatWindow({
               </div>
             )}
 
-            <div
-              className={cn(
-                'max-w-[80%] rounded-2xl px-4 py-2',
-                message.author.id === userId
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-900'
-              )}
-            >
-              {/* Header */}
-              {message.author.id !== userId && (
-                <div className="flex items-center gap-1 mb-1">
-                  {(message.author.isAI || message.author.name === 'AI Assistant') && (
-                    <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">AI</span>
+            <div className="relative max-w-[80%]">
+              {/* Hover actions */}
+              {hoveredMessageId === message.id && !message.deletedAt && !editingMessageId && (
+                <div className={`absolute -top-7 ${message.author.id === userId ? 'right-0' : 'left-0'} flex items-center gap-0.5 bg-white shadow-lg rounded-lg border p-0.5 z-10`}>
+                  {/* Emoji picker button */}
+                  <button
+                    onClick={() => setShowEmojiPickerFor(showEmojiPickerFor === message.id ? null : message.id)}
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    title="Додати реакцію"
+                  >
+                    <Smile className="w-3.5 h-3.5 text-gray-500" />
+                  </button>
+
+                  {/* Edit button (only for own messages, not AI) */}
+                  {message.author.id === userId && !message.author.isAI && (
+                    <button
+                      onClick={() => handleStartEdit(message)}
+                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                      title="Редагувати"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-gray-500" />
+                    </button>
                   )}
-                  <p className="text-xs font-semibold text-gray-700">{message.author.name}</p>
+
+                  {/* Delete button (only for own messages) */}
+                  {message.author.id === userId && (
+                    <button
+                      onClick={() => setDeleteConfirmId(message.id)}
+                      className="p-1 hover:bg-red-100 rounded transition-colors"
+                      title="Видалити"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                    </button>
+                  )}
                 </div>
               )}
 
-              {/* Content */}
-              {message.author.isAI || message.author.name === 'AI Assistant' ? (
-                <div className="text-sm prose prose-sm max-w-none">
-                  <ReactMarkdown>{message.content}</ReactMarkdown>
+              {/* Emoji picker dropdown */}
+              {showEmojiPickerFor === message.id && (
+                <div className={`absolute -top-14 ${message.author.id === userId ? 'right-0' : 'left-0'} flex items-center gap-0.5 bg-white shadow-lg rounded-lg border p-1.5 z-20`}>
+                  {QUICK_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => handleToggleReaction(message.id, emoji)}
+                      className="text-lg hover:scale-125 transition-transform p-0.5"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
                 </div>
-              ) : (
-                <p className="text-sm">{message.content}</p>
               )}
 
-              {/* Timestamp */}
-              <p
+              {/* Delete confirmation dialog */}
+              {deleteConfirmId === message.id && (
+                <div className={`absolute -top-16 ${message.author.id === userId ? 'right-0' : 'left-0'} bg-white shadow-lg rounded-lg border p-2 z-20 min-w-[160px]`}>
+                  <p className="text-xs text-gray-700 mb-1.5">Видалити повідомлення?</p>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => handleDeleteMessage(message.id)}
+                      className="flex-1 px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors"
+                    >
+                      Видалити
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirmId(null)}
+                      className="flex-1 px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded hover:bg-gray-300 transition-colors"
+                    >
+                      Скасувати
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div
                 className={cn(
-                  'text-xs mt-1',
-                  message.author.id === userId ? 'text-blue-100' : 'text-gray-400'
+                  'rounded-2xl px-4 py-2',
+                  message.deletedAt
+                    ? 'bg-gray-100 text-gray-400 italic'
+                    : message.author.id === userId
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-gray-900'
                 )}
               >
-                {new Date(message.createdAt).toLocaleTimeString('uk-UA', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </p>
+                {/* Deleted message */}
+                {message.deletedAt ? (
+                  <p className="text-sm">Повідомлення видалено</p>
+                ) : (
+                  <>
+                    {/* Header */}
+                    {message.author.id !== userId && (
+                      <div className="flex items-center gap-1 mb-1">
+                        {(message.author.isAI || message.author.name === 'AI Assistant') && (
+                          <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">AI</span>
+                        )}
+                        <p className="text-xs font-semibold text-gray-700">{message.author.name}</p>
+                      </div>
+                    )}
 
-              {/* Task Preview */}
-              {hasTaskPreview(message) && message.aiContext?.taskPreview?.task && (
-                <div className="mt-2">
-                  <TaskPreviewCard
-                    taskData={message.aiContext.taskPreview.task}
-                    onTaskCreated={info => handleTaskCreated(message.id, info)}
-                    onDismiss={() => handleDismissPreview(message.id)}
-                  />
-                </div>
-              )}
+                    {/* Edit mode */}
+                    {editingMessageId === message.id ? (
+                      <div className="flex flex-col gap-1.5">
+                        <input
+                          type="text"
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          className="w-full px-2 py-1.5 border rounded text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveEdit();
+                            if (e.key === 'Escape') handleCancelEdit();
+                          }}
+                        />
+                        <div className="flex gap-1.5 justify-end">
+                          <button
+                            onClick={handleCancelEdit}
+                            className="p-1 bg-gray-200 rounded hover:bg-gray-300 transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5 text-gray-600" />
+                          </button>
+                          <button
+                            onClick={handleSaveEdit}
+                            className="p-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Content */}
+                        {message.author.isAI || message.author.name === 'AI Assistant' ? (
+                          <div className="text-sm prose prose-sm max-w-none">
+                            <ReactMarkdown>{message.content}</ReactMarkdown>
+                          </div>
+                        ) : (
+                          <p className="text-sm">{message.content}</p>
+                        )}
+                      </>
+                    )}
 
-              {/* Auto-Plan Preview */}
-              {hasAutoPlanPreview(message) && message.aiContext?.autoPlanPreview && (
-                <div className="mt-2">
-                  <AutoPlanPreviewCard
-                    planData={message.aiContext.autoPlanPreview}
-                    onPlanApplied={info => handlePlanApplied(message.id, info)}
-                    onDismiss={() => handleDismissPreview(message.id)}
-                  />
+                    {/* Timestamp and Edited badge */}
+                    <div className="flex items-center gap-1 mt-1">
+                      <p
+                        className={cn(
+                          'text-xs',
+                          message.author.id === userId ? 'text-blue-100' : 'text-gray-400'
+                        )}
+                      >
+                        {new Date(message.createdAt).toLocaleTimeString('uk-UA', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                      {message.editedAt && (
+                        <span className={cn(
+                          'text-xs',
+                          message.author.id === userId ? 'text-blue-100' : 'text-gray-400'
+                        )}>
+                          (відредаговано)
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Task Preview */}
+                    {hasTaskPreview(message) && message.aiContext?.taskPreview?.task && (
+                      <div className="mt-2">
+                        <TaskPreviewCard
+                          taskData={message.aiContext.taskPreview.task}
+                          onTaskCreated={info => handleTaskCreated(message.id, info)}
+                          onDismiss={() => handleDismissPreview(message.id)}
+                        />
+                      </div>
+                    )}
+
+                    {/* Auto-Plan Preview */}
+                    {hasAutoPlanPreview(message) && message.aiContext?.autoPlanPreview && (
+                      <div className="mt-2">
+                        <AutoPlanPreviewCard
+                          planData={message.aiContext.autoPlanPreview}
+                          onPlanApplied={info => handlePlanApplied(message.id, info)}
+                          onDismiss={() => handleDismissPreview(message.id)}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Reactions display */}
+              {!message.deletedAt && message.reactions && message.reactions.length > 0 && (
+                <div className={`flex flex-wrap gap-0.5 mt-1 ${message.author.id === userId ? 'justify-end' : 'justify-start'}`}>
+                  {groupReactions(message.reactions).map(({ emoji, count, users, hasUserReacted }) => (
+                    <button
+                      key={emoji}
+                      onClick={() => handleToggleReaction(message.id, emoji)}
+                      className={cn(
+                        'flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs border transition-colors',
+                        hasUserReacted
+                          ? 'bg-blue-100 border-blue-300 text-blue-700'
+                          : 'bg-gray-100 border-gray-200 hover:bg-gray-200'
+                      )}
+                      title={users.join(', ')}
+                    >
+                      <span>{emoji}</span>
+                      <span>{count}</span>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>

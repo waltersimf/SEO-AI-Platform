@@ -112,8 +112,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  chatMembers ChatMember[]
-  messages    Message[]
+  chatMembers      ChatMember[]
+  messages         Message[]
+  messageReactions MessageReaction[]
 
   // Task Management relations
   assignedTasks Task[]        @relation("AssignedTasks")
@@ -193,10 +194,34 @@ model Message {
   aiContext    Json?
   aiModel      String?
 
+  // Edit and delete support
+  editedAt  DateTime?
+  deletedAt DateTime?
+
   createdAt DateTime @default(now())
+
+  // Reactions
+  reactions MessageReaction[]
 
   @@index([chatId, createdAt])
   @@map("messages")
+}
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  emoji String
+
+  createdAt DateTime @default(now())
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@map("message_reactions")
 }
 
 // Task Management Models

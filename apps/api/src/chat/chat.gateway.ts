@@ -1085,6 +1085,214 @@ export class ChatGateway
     }
   }
 
+  // ==========================================
+  // Message Reactions
+  // ==========================================
+
+  @SubscribeMessage('add_reaction')
+  async handleAddReaction(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { messageId: string; userId: string; emoji: string; chatId: string },
+  ) {
+    try {
+      if (!payload?.messageId || !payload?.userId || !payload?.emoji || !payload?.chatId) {
+        client.emit('error', {
+          message: 'Invalid payload: messageId, userId, emoji, and chatId are required',
+          code: 'INVALID_PAYLOAD',
+        });
+        return { success: false };
+      }
+
+      // Verify user is a member of this chat
+      const isMember = await this.chatService.isChatMember(payload.chatId, payload.userId);
+      if (!isMember) {
+        client.emit('error', {
+          code: 'UNAUTHORIZED',
+          message: 'Not authorized for this chat',
+        });
+        return { success: false };
+      }
+
+      const reaction = await this.chatService.addReaction(
+        payload.messageId,
+        payload.userId,
+        payload.emoji,
+      );
+
+      // Broadcast to all in room
+      this.server.to(payload.chatId).emit('reaction_added', {
+        messageId: payload.messageId,
+        reaction: {
+          id: reaction.id,
+          emoji: reaction.emoji,
+          userId: payload.userId,
+          user: reaction.user,
+        },
+      });
+
+      this.logger.log(`Reaction ${payload.emoji} added to message ${payload.messageId}`);
+      return { success: true, reaction };
+    } catch (error) {
+      this.logger.error('Error adding reaction:', error);
+      client.emit('error', {
+        message: 'Failed to add reaction',
+        code: 'REACTION_FAILED',
+      });
+      return { success: false };
+    }
+  }
+
+  @SubscribeMessage('remove_reaction')
+  async handleRemoveReaction(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { messageId: string; userId: string; emoji: string; chatId: string },
+  ) {
+    try {
+      if (!payload?.messageId || !payload?.userId || !payload?.emoji || !payload?.chatId) {
+        client.emit('error', {
+          message: 'Invalid payload',
+          code: 'INVALID_PAYLOAD',
+        });
+        return { success: false };
+      }
+
+      // Verify user is a member of this chat
+      const isMember = await this.chatService.isChatMember(payload.chatId, payload.userId);
+      if (!isMember) {
+        client.emit('error', {
+          code: 'UNAUTHORIZED',
+          message: 'Not authorized for this chat',
+        });
+        return { success: false };
+      }
+
+      await this.chatService.removeReaction(
+        payload.messageId,
+        payload.userId,
+        payload.emoji,
+      );
+
+      // Broadcast to all in room
+      this.server.to(payload.chatId).emit('reaction_removed', {
+        messageId: payload.messageId,
+        userId: payload.userId,
+        emoji: payload.emoji,
+      });
+
+      this.logger.log(`Reaction ${payload.emoji} removed from message ${payload.messageId}`);
+      return { success: true };
+    } catch (error) {
+      this.logger.error('Error removing reaction:', error);
+      client.emit('error', {
+        message: 'Failed to remove reaction',
+        code: 'REACTION_FAILED',
+      });
+      return { success: false };
+    }
+  }
+
+  // ==========================================
+  // Message Edit and Delete
+  // ==========================================
+
+  @SubscribeMessage('edit_message')
+  async handleEditMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { messageId: string; userId: string; content: string; chatId: string },
+  ) {
+    try {
+      if (!payload?.messageId || !payload?.userId || !payload?.content || !payload?.chatId) {
+        client.emit('error', {
+          message: 'Invalid payload: messageId, userId, content, and chatId are required',
+          code: 'INVALID_PAYLOAD',
+        });
+        return { success: false };
+      }
+
+      // Verify user is a member of this chat
+      const isMember = await this.chatService.isChatMember(payload.chatId, payload.userId);
+      if (!isMember) {
+        client.emit('error', {
+          code: 'UNAUTHORIZED',
+          message: 'Not authorized for this chat',
+        });
+        return { success: false };
+      }
+
+      const updatedMessage = await this.chatService.editMessage(
+        payload.messageId,
+        payload.userId,
+        payload.content,
+      );
+
+      // Broadcast to all in room
+      this.server.to(payload.chatId).emit('message_edited', {
+        messageId: payload.messageId,
+        content: updatedMessage.content,
+        editedAt: updatedMessage.editedAt,
+      });
+
+      this.logger.log(`Message ${payload.messageId} edited`);
+      return { success: true, message: updatedMessage };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to edit message';
+      this.logger.error('Error editing message:', error);
+      client.emit('error', {
+        message: errorMessage,
+        code: 'EDIT_FAILED',
+      });
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  @SubscribeMessage('delete_message')
+  async handleDeleteMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { messageId: string; userId: string; chatId: string },
+  ) {
+    try {
+      if (!payload?.messageId || !payload?.userId || !payload?.chatId) {
+        client.emit('error', {
+          message: 'Invalid payload: messageId, userId, and chatId are required',
+          code: 'INVALID_PAYLOAD',
+        });
+        return { success: false };
+      }
+
+      // Verify user is a member of this chat
+      const isMember = await this.chatService.isChatMember(payload.chatId, payload.userId);
+      if (!isMember) {
+        client.emit('error', {
+          code: 'UNAUTHORIZED',
+          message: 'Not authorized for this chat',
+        });
+        return { success: false };
+      }
+
+      const deletedMessage = await this.chatService.softDeleteMessage(
+        payload.messageId,
+        payload.userId,
+      );
+
+      // Broadcast to all in room
+      this.server.to(payload.chatId).emit('message_deleted', {
+        messageId: payload.messageId,
+        deletedAt: deletedMessage.deletedAt,
+      });
+
+      this.logger.log(`Message ${payload.messageId} deleted`);
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete message';
+      this.logger.error('Error deleting message:', error);
+      client.emit('error', {
+        message: errorMessage,
+        code: 'DELETE_FAILED',
+      });
+      return { success: false, error: errorMessage };
+    }
+  }
+
   @SubscribeMessage('confirm_task_created')
   async handleTaskCreatedConfirmation(
     @ConnectedSocket() _client: Socket,
