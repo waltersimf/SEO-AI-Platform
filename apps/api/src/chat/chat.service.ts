@@ -113,12 +113,27 @@ export class ChatService {
           aiContext: true, // Explicitly include aiContext
           aiModel: true,
           createdAt: true,
+          editedAt: true,
+          deletedAt: true,
           author: {
             select: {
               id: true,
               name: true,
               avatar: true,
               isAI: true,
+            },
+          },
+          reactions: {
+            select: {
+              id: true,
+              emoji: true,
+              userId: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
             },
           },
         },
@@ -415,6 +430,204 @@ export class ChatService {
 
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new WsException(`Failed to create direct chat: ${errorMessage}`);
+    }
+  }
+
+  // ==========================================
+  // Message Reactions, Edit, and Delete
+  // ==========================================
+
+  /**
+   * Add a reaction to a message
+   */
+  async addReaction(messageId: string, userId: string, emoji: string) {
+    try {
+      // Check if reaction already exists
+      const existing = await this.prisma.messageReaction.findUnique({
+        where: {
+          messageId_userId_emoji: {
+            messageId,
+            userId,
+            emoji,
+          },
+        },
+      });
+
+      if (existing) {
+        return existing;
+      }
+
+      const reaction = await this.prisma.messageReaction.create({
+        data: {
+          messageId,
+          userId,
+          emoji,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      return reaction;
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+      throw new WsException('Failed to add reaction');
+    }
+  }
+
+  /**
+   * Remove a reaction from a message
+   */
+  async removeReaction(messageId: string, userId: string, emoji: string) {
+    try {
+      const deleted = await this.prisma.messageReaction.deleteMany({
+        where: {
+          messageId,
+          userId,
+          emoji,
+        },
+      });
+
+      return { success: deleted.count > 0 };
+    } catch (error) {
+      console.error('Error removing reaction:', error);
+      throw new WsException('Failed to remove reaction');
+    }
+  }
+
+  /**
+   * Edit a message (only author can edit)
+   */
+  async editMessage(messageId: string, userId: string, content: string) {
+    try {
+      // Find the message and check ownership
+      const message = await this.prisma.message.findUnique({
+        where: { id: messageId },
+        select: { authorId: true, deletedAt: true },
+      });
+
+      if (!message) {
+        throw new NotFoundException('Message not found');
+      }
+
+      if (message.authorId !== userId) {
+        throw new ForbiddenException('You can only edit your own messages');
+      }
+
+      if (message.deletedAt) {
+        throw new ForbiddenException('Cannot edit deleted message');
+      }
+
+      const updatedMessage = await this.prisma.message.update({
+        where: { id: messageId },
+        data: {
+          content,
+          editedAt: new Date(),
+        },
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+              isAI: true,
+            },
+          },
+          reactions: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return updatedMessage;
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
+        throw error;
+      }
+      console.error('Error editing message:', error);
+      throw new WsException('Failed to edit message');
+    }
+  }
+
+  /**
+   * Soft delete a message (only author can delete)
+   */
+  async softDeleteMessage(messageId: string, userId: string) {
+    try {
+      // Find the message and check ownership
+      const message = await this.prisma.message.findUnique({
+        where: { id: messageId },
+        select: { authorId: true, chatId: true, deletedAt: true },
+      });
+
+      if (!message) {
+        throw new NotFoundException('Message not found');
+      }
+
+      if (message.authorId !== userId) {
+        throw new ForbiddenException('You can only delete your own messages');
+      }
+
+      if (message.deletedAt) {
+        throw new ForbiddenException('Message already deleted');
+      }
+
+      const updatedMessage = await this.prisma.message.update({
+        where: { id: messageId },
+        data: {
+          deletedAt: new Date(),
+        },
+        select: {
+          id: true,
+          chatId: true,
+          authorId: true,
+          deletedAt: true,
+        },
+      });
+
+      return updatedMessage;
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
+        throw error;
+      }
+      console.error('Error deleting message:', error);
+      throw new WsException('Failed to delete message');
+    }
+  }
+
+  /**
+   * Get reactions for a message
+   */
+  async getMessageReactions(messageId: string) {
+    try {
+      const reactions = await this.prisma.messageReaction.findMany({
+        where: { messageId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      return reactions;
+    } catch (error) {
+      console.error('Error fetching reactions:', error);
+      throw new WsException('Failed to fetch reactions');
     }
   }
 
