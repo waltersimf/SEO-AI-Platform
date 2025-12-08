@@ -456,8 +456,10 @@ export class AiService {
           return JSON.stringify({
             projectName: project.name,
             domain: project.domain,
+            integrations: analysis.integrations,
             insights: analysis.insights,
             latestMetrics: analysis.latestMetrics,
+            previousMetrics: analysis.previousMetrics,
             recommendations: analysis.recommendations,
           }, null, 2);
         }

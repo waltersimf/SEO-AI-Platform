@@ -32,7 +32,20 @@ export interface DetailedAnalysis {
     domain: string;
   } | null;
   insights: Insight[];
+  integrations: {
+    gscConnected: boolean;
+    ga4Connected: boolean;
+  };
   latestMetrics: {
+    gscClicks: number | null;
+    gscImpressions: number | null;
+    gscCtr: number | null;
+    gscPosition: number | null;
+    ga4Users: number | null;
+    ga4Sessions: number | null;
+    ga4Pageviews: number | null;
+  } | null;
+  previousMetrics: {
     gscClicks: number | null;
     gscImpressions: number | null;
     gscCtr: number | null;
@@ -213,10 +226,22 @@ export class AnalyticsService {
   async getDetailedAnalysis(projectId: string): Promise<DetailedAnalysis> {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
-      select: { id: true, name: true, domain: true },
+      select: {
+        id: true,
+        name: true,
+        domain: true,
+        gscPropertyUrl: true,
+        gaPropertyId: true,
+      },
     });
 
     const insights = await this.analyzeProject(projectId);
+
+    // Check integration status
+    const integrations = {
+      gscConnected: !!project?.gscPropertyUrl,
+      ga4Connected: !!project?.gaPropertyId,
+    };
 
     // Get latest metrics
     const latestMetrics = await this.prisma.projectMetricsHistory.findFirst({
@@ -233,10 +258,34 @@ export class AnalyticsService {
       },
     });
 
+    // Get metrics from 7 days ago for comparison
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const previousMetrics = await this.prisma.projectMetricsHistory.findFirst({
+      where: {
+        projectId,
+        date: { lte: sevenDaysAgo },
+      },
+      orderBy: { date: 'desc' },
+      select: {
+        gscClicks: true,
+        gscImpressions: true,
+        gscCtr: true,
+        gscPosition: true,
+        ga4Users: true,
+        ga4Sessions: true,
+        ga4Pageviews: true,
+      },
+    });
+
     return {
-      project,
+      project: project
+        ? { id: project.id, name: project.name, domain: project.domain }
+        : null,
       insights,
+      integrations,
       latestMetrics,
+      previousMetrics,
       recommendations: this.generateRecommendations(insights),
     };
   }

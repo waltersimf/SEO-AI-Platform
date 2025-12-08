@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, CheckCircle, Loader2, BarChart3 } from 'lucide-react';
+import { TrendingUp, TrendingDown, CheckCircle, Loader2, BarChart3, RefreshCw, AlertCircle } from 'lucide-react';
 import { API_URL } from '@/config/api';
 
 interface Insight {
@@ -22,11 +22,10 @@ export function InsightsWidget() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    fetchInsights();
-  }, []);
+  const fetchInsights = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-  const fetchInsights = async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -40,20 +39,28 @@ export function InsightsWidget() {
 
       if (res.ok) {
         const data = await res.json();
-        setInsights(data);
+        setInsights(Array.isArray(data) ? data : []);
       } else if (res.status === 401) {
         localStorage.removeItem('token');
         router.push('/auth/login');
+      } else if (res.status === 400) {
+        // User might not have organization - show friendly message
+        setInsights([]);
       } else {
-        setError('Не вдалося завантажити інсайти');
+        const errorData = await res.json().catch(() => ({}));
+        setError(errorData.message || 'Не вдалося завантажити інсайти');
       }
     } catch (err) {
       console.error('Failed to fetch insights:', err);
-      setError('Помилка завантаження');
+      setError('Помилка з\'єднання. Перевірте інтернет.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    fetchInsights();
+  }, [fetchInsights]);
 
   if (loading) {
     return (
@@ -83,7 +90,17 @@ export function InsightsWidget() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">{error}</p>
+          <div className="flex flex-col items-center gap-3 py-4">
+            <AlertCircle className="h-8 w-8 text-yellow-500" />
+            <p className="text-sm text-muted-foreground text-center">{error}</p>
+            <button
+              onClick={fetchInsights}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Спробувати знову
+            </button>
+          </div>
         </CardContent>
       </Card>
     );
@@ -114,6 +131,13 @@ export function InsightsWidget() {
         <CardTitle className="text-lg flex items-center gap-2">
           <BarChart3 className="h-5 w-5" />
           Інсайти
+          <button
+            onClick={fetchInsights}
+            className="ml-auto p-1 hover:bg-gray-100 rounded transition-colors"
+            title="Оновити"
+          >
+            <RefreshCw className="h-4 w-4 text-muted-foreground" />
+          </button>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -122,21 +146,21 @@ export function InsightsWidget() {
             key={`${insight.projectId}-${insight.metric}-${index}`}
             className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
               insight.type === 'positive'
-                ? 'bg-green-50 hover:bg-green-100'
-                : 'bg-red-50 hover:bg-red-100'
+                ? 'bg-green-50 hover:bg-green-100 dark:bg-green-950 dark:hover:bg-green-900'
+                : 'bg-red-50 hover:bg-red-100 dark:bg-red-950 dark:hover:bg-red-900'
             }`}
             onClick={() => router.push(`/dashboard/projects/${insight.projectId}`)}
           >
             {insight.type === 'positive' ? (
-              <TrendingUp className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
             ) : (
-              <TrendingDown className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <TrendingDown className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
             )}
             <div className="min-w-0 flex-1">
               <p className="font-medium text-sm truncate">{insight.projectName}</p>
               <p
                 className={`text-sm ${
-                  insight.type === 'positive' ? 'text-green-700' : 'text-red-700'
+                  insight.type === 'positive' ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'
                 }`}
               >
                 {insight.message}
