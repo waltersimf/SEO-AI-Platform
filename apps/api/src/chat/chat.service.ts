@@ -29,6 +29,7 @@ export class ChatService {
     isAIResponse?: boolean;
     aiModel?: string;
     aiContext?: Record<string, any>;
+    replyToId?: string;
   }) {
     return this.prisma.message.create({
       data: {
@@ -38,6 +39,7 @@ export class ChatService {
         isAIResponse: data.isAIResponse ?? false,
         aiModel: data.aiModel,
         aiContext: data.aiContext || {},
+        replyToId: data.replyToId || null,
       },
       include: {
         author: {
@@ -53,13 +55,26 @@ export class ChatService {
             organizationId: true,
           },
         },
+        replyTo: {
+          select: {
+            id: true,
+            content: true,
+            deletedAt: true,
+            author: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
   }
 
-  async createMessage(chatId: string, authorId: string, content: string) {
+  async createMessage(chatId: string, authorId: string, content: string, replyToId?: string) {
     try {
-      return await this.saveMessageToDb({ chatId, authorId, content });
+      return await this.saveMessageToDb({ chatId, authorId, content, replyToId });
     } catch (error) {
       console.error('Error creating message:', error);
       throw new WsException('Failed to create message');
@@ -115,6 +130,7 @@ export class ChatService {
           createdAt: true,
           editedAt: true,
           deletedAt: true,
+          replyToId: true,
           author: {
             select: {
               id: true,
@@ -129,6 +145,19 @@ export class ChatService {
               emoji: true,
               userId: true,
               user: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          replyTo: {
+            select: {
+              id: true,
+              content: true,
+              deletedAt: true,
+              author: {
                 select: {
                   id: true,
                   name: true,
