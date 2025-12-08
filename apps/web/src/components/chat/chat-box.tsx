@@ -673,8 +673,12 @@ export function ChatBox({
 
   // Toggle reaction (add if not exists, remove if exists)
   const handleToggleReaction = (messageId: string, emoji: string) => {
+    console.log('handleToggleReaction called:', { messageId, emoji, userId, chatId });
     const socket = socketRef.current;
-    if (!socket) return;
+    if (!socket) {
+      console.error('Socket not connected');
+      return;
+    }
 
     const message = messages.find(m => m.id === messageId);
     const existingReaction = message?.reactions?.find(
@@ -682,8 +686,10 @@ export function ChatBox({
     );
 
     if (existingReaction) {
+      console.log('Removing reaction:', { messageId, emoji });
       socket.emit('remove_reaction', { messageId, userId, emoji, chatId });
     } else {
+      console.log('Adding reaction:', { messageId, emoji });
       socket.emit('add_reaction', { messageId, userId, emoji, chatId });
     }
     setShowEmojiPickerFor(null);
@@ -755,7 +761,12 @@ export function ChatBox({
             key={message.id}
             className={`flex ${message.author.id === userId ? 'justify-end' : 'justify-start'}`}
             onMouseEnter={() => setHoveredMessageId(message.id)}
-            onMouseLeave={() => {
+            onMouseLeave={(e) => {
+              // Check if we're moving to the emoji picker (which is a child)
+              const relatedTarget = e.relatedTarget as HTMLElement;
+              if (relatedTarget && e.currentTarget.contains(relatedTarget)) {
+                return; // Don't hide if moving within the message container
+              }
               setHoveredMessageId(null);
               setShowEmojiPickerFor(null);
             }}
@@ -808,12 +819,21 @@ export function ChatBox({
 
               {/* Emoji picker dropdown */}
               {showEmojiPickerFor === message.id && (
-                <div className={`absolute -top-16 ${message.author.id === userId ? 'right-0' : 'left-0'} flex items-center gap-1 bg-white shadow-lg rounded-lg border p-2 z-20`}>
+                <div
+                  className={`absolute -top-16 ${message.author.id === userId ? 'right-0' : 'left-0'} flex items-center gap-1 bg-white shadow-lg rounded-lg border p-2 z-20`}
+                  onMouseLeave={(e) => e.stopPropagation()}
+                >
                   {QUICK_EMOJIS.map((emoji) => (
                     <button
                       key={emoji}
-                      onClick={() => handleToggleReaction(message.id, emoji)}
-                      className="text-xl hover:scale-125 transition-transform p-1"
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        console.log('Emoji clicked:', emoji, message.id);
+                        handleToggleReaction(message.id, emoji);
+                      }}
+                      className="text-xl hover:scale-125 transition-transform p-1 hover:bg-gray-100 rounded"
                     >
                       {emoji}
                     </button>
