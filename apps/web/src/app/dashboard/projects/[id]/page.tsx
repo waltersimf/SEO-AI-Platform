@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ArrowLeft, Globe, Calendar, Pencil, Trash2, Tag, Users, Link2, Check, Loader2, ChevronsUpDown, Search } from 'lucide-react';
+import { ArrowLeft, Globe, Calendar, Pencil, Trash2, Tag, Users, Link2, Check, Loader2, ChevronsUpDown, Search, CreditCard } from 'lucide-react';
 import { API_URL } from '@/config/api';
 import { ProjectSEODashboard } from '@/components/projects/project-seo-dashboard';
 
@@ -19,6 +19,11 @@ interface Project {
   gscPropertyUrl: string | null;
   gaPropertyId: string | null;
   serpstatProjectId: string | null;
+  paymentStatus: 'paid' | 'pending' | 'unpaid' | 'overdue';
+  paymentDueDate: string | null;
+  budgetTotal: number | null;
+  budgetSpent: number | null;
+  lastPaymentDate: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -55,6 +60,15 @@ export default function ProjectDetailPage() {
   const [savingIntegrations, setSavingIntegrations] = useState(false);
   const [integrationError, setIntegrationError] = useState<string | null>(null);
   const [integrationSuccess, setIntegrationSuccess] = useState(false);
+
+  // Payment tracking state
+  const [paymentStatus, setPaymentStatus] = useState<string>('unpaid');
+  const [paymentDueDate, setPaymentDueDate] = useState<string>('');
+  const [budgetTotal, setBudgetTotal] = useState<string>('');
+  const [budgetSpent, setBudgetSpent] = useState<string>('');
+  const [savingPayment, setSavingPayment] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   const router = useRouter();
   const params = useParams();
@@ -127,6 +141,11 @@ export default function ProjectDetailPage() {
       setSelectedGsc(data.gscPropertyUrl || '');
       setSelectedGa(data.gaPropertyId || '');
       setSelectedSerpstatProjectId(data.serpstatProjectId || '');
+      // Initialize payment state
+      setPaymentStatus(data.paymentStatus || 'unpaid');
+      setPaymentDueDate(data.paymentDueDate ? data.paymentDueDate.split('T')[0] : '');
+      setBudgetTotal(data.budgetTotal?.toString() || '');
+      setBudgetSpent(data.budgetSpent?.toString() || '');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -215,6 +234,47 @@ export default function ProjectDetailPage() {
       setIntegrationError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setSavingIntegrations(false);
+    }
+  };
+
+  const handleSavePayment = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
+
+    setSavingPayment(true);
+    setPaymentError(null);
+    setPaymentSuccess(false);
+
+    try {
+      const response = await fetch(`${API_URL}/api/projects/${projectId}/payment`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          paymentStatus,
+          paymentDueDate: paymentDueDate || undefined,
+          budgetTotal: budgetTotal ? parseFloat(budgetTotal) : undefined,
+          budgetSpent: budgetSpent ? parseFloat(budgetSpent) : undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Не вдалося зберегти дані оплати');
+      }
+
+      const updatedProject = await response.json();
+      setProject(updatedProject);
+      setPaymentSuccess(true);
+      setTimeout(() => setPaymentSuccess(false), 3000);
+    } catch (err) {
+      setPaymentError(err instanceof Error ? err.message : 'Виникла помилка');
+    } finally {
+      setSavingPayment(false);
     }
   };
 
@@ -696,6 +756,120 @@ export default function ProjectDetailPage() {
                       </Button>
                     </>
                   )}
+                </CardContent>
+              </Card>
+
+              {/* Payment Tracking */}
+              <Card className="md:col-span-2">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    Оплата
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Success/Error Messages */}
+                  {paymentSuccess && (
+                    <div className="flex items-center gap-2 text-green-600 text-sm bg-green-50 p-3 rounded-lg">
+                      <Check className="h-4 w-4" />
+                      Дані оплати збережено!
+                    </div>
+                  )}
+                  {paymentError && (
+                    <div className="text-destructive text-sm bg-destructive/10 p-3 rounded-lg">
+                      {paymentError}
+                    </div>
+                  )}
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {/* Status selector */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Статус оплати</label>
+                      <select
+                        value={paymentStatus}
+                        onChange={(e) => setPaymentStatus(e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      >
+                        <option value="paid">Оплачено</option>
+                        <option value="pending">Очікує оплати</option>
+                        <option value="unpaid">Не оплачено</option>
+                        <option value="overdue">Прострочено</option>
+                      </select>
+                    </div>
+
+                    {/* Due date */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Дата оплати</label>
+                      <Input
+                        type="date"
+                        value={paymentDueDate}
+                        onChange={(e) => setPaymentDueDate(e.target.value)}
+                      />
+                    </div>
+
+                    {/* Budget Total */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Бюджет (грн)</label>
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        value={budgetTotal}
+                        onChange={(e) => setBudgetTotal(e.target.value)}
+                      />
+                    </div>
+
+                    {/* Budget Spent */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Витрачено (грн)</label>
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        value={budgetSpent}
+                        onChange={(e) => setBudgetSpent(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Budget progress bar */}
+                  {budgetTotal && parseFloat(budgetTotal) > 0 && (
+                    <div className="pt-2">
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="text-muted-foreground">Використано бюджету</span>
+                        <span className="font-medium">
+                          {Math.round(((parseFloat(budgetSpent) || 0) / parseFloat(budgetTotal)) * 100)}%
+                        </span>
+                      </div>
+                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            (parseFloat(budgetSpent) || 0) / parseFloat(budgetTotal) > 0.9 ? 'bg-red-500' :
+                            (parseFloat(budgetSpent) || 0) / parseFloat(budgetTotal) > 0.7 ? 'bg-yellow-500' : 'bg-green-500'
+                          }`}
+                          style={{ width: `${Math.min(((parseFloat(budgetSpent) || 0) / parseFloat(budgetTotal)) * 100, 100)}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                        <span>{parseFloat(budgetSpent) || 0} грн</span>
+                        <span>{parseFloat(budgetTotal)} грн</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Save Button */}
+                  <Button
+                    onClick={handleSavePayment}
+                    disabled={savingPayment}
+                    className="w-full"
+                  >
+                    {savingPayment ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Збереження...
+                      </>
+                    ) : (
+                      'Зберегти дані оплати'
+                    )}
+                  </Button>
                 </CardContent>
               </Card>
             </div>

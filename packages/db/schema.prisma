@@ -39,6 +39,14 @@ enum TaskPriority {
   critical
 }
 
+// Payment Status Enum
+enum PaymentStatus {
+  paid
+  pending
+  unpaid
+  overdue
+}
+
 model Organization {
   id          String @id @default(cuid())
   name        String
@@ -75,6 +83,13 @@ model Project {
   gscPropertyUrl    String? // GSC property URL
   gaPropertyId      String? // GA4 property ID
   serpstatProjectId String? // Serpstat Rank Tracker project ID
+
+  // Payment tracking
+  paymentStatus   PaymentStatus @default(unpaid)
+  paymentDueDate  DateTime?
+  budgetTotal     Float?        // Total budget for the project
+  budgetSpent     Float?        // Amount already spent
+  lastPaymentDate DateTime?
 
   isDeleted Boolean   @default(false)
   deletedAt DateTime?
