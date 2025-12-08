@@ -21,6 +21,7 @@ export class ChatService {
 
   /**
    * Private method to save message to database (DRY)
+   * Single source of truth for all message creation logic
    */
   private async saveMessageToDb(data: {
     chatId: string;
@@ -31,7 +32,8 @@ export class ChatService {
     aiContext?: Record<string, any>;
     replyToId?: string;
   }) {
-    return this.prisma.message.create({
+    // Create the message
+    const message = await this.prisma.message.create({
       data: {
         chatId: data.chatId,
         authorId: data.authorId,
@@ -55,6 +57,16 @@ export class ChatService {
             organizationId: true,
           },
         },
+        reactions: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
         replyTo: {
           select: {
             id: true,
@@ -70,6 +82,14 @@ export class ChatService {
         },
       },
     });
+
+    // Update chat's updatedAt timestamp
+    await this.prisma.chat.update({
+      where: { id: data.chatId },
+      data: { updatedAt: new Date() },
+    });
+
+    return message;
   }
 
   async createMessage(chatId: string, authorId: string, content: string, replyToId?: string) {
