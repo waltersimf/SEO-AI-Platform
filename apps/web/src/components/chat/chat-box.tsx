@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { initSocket, getSocket } from '../chat/socket';
 import { Send, Pencil, Trash2, X, Check, Copy } from 'lucide-react';
 import { TypingIndicator } from './typing-indicator';
@@ -1045,9 +1046,9 @@ export function ChatBox({
         </div>
       </div>
 
-      {/* Context Menu */}
+      {/* Context Menu - rendered via portal to escape overflow:hidden */}
       {contextMenu && console.log('Rendering context menu at:', contextMenu.x, contextMenu.y) as undefined}
-      {contextMenu && (
+      {contextMenu && typeof document !== 'undefined' && createPortal(
         <div
           ref={contextMenuRef}
           className="fixed bg-white rounded-lg shadow-xl border py-2 min-w-[180px] z-[9999]"
@@ -1120,7 +1121,8 @@ export function ChatBox({
               <span>Видалити</span>
             </button>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
