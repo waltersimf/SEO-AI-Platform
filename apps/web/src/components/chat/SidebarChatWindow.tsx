@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { Send, Smile, Pencil, Trash2, X, Check } from 'lucide-react';
+import { Send, Pencil, Trash2, X, Check, Copy } from 'lucide-react';
 import { initSocket, getSocket } from './socket';
 import { TypingIndicator } from './typing-indicator';
 import { TaskPreviewCard } from './task-preview-card';
@@ -13,6 +13,16 @@ import { usePermissions } from '@/hooks/usePermissions';
 
 // Quick emoji reactions
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
+
+// Context menu state interface
+interface ContextMenuState {
+  messageId: string;
+  x: number;
+  y: number;
+  isOwnMessage: boolean;
+  isDeleted: boolean;
+  messageContent: string;
+}
 
 interface TaskPreviewData {
   type: 'task_preview';
@@ -131,11 +141,11 @@ export function SidebarChatWindow({
   // Edit, delete, and reaction states
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [showEmojiPickerFor, setShowEmojiPickerFor] = useState<string | null>(null);
-  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [showEmojiSubmenu, setShowEmojiSubmenu] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hideTypingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -529,6 +539,47 @@ export function SidebarChatWindow({
   // Reaction, Edit, and Delete handlers
   // ==========================================
 
+  // Close context menu on click outside or Escape
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
+        setContextMenu(null);
+        setShowEmojiSubmenu(false);
+      }
+    };
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setContextMenu(null);
+        setShowEmojiSubmenu(false);
+      }
+    };
+
+    if (contextMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [contextMenu]);
+
+  // Handle context menu open
+  const handleContextMenu = (e: React.MouseEvent, message: Message) => {
+    e.preventDefault();
+    setContextMenu({
+      messageId: message.id,
+      x: e.clientX,
+      y: e.clientY,
+      isOwnMessage: message.author.id === userId,
+      isDeleted: !!message.deletedAt,
+      messageContent: message.content,
+    });
+    setShowEmojiSubmenu(false);
+  };
+
   // Toggle reaction (add if not exists, remove if exists)
   const handleToggleReaction = (messageId: string, emoji: string) => {
     console.log('handleToggleReaction called:', { messageId, emoji, userId, chatId });
@@ -550,13 +601,15 @@ export function SidebarChatWindow({
       console.log('Adding reaction:', { messageId, emoji });
       socket.emit('add_reaction', { messageId, userId, emoji, chatId });
     }
-    setShowEmojiPickerFor(null);
+    setContextMenu(null);
+    setShowEmojiSubmenu(false);
   };
 
   // Start editing a message
   const handleStartEdit = (message: Message) => {
     setEditingMessageId(message.id);
     setEditContent(message.content);
+    setContextMenu(null);
   };
 
   // Cancel editing
@@ -586,7 +639,13 @@ export function SidebarChatWindow({
     if (!socket) return;
 
     socket.emit('delete_message', { messageId, userId, chatId });
-    setDeleteConfirmId(null);
+    setContextMenu(null);
+  };
+
+  // Copy message text
+  const handleCopyText = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setContextMenu(null);
   };
 
   // Group reactions by emoji with count
@@ -618,16 +677,7 @@ export function SidebarChatWindow({
           <div
             key={message.id}
             className={cn('flex', message.author.id === userId ? 'justify-end' : 'justify-start')}
-            onMouseEnter={() => setHoveredMessageId(message.id)}
-            onMouseLeave={(e) => {
-              // Check if we're moving to the emoji picker (which is a child)
-              const relatedTarget = e.relatedTarget as HTMLElement;
-              if (relatedTarget && e.currentTarget.contains(relatedTarget)) {
-                return; // Don't hide if moving within the message container
-              }
-              setHoveredMessageId(null);
-              setShowEmojiPickerFor(null);
-            }}
+            onContextMenu={(e) => handleContextMenu(e, message)}
           >
             {/* Avatar for others */}
             {message.author.id !== userId && (
@@ -646,87 +696,6 @@ export function SidebarChatWindow({
             )}
 
             <div className="relative max-w-[80%]">
-              {/* Hover actions */}
-              {hoveredMessageId === message.id && !message.deletedAt && !editingMessageId && (
-                <div className={`absolute -top-7 ${message.author.id === userId ? 'right-0' : 'left-0'} flex items-center gap-0.5 bg-white shadow-lg rounded-lg border p-0.5 z-10`}>
-                  {/* Emoji picker button */}
-                  <button
-                    onClick={() => setShowEmojiPickerFor(showEmojiPickerFor === message.id ? null : message.id)}
-                    className="p-1 hover:bg-gray-100 rounded transition-colors"
-                    title="Додати реакцію"
-                  >
-                    <Smile className="w-3.5 h-3.5 text-gray-500" />
-                  </button>
-
-                  {/* Edit button (only for own messages, not AI) */}
-                  {message.author.id === userId && !message.author.isAI && (
-                    <button
-                      onClick={() => handleStartEdit(message)}
-                      className="p-1 hover:bg-gray-100 rounded transition-colors"
-                      title="Редагувати"
-                    >
-                      <Pencil className="w-3.5 h-3.5 text-gray-500" />
-                    </button>
-                  )}
-
-                  {/* Delete button (only for own messages) */}
-                  {message.author.id === userId && (
-                    <button
-                      onClick={() => setDeleteConfirmId(message.id)}
-                      className="p-1 hover:bg-red-100 rounded transition-colors"
-                      title="Видалити"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* Emoji picker dropdown */}
-              {showEmojiPickerFor === message.id && (
-                <div
-                  className={`absolute -top-14 ${message.author.id === userId ? 'right-0' : 'left-0'} flex items-center gap-0.5 bg-white shadow-lg rounded-lg border p-1.5 z-20`}
-                  onMouseLeave={(e) => e.stopPropagation()}
-                >
-                  {QUICK_EMOJIS.map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        console.log('Emoji clicked:', emoji, message.id);
-                        handleToggleReaction(message.id, emoji);
-                      }}
-                      className="text-lg hover:scale-125 transition-transform p-0.5 hover:bg-gray-100 rounded"
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Delete confirmation dialog */}
-              {deleteConfirmId === message.id && (
-                <div className={`absolute -top-16 ${message.author.id === userId ? 'right-0' : 'left-0'} bg-white shadow-lg rounded-lg border p-2 z-20 min-w-[160px]`}>
-                  <p className="text-xs text-gray-700 mb-1.5">Видалити повідомлення?</p>
-                  <div className="flex gap-1.5">
-                    <button
-                      onClick={() => handleDeleteMessage(message.id)}
-                      className="flex-1 px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors"
-                    >
-                      Видалити
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirmId(null)}
-                      className="flex-1 px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded hover:bg-gray-300 transition-colors"
-                    >
-                      Скасувати
-                    </button>
-                  </div>
-                </div>
-              )}
-
               <div
                 className={cn(
                   'rounded-2xl px-4 py-2',
@@ -955,6 +924,97 @@ export function SidebarChatWindow({
           </div>
         )}
       </div>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          ref={contextMenuRef}
+          className="fixed bg-white rounded-lg shadow-xl border py-2 min-w-[180px] z-50"
+          style={{
+            top: contextMenu.y,
+            left: contextMenu.x,
+          }}
+        >
+          {/* Reactions submenu */}
+          {!contextMenu.isDeleted && (
+            <div
+              className="relative"
+              onMouseEnter={() => setShowEmojiSubmenu(true)}
+              onMouseLeave={() => setShowEmojiSubmenu(false)}
+            >
+              <button
+                type="button"
+                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+              >
+                <span className="text-base">😊</span>
+                <span>Реакція</span>
+                <span className="ml-auto text-gray-400">›</span>
+              </button>
+
+              {/* Emoji submenu */}
+              {showEmojiSubmenu && (
+                <div className="absolute left-full top-0 ml-1 bg-white rounded-lg shadow-xl border p-2 flex gap-1">
+                  {QUICK_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        handleToggleReaction(contextMenu.messageId, emoji);
+                      }}
+                      className="text-xl hover:scale-125 transition-transform p-1 hover:bg-gray-100 rounded"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Edit option (only for own messages, not AI, not deleted) */}
+          {contextMenu.isOwnMessage && !contextMenu.isDeleted && (
+            <button
+              type="button"
+              onClick={() => {
+                const message = messages.find(m => m.id === contextMenu.messageId);
+                if (message && !message.author.isAI) {
+                  handleStartEdit(message);
+                }
+              }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+            >
+              <Pencil className="w-4 h-4 text-gray-500" />
+              <span>Редагувати</span>
+            </button>
+          )}
+
+          {/* Copy option (not for deleted messages) */}
+          {!contextMenu.isDeleted && (
+            <button
+              type="button"
+              onClick={() => handleCopyText(contextMenu.messageContent)}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+            >
+              <Copy className="w-4 h-4 text-gray-500" />
+              <span>Копіювати</span>
+            </button>
+          )}
+
+          {/* Delete option (only for own messages, not already deleted) */}
+          {contextMenu.isOwnMessage && !contextMenu.isDeleted && (
+            <button
+              type="button"
+              onClick={() => handleDeleteMessage(contextMenu.messageId)}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 text-red-600 flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Видалити</span>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
