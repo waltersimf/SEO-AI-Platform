@@ -541,8 +541,12 @@ export function SidebarChatWindow({
 
   // Close context menu on click outside or Escape
   useEffect(() => {
+    if (!contextMenu) return;
+
     const handleClickOutside = (e: MouseEvent) => {
+      console.log('Click outside check, contextMenuRef:', contextMenuRef.current);
       if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
+        console.log('Closing context menu - clicked outside');
         setContextMenu(null);
         setShowEmojiSubmenu(false);
       }
@@ -550,18 +554,23 @@ export function SidebarChatWindow({
 
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        console.log('Closing context menu - Escape pressed');
         setContextMenu(null);
         setShowEmojiSubmenu(false);
       }
     };
 
-    if (contextMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
+    // Use setTimeout to avoid closing on the same click that opened the menu
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('click', handleClickOutside);
+      document.addEventListener('contextmenu', handleClickOutside);
       document.addEventListener('keydown', handleEscape);
-    }
+    }, 0);
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      clearTimeout(timeoutId);
+      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('contextmenu', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
   }, [contextMenu]);
@@ -569,6 +578,8 @@ export function SidebarChatWindow({
   // Handle context menu open
   const handleContextMenu = (e: React.MouseEvent, message: Message) => {
     e.preventDefault();
+    e.stopPropagation();
+    console.log('Context menu triggered:', message.id, e.clientX, e.clientY);
     setContextMenu({
       messageId: message.id,
       x: e.clientX,
@@ -926,13 +937,14 @@ export function SidebarChatWindow({
       </div>
 
       {/* Context Menu */}
+      {contextMenu && console.log('Rendering context menu at:', contextMenu.x, contextMenu.y) as undefined}
       {contextMenu && (
         <div
           ref={contextMenuRef}
-          className="fixed bg-white rounded-lg shadow-xl border py-2 min-w-[180px] z-50"
+          className="fixed bg-white rounded-lg shadow-xl border py-2 min-w-[180px] z-[9999]"
           style={{
-            top: contextMenu.y,
-            left: contextMenu.x,
+            top: Math.min(contextMenu.y, window.innerHeight - 200),
+            left: Math.min(contextMenu.x, window.innerWidth - 200),
           }}
         >
           {/* Reactions submenu */}
