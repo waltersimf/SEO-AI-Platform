@@ -198,12 +198,18 @@ model Message {
   editedAt  DateTime?
   deletedAt DateTime?
 
+  // Reply thread support
+  replyToId String?
+  replyTo   Message?  @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies   Message[] @relation("MessageReplies")
+
   createdAt DateTime @default(now())
 
   // Reactions
   reactions MessageReaction[]
 
   @@index([chatId, createdAt])
+  @@index([replyToId])
   @@map("messages")
 }
 

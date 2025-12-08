@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { initSocket, getSocket } from '../chat/socket';
-import { Send, Pencil, Trash2, X, Check, Copy } from 'lucide-react';
+import { Send, Pencil, Trash2, X, Check, Copy, Reply } from 'lucide-react';
 import { TypingIndicator } from './typing-indicator';
 import { TaskPreviewCard } from './task-preview-card';
 import { AutoPlanPreviewCard } from './auto-plan-preview-card';
@@ -95,6 +95,16 @@ interface Message {
   editedAt?: string;
   deletedAt?: string;
   reactions?: MessageReaction[];
+  replyToId?: string;
+  replyTo?: {
+    id: string;
+    content: string;
+    deletedAt?: string;
+    author: {
+      id: string;
+      name: string;
+    };
+  };
   aiContext?: {
     taskPreview?: TaskPreviewData;
     autoPlanPreview?: AutoPlanPreviewData;
@@ -139,6 +149,13 @@ export function ChatBox({
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [showEmojiSubmenu, setShowEmojiSubmenu] = useState(false);
   const [emojiSubmenuPosition, setEmojiSubmenuPosition] = useState<'right' | 'left'>('right');
+
+  // Reply state
+  const [replyingTo, setReplyingTo] = useState<{
+    id: string;
+    content: string;
+    authorName: string;
+  } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
@@ -524,17 +541,19 @@ export function ChatBox({
 
     const socket = socketRef.current;
     if (!socket) return;
-    
+
     socket.emit('send_message', {
       chatId,
       authorId: userId,
       content: inputValue,
+      replyToId: replyingTo?.id || null,
     });
 
     // Stop typing
     socket.emit('typing_stop', { chatId, userId });
 
     setInputValue('');
+    setReplyingTo(null);
   };
 
   // Check for @ mention (supports both @ and " for Ukrainian keyboard)
@@ -830,6 +849,7 @@ export function ChatBox({
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
           <div
+            id={`message-${message.id}`}
             key={message.id}
             className={`flex ${message.author.id === userId ? 'justify-end' : 'justify-start'}`}
           >
@@ -858,6 +878,30 @@ export function ChatBox({
                   <p className="text-sm">Повідомлення видалено</p>
                 ) : (
                   <>
+                    {/* Reply quote */}
+                    {message.replyTo && (
+                      <div
+                        className={`mb-2 p-2 rounded cursor-pointer text-xs ${
+                          message.author.id === userId ? 'bg-white/20' : 'bg-black/10'
+                        }`}
+                        onClick={() => {
+                          const el = document.getElementById(`message-${message.replyTo!.id}`);
+                          el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }}
+                      >
+                        <p className={`font-medium ${
+                          message.author.id === userId ? 'text-blue-200' : 'text-blue-600'
+                        }`}>
+                          {message.replyTo.author.name}
+                        </p>
+                        <p className={`truncate ${
+                          message.author.id === userId ? 'text-white/80' : 'opacity-80'
+                        }`}>
+                          {message.replyTo.deletedAt ? 'Повідомлення видалено' : message.replyTo.content}
+                        </p>
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-2 mb-1">
                       {/* Show avatar emoji inline for AI users */}
                       {(message.author.isAI || message.author.name === 'AI Assistant') && (
@@ -994,6 +1038,23 @@ export function ChatBox({
         </div>
       )}
 
+      {/* Reply preview */}
+      {replyingTo && (
+        <div className="px-4 py-2 bg-gray-50 border-t flex items-center gap-2">
+          <div className="w-1 h-10 bg-blue-500 rounded-full" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-blue-600">{replyingTo.authorName}</p>
+            <p className="text-sm text-gray-600 truncate">{replyingTo.content}</p>
+          </div>
+          <button
+            onClick={() => setReplyingTo(null)}
+            className="p-1 hover:bg-gray-200 rounded"
+          >
+            <X className="w-4 h-4 text-gray-500" />
+          </button>
+        </div>
+      )}
+
       {/* Input */}
       <div className="border-t p-4 relative">
         {/* Mention Dropdown */}
@@ -1058,6 +1119,29 @@ export function ChatBox({
             left: Math.min(contextMenu.x, window.innerWidth - 200)
           }}
         >
+          {/* Reply option (not for deleted messages) */}
+          {!contextMenu.isDeleted && (
+            <button
+              type="button"
+              onClick={() => {
+                const message = messages.find(m => m.id === contextMenu.messageId);
+                if (message) {
+                  setReplyingTo({
+                    id: contextMenu.messageId,
+                    content: contextMenu.messageContent,
+                    authorName: message.author.name,
+                  });
+                  setContextMenu(null);
+                  inputRef.current?.focus();
+                }
+              }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-3"
+            >
+              <Reply className="w-4 h-4 text-gray-500" />
+              <span>Відповісти</span>
+            </button>
+          )}
+
           {/* Reactions submenu */}
           {!contextMenu.isDeleted && (
             <div className="relative">

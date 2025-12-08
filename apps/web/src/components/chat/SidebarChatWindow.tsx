@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Send, Pencil, Trash2, X, Check, Copy } from 'lucide-react';
+import { Send, Pencil, Trash2, X, Check, Copy, Reply } from 'lucide-react';
 import { initSocket, getSocket } from './socket';
 import { TypingIndicator } from './typing-indicator';
 import { TaskPreviewCard } from './task-preview-card';
@@ -96,6 +96,16 @@ interface Message {
   editedAt?: string;
   deletedAt?: string;
   reactions?: MessageReaction[];
+  replyToId?: string;
+  replyTo?: {
+    id: string;
+    content: string;
+    deletedAt?: string;
+    author: {
+      id: string;
+      name: string;
+    };
+  };
   aiContext?: {
     taskPreview?: TaskPreviewData;
     autoPlanPreview?: AutoPlanPreviewData;
@@ -145,6 +155,13 @@ export function SidebarChatWindow({
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [showEmojiSubmenu, setShowEmojiSubmenu] = useState(false);
   const [emojiSubmenuPosition, setEmojiSubmenuPosition] = useState<'right' | 'left'>('right');
+
+  // Reply state
+  const [replyingTo, setReplyingTo] = useState<{
+    id: string;
+    content: string;
+    authorName: string;
+  } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
@@ -410,9 +427,11 @@ export function SidebarChatWindow({
       chatId,
       authorId: userId,
       content: inputValue,
+      replyToId: replyingTo?.id || null,
     });
     socket.emit('typing_stop', { chatId, userId });
     setInputValue('');
+    setReplyingTo(null);
   };
 
   const detectMention = (value: string, cursorPos: number) => {
@@ -688,6 +707,7 @@ export function SidebarChatWindow({
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.map(message => (
           <div
+            id={`message-${message.id}`}
             key={message.id}
             className={cn('flex', message.author.id === userId ? 'justify-end' : 'justify-start')}
             onContextMenu={(e) => handleContextMenu(e, message)}
@@ -724,6 +744,33 @@ export function SidebarChatWindow({
                   <p className="text-sm">Повідомлення видалено</p>
                 ) : (
                   <>
+                    {/* Reply quote */}
+                    {message.replyTo && (
+                      <div
+                        className={cn(
+                          'mb-2 p-2 rounded cursor-pointer text-xs',
+                          message.author.id === userId ? 'bg-blue-600/30' : 'bg-black/10'
+                        )}
+                        onClick={() => {
+                          const el = document.getElementById(`message-${message.replyTo!.id}`);
+                          el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }}
+                      >
+                        <p className={cn(
+                          'font-medium',
+                          message.author.id === userId ? 'text-blue-200' : 'text-blue-600'
+                        )}>
+                          {message.replyTo.author.name}
+                        </p>
+                        <p className={cn(
+                          'truncate',
+                          message.author.id === userId ? 'text-blue-100/80' : 'opacity-80'
+                        )}>
+                          {message.replyTo.deletedAt ? 'Повідомлення видалено' : message.replyTo.content}
+                        </p>
+                      </div>
+                    )}
+
                     {/* Header */}
                     {message.author.id !== userId && (
                       <div className="flex items-center gap-1 mb-1">
@@ -873,6 +920,23 @@ export function SidebarChatWindow({
         </div>
       )}
 
+      {/* Reply preview */}
+      {replyingTo && (
+        <div className="px-4 py-2 bg-gray-50 border-t flex items-center gap-2">
+          <div className="w-1 h-10 bg-blue-500 rounded-full" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-blue-600">{replyingTo.authorName}</p>
+            <p className="text-sm text-gray-600 truncate">{replyingTo.content}</p>
+          </div>
+          <button
+            onClick={() => setReplyingTo(null)}
+            className="p-1 hover:bg-gray-200 rounded"
+          >
+            <X className="w-4 h-4 text-gray-500" />
+          </button>
+        </div>
+      )}
+
       {/* Input */}
       <div className="border-t border-gray-200 p-3 relative">
         {/* Mention dropdown */}
@@ -949,6 +1013,29 @@ export function SidebarChatWindow({
             left: Math.min(contextMenu.x, window.innerWidth - 200),
           }}
         >
+          {/* Reply option (not for deleted messages) */}
+          {!contextMenu.isDeleted && (
+            <button
+              type="button"
+              onClick={() => {
+                const message = messages.find(m => m.id === contextMenu.messageId);
+                if (message) {
+                  setReplyingTo({
+                    id: contextMenu.messageId,
+                    content: contextMenu.messageContent,
+                    authorName: message.author.name,
+                  });
+                  setContextMenu(null);
+                  inputRef.current?.focus();
+                }
+              }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+            >
+              <Reply className="w-4 h-4 text-gray-500" />
+              <span>Відповісти</span>
+            </button>
+          )}
+
           {/* Reactions submenu */}
           {!contextMenu.isDeleted && (
             <div

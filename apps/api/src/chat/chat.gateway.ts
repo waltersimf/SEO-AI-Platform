@@ -310,6 +310,7 @@ export class ChatGateway
           payload.chatId,
           payload.authorId,
           payload.content,
+          payload.replyToId,
         ),
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Database timeout')), 5000),
