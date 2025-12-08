@@ -21,6 +21,7 @@ import { Role } from '@prisma/client';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto';
 import { AhrefsService } from '../integrations/ahrefs.service';
 import { SerpstatService } from '../integrations/serpstat.service';
 import { GscService } from '../gsc/gsc.service';
@@ -145,6 +146,37 @@ export class ProjectsController {
       }
 
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete project';
+      throw new InternalServerErrorException(errorMessage);
+    }
+  }
+
+  /**
+   * Update payment status for a project
+   */
+  @Patch(':id/payment')
+  @Roles(Role.OWNER, Role.ADMIN)
+  async updatePaymentStatus(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() dto: UpdatePaymentStatusDto,
+  ) {
+    try {
+      if (!req.user || !req.user.organizationId) {
+        throw new BadRequestException('User not authenticated or missing organization');
+      }
+
+      const organizationId = req.user.organizationId;
+      return this.projectsService.updatePaymentStatus(id, organizationId, dto);
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update payment status';
       throw new InternalServerErrorException(errorMessage);
     }
   }

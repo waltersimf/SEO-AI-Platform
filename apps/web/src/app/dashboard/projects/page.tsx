@@ -13,6 +13,10 @@ interface Project {
   name: string;
   domain: string;
   createdAt: string;
+  paymentStatus?: 'paid' | 'pending' | 'unpaid' | 'overdue';
+  paymentDueDate?: string;
+  budgetTotal?: number;
+  budgetSpent?: number;
 }
 
 export default function ProjectsPage() {
