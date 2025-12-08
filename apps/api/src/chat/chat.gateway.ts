@@ -1094,8 +1094,11 @@ export class ChatGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { messageId: string; userId: string; emoji: string; chatId: string },
   ) {
+    this.logger.log(`🎯 add_reaction received: ${JSON.stringify(payload)}`);
+
     try {
       if (!payload?.messageId || !payload?.userId || !payload?.emoji || !payload?.chatId) {
+        this.logger.error('Invalid payload for add_reaction:', payload);
         client.emit('error', {
           message: 'Invalid payload: messageId, userId, emoji, and chatId are required',
           code: 'INVALID_PAYLOAD',
@@ -1106,6 +1109,7 @@ export class ChatGateway
       // Verify user is a member of this chat
       const isMember = await this.chatService.isChatMember(payload.chatId, payload.userId);
       if (!isMember) {
+        this.logger.warn(`User ${payload.userId} not authorized for chat ${payload.chatId}`);
         client.emit('error', {
           code: 'UNAUTHORIZED',
           message: 'Not authorized for this chat',
@@ -1119,6 +1123,8 @@ export class ChatGateway
         payload.emoji,
       );
 
+      this.logger.log(`✅ Reaction created: ${reaction.id}, emoji: ${payload.emoji}`);
+
       // Broadcast to all in room
       this.server.to(payload.chatId).emit('reaction_added', {
         messageId: payload.messageId,
@@ -1130,7 +1136,7 @@ export class ChatGateway
         },
       });
 
-      this.logger.log(`Reaction ${payload.emoji} added to message ${payload.messageId}`);
+      this.logger.log(`📡 Broadcast reaction_added to room ${payload.chatId}`);
       return { success: true, reaction };
     } catch (error) {
       this.logger.error('Error adding reaction:', error);
@@ -1147,8 +1153,11 @@ export class ChatGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { messageId: string; userId: string; emoji: string; chatId: string },
   ) {
+    this.logger.log(`🎯 remove_reaction received: ${JSON.stringify(payload)}`);
+
     try {
       if (!payload?.messageId || !payload?.userId || !payload?.emoji || !payload?.chatId) {
+        this.logger.error('Invalid payload for remove_reaction:', payload);
         client.emit('error', {
           message: 'Invalid payload',
           code: 'INVALID_PAYLOAD',
@@ -1159,6 +1168,7 @@ export class ChatGateway
       // Verify user is a member of this chat
       const isMember = await this.chatService.isChatMember(payload.chatId, payload.userId);
       if (!isMember) {
+        this.logger.warn(`User ${payload.userId} not authorized for chat ${payload.chatId}`);
         client.emit('error', {
           code: 'UNAUTHORIZED',
           message: 'Not authorized for this chat',
@@ -1172,6 +1182,8 @@ export class ChatGateway
         payload.emoji,
       );
 
+      this.logger.log(`✅ Reaction removed: ${payload.emoji} from message ${payload.messageId}`);
+
       // Broadcast to all in room
       this.server.to(payload.chatId).emit('reaction_removed', {
         messageId: payload.messageId,
@@ -1179,7 +1191,7 @@ export class ChatGateway
         emoji: payload.emoji,
       });
 
-      this.logger.log(`Reaction ${payload.emoji} removed from message ${payload.messageId}`);
+      this.logger.log(`📡 Broadcast reaction_removed to room ${payload.chatId}`);
       return { success: true };
     } catch (error) {
       this.logger.error('Error removing reaction:', error);
