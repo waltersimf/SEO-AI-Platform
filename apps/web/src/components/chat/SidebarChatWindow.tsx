@@ -10,6 +10,7 @@ import { AutoPlanPreviewCard } from './auto-plan-preview-card';
 import { API_URL } from '@/config/api';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { usePermissions } from '@/hooks/usePermissions';
 
 // Quick emoji reactions
@@ -814,8 +815,8 @@ export function SidebarChatWindow({
                       <>
                         {/* Content */}
                         {message.author.isAI || message.author.name === 'AI Assistant' ? (
-                          <div className="text-sm prose prose-sm max-w-none">
-                            <ReactMarkdown>{message.content}</ReactMarkdown>
+                          <div className="text-sm prose prose-sm max-w-none prose-table:border-collapse prose-td:border prose-td:border-gray-300 prose-td:p-2 prose-th:border prose-th:border-gray-300 prose-th:p-2 prose-th:bg-gray-100">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
                           </div>
                         ) : (
                           <p className="text-sm">{message.content}</p>
