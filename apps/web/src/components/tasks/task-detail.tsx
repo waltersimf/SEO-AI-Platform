@@ -42,6 +42,8 @@ const statusColors: Record<TaskStatus, string> = {
   paused: "bg-orange-100 text-orange-700",
   done: "bg-green-100 text-green-700",
   wont_do: "bg-slate-100 text-slate-500",
+  pending_acceptance: "bg-amber-100 text-amber-700",
+  declined: "bg-red-100 text-red-700",
 };
 
 const statusLabels: Record<TaskStatus, string> = {
@@ -53,6 +55,8 @@ const statusLabels: Record<TaskStatus, string> = {
   paused: "Paused",
   done: "Done",
   wont_do: "Won't Do",
+  pending_acceptance: "Очікує прийняття",
+  declined: "Відхилено",
 };
 
 export function TaskDetail({ task, currentUserId, onStatusChange }: TaskDetailProps) {

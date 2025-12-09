@@ -140,7 +140,7 @@ export function SidebarChatWindow({
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState<{ userId: string; userName: string } | null>(null);
-  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+  const [, setOnlineUsers] = useState<string[]>([]);
   const [organizationUsers, setOrganizationUsers] = useState<OrganizationUser[]>([]);
   const [mentionDropdownVisible, setMentionDropdownVisible] = useState(false);
   const [mentionSearchQuery, setMentionSearchQuery] = useState('');
