@@ -21,16 +21,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   const { addUnreadMessage, setTotalUnreadCount, setUnreadMessages, state } = useChatSidebar();
 
-  // Helper to get chat display name
-  const getChatName = (chat: any): string => {
-    if (chat.name) return chat.name;
-    if (chat.type === 'direct' && chat.members) {
-      const otherMember = chat.members.find((m: any) => m.userId !== user?.id);
-      return otherMember?.user?.name || 'Direct Chat';
-    }
-    return 'Unnamed Chat';
-  };
-
   // Only show chat on main dashboard and chat pages
   const showChat = pathname === '/dashboard' || pathname.startsWith('/dashboard/chat');
 
