@@ -164,7 +164,6 @@ export function SidebarChatList({
         method: 'POST',
       });
       await loadChats();
-      const user = organizationUsers.find(u => u.id === userId);
       const isOnline = isUserOnline(userId);
       selectChat(data.chatId, userName, isOnline);
     } catch (error) {
