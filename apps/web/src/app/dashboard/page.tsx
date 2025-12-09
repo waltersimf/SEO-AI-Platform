@@ -10,7 +10,6 @@ import { useSocket } from "@/contexts/socket-context";
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
-  const { socketStatus } = useSocket();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
