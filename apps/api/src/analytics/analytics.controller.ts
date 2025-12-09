@@ -38,8 +38,8 @@ export class AnalyticsController {
       throw new BadRequestException('User ID not found in token');
     }
 
-    const membership = await this.prisma.organizationMember.findFirst({
-      where: { userId },
+    const membership = await this.prisma.user.findFirst({
+      where: { id: userId },
       select: { organizationId: true },
     });
 

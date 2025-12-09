@@ -59,7 +59,7 @@ export interface DetailedAnalysis {
 
 @Injectable()
 export class AnalyticsService {
-  private readonly logger = new Logger(AnalyticsService.name);
+  private readonly _logger = new Logger(AnalyticsService.name);
 
   constructor(private prisma: PrismaService) {}
 
