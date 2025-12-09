@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { API_URL } from '@/config/api';
 
 export async function apiFetch<T = any>(
   endpoint: string,

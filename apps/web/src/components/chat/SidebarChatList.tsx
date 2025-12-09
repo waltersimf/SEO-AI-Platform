@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { Search, SlidersHorizontal, Plus, User, Users, Bot } from 'lucide-react';
+import { Search, SlidersHorizontal, Plus, Users, Bot } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { useChatSidebar } from '@/contexts/chat-sidebar-context';
 import { API_URL, SOCKET_URL } from '@/config/api';
@@ -49,7 +49,7 @@ export function SidebarChatList({
   currentUserId,
   onCreateChat,
   refreshTrigger,
-  compact = false,
+  compact: _compact = false,
 }: SidebarChatListProps) {
   const { state, selectChat, setTotalUnreadCount } = useChatSidebar();
   const [chats, setChats] = useState<Chat[]>([]);

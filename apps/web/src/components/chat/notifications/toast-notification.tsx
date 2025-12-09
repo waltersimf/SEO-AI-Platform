@@ -13,8 +13,8 @@ export interface ToastNotificationProps {
 }
 
 export function ToastNotification({
-  id,
-  chatId,
+  id: _id,
+  chatId: _chatId,
   chatName,
   message,
   authorName,

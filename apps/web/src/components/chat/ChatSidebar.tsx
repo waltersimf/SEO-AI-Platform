@@ -65,8 +65,6 @@ export function ChatSidebar({
   };
 
   const isWide = state.mode === 'wide';
-  const showListView = state.view === 'list' || isWide;
-  const showChatView = state.view === 'chat' || isWide;
 
   return (
     <>

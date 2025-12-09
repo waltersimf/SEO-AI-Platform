@@ -219,7 +219,7 @@ export function ProjectSEODashboard({ projectId }: ProjectSEODashboardProps) {
   const [error, setError] = useState<string | null>(null);
   const [projectPositions, setProjectPositions] = useState<SerpstatProjectPositions | null>(null);
   const [positionsLoading, setPositionsLoading] = useState(false);
-  const [positionsError, setPositionsError] = useState<string | null>(null);
+  const [, setPositionsError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSeoMetrics = async () => {

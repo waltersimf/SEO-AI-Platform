@@ -147,7 +147,7 @@ export function TaskComments({ taskId, currentUserId, currentUserName = "You" }:
             No comments yet. Be the first to comment!
           </div>
         ) : (
-          comments.map((comment, index) => (
+          comments.map((comment, _index) => (
             <div
               key={comment.id}
               className="flex gap-3 group p-3 rounded-lg hover:bg-muted/50 transition-colors"

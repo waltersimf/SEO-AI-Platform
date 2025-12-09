@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { ToastNotification, ToastNotificationProps } from "./toast-notification";
+import { ToastNotification } from "./toast-notification";
 
 interface Toast {
   id: string;
