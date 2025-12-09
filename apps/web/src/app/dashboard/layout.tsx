@@ -149,12 +149,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    if (user) {
-      fetchUnreadCount();
-      const interval = setInterval(fetchUnreadCount, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [user]);
+    if (!user) return;
+  
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+    }, [user]);
 
   return (
     <SocketProvider socketStatus={socketStatus}>
